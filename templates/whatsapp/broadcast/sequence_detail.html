@@ -17,7 +17,7 @@
         <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ sequence.name }}</h2>
         <div class="flex items-center gap-2 mt-1">
           {% if sequence.status == 'active' %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Active</span>
           {% elif sequence.status == 'paused' %}
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">Paused</span>
           {% else %}
@@ -47,7 +47,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Enrolled</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ sequence.completed_count }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ sequence.completed_count }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -131,7 +131,7 @@
           </div>
           <div class="flex items-center gap-2">
             {% if enr.status == 'active' %}
-              <span class="text-xs text-green-600 dark:text-green-400">Active</span>
+              <span class="text-xs text-growth-600 dark:text-growth-400">Active</span>
             {% elif enr.status == 'completed' %}
               <span class="text-xs text-kova-600 dark:text-kova-400">Completed</span>
             {% else %}

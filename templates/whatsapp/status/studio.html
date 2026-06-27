@@ -7,6 +7,7 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
+  {% include "whatsapp/_whatsapp_tabs.html" %}
 
   {# Stats Bar #}
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -15,7 +16,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.ready }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ stats.ready }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Ready</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -141,7 +142,7 @@
             <div class="flex items-center gap-2 mb-1.5">
               {# State badge #}
               {% if status.state == 'ready' %}
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Ready</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Ready</span>
               {% elif status.state == 'shared' %}
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-900 dark:text-kova-200">Shared</span>
               {% elif status.state == 'skipped' %}
@@ -206,8 +207,8 @@
   {% else %}
   <div class="card border-dashed border-gray-200 dark:border-gray-700">
     <div class="card-body text-center py-14 px-6">
-      <div class="w-14 h-14 mx-auto rounded-xl bg-green-100 dark:bg-green-900 flex items-center justify-center mb-4">
-        <svg class="w-7 h-7 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      <div class="w-14 h-14 mx-auto rounded-xl bg-growth-100 dark:bg-growth-900 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
       </div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Status content yet</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">

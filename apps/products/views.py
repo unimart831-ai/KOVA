@@ -1078,6 +1078,16 @@ def snap_to_sell(request):
     studio_unavailable = studio_polish_unavailable(request.user)
     lite_forced = studio_unavailable
     lite_notice = LITE_POLISH_NOTICE if lite_forced else ""
+    profile = request.user.profile
+    bm = getattr(profile, "business_model", "") or "product"
+    default_offering = {
+        "product": "product",
+        "service": "service",
+        "professional": "product",
+    }.get(bm, "product")
+    from apps.products.scene_packs import default_scene_pack_for_profile
+
+    default_scene_pack = default_scene_pack_for_profile(profile)
     if studio_unavailable and not photoroom_enabled():
         studio_notice = studio_polish_unavailable_message()
     elif studio_unavailable:
@@ -1101,7 +1111,9 @@ def snap_to_sell(request):
             "platform_blocked": usage.get("platform_blocked"),
             "scene_pack_options": SCENE_PACK_OPTIONS,
             "credit_estimates_json": json.dumps(credit_estimates),
-            "business_model": getattr(request.user.profile, "business_model", ""),
+            "business_model": bm,
+            "default_offering_type": default_offering,
+            "default_scene_pack": default_scene_pack,
         },
     )
 
@@ -1137,7 +1149,14 @@ def snap_launch(request):
     name = sanitize_product_name(request.POST.get("name", ""))
     photos = request.FILES.getlist("photos")
 
-    offering_type = request.POST.get("offering_type", "product").strip() or "product"
+    offering_type = request.POST.get("offering_type", "").strip()
+    if not offering_type:
+        bm = getattr(request.user.profile, "business_model", "") or "product"
+        offering_type = {
+            "product": "product",
+            "service": "service",
+            "professional": "product",
+        }.get(bm, "product")
     snap_mode = (request.POST.get("snap_mode") or "product").strip() or "product"
     if snap_mode in ("portfolio", "case_study"):
         offering_type = "product"

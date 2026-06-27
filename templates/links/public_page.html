@@ -66,6 +66,21 @@
       {% endif %}
     </div>
 
+    {% if shop_url or booking_url %}
+    <div class="grid grid-cols-1 gap-3 mb-6">
+      {% if shop_url %}
+      <a href="{{ shop_url }}" class="kova-link-btn featured block w-full py-3.5 px-6 rounded-xl text-center font-medium">
+        {% if business_model == 'professional' %}View portfolio{% elif business_model == 'service' %}Browse services{% else %}Shop our collection{% endif %}
+      </a>
+      {% endif %}
+      {% if booking_url %}
+      <a href="{{ booking_url }}" class="kova-link-btn block w-full py-3.5 px-6 rounded-xl text-center font-medium">
+        {% if business_model == 'professional' %}Book a consultation{% else %}Book with us{% endif %}
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
     {# ── Links ── #}
     <div class="space-y-3 mb-8">
       {% for link in links %}

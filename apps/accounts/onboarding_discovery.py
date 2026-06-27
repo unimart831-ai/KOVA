@@ -68,7 +68,7 @@ BUSINESS_TYPE_PRESETS: list[dict[str, Any]] = [
         "label": "Something else",
         "icon": "grid",
         "industry": "",
-        "business_model": "",
+        "business_model": BUSINESS_MODEL_SERVICE,
     },
 ]
 

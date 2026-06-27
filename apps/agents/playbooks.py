@@ -26,7 +26,7 @@ PLAYBOOKS = {
     # ──────────────────────────────────────────────────────────────────────
     "food_restaurant": {
         "name": "Food & Restaurant",
-        "industries": [],  # food businesses should match via keywords, not catch-all
+        "industries": ["food_restaurant"],
         "keywords": ["restaurant", "food", "cafe", "kitchen", "catering", "bakery", "chef"],
         "content_dna_presets": {
             "winning_formats": ["behind-the-scenes", "food-close-up", "customer-story", "process-video", "daily-special"],
@@ -135,7 +135,7 @@ PLAYBOOKS = {
 
     "fashion_beauty": {
         "name": "Fashion & Beauty",
-        "industries": ["ecommerce"],
+        "industries": ["ecommerce", "fashion_beauty", "salon_beauty", "wholesale_retail"],
         "keywords": ["fashion", "clothing", "beauty", "salon", "makeup", "style", "boutique", "hair"],
         "content_dna_presets": {
             "winning_formats": ["outfit-of-the-day", "transformation", "styling-tips", "trend-alert", "customer-wearing"],

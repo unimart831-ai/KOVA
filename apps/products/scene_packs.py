@@ -48,6 +48,16 @@ def normalize_scene_pack(value: str | None) -> str:
     return pack if pack in VALID_SCENE_PACKS else SCENE_PACK_AUTO
 
 
+def default_scene_pack_for_profile(profile) -> str:
+    """Default polish scene pack by business type."""
+    bm = (getattr(profile, "business_model", None) or "").strip()
+    if bm == "service":
+        return SCENE_PACK_BRAND_STUDIO
+    if bm == "professional":
+        return SCENE_PACK_BRAND_STUDIO
+    return SCENE_PACK_AUTO
+
+
 def get_product_scene_pack(product) -> str:
     meta = getattr(product, "marketplace_metadata", None) or {}
     if not isinstance(meta, dict):

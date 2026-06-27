@@ -7,13 +7,14 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
+  {% include "whatsapp/_whatsapp_tabs.html" %}
 
   {# No WhatsApp Account Connected #}
   {% if not wa_accounts %}
   <div class="card border-dashed border-gray-200 dark:border-gray-700">
     <div class="card-body text-center py-14 px-6">
-      <div class="w-14 h-14 mx-auto rounded-xl bg-green-100 dark:bg-green-900 flex items-center justify-center mb-4">
-        <svg class="w-7 h-7 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.29-1.24l-.28-.17-2.93.77.78-2.85-.18-.29A8 8 0 1112 20z"/></svg>
+      <div class="w-14 h-14 mx-auto rounded-xl bg-growth-100 dark:bg-growth-900 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-growth-600 dark:text-growth-400" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.29-1.24l-.28-.17-2.93.77.78-2.85-.18-.29A8 8 0 1112 20z"/></svg>
       </div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Connect WhatsApp Business</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
@@ -34,7 +35,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Conversations</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.active }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ stats.active }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -93,8 +94,8 @@
         <a href="{% url 'whatsapp:conversation' convo.pk %}"
            class="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
           {# Avatar #}
-          <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
-            <span class="text-sm font-bold text-green-700 dark:text-green-300">
+          <div class="w-10 h-10 rounded-full bg-growth-100 dark:bg-growth-900 flex items-center justify-center shrink-0">
+            <span class="text-sm font-bold text-growth-700 dark:text-growth-300">
               {{ convo.contact_name|default:convo.contact_wa_id|truncatechars:2|upper }}
             </span>
           </div>
@@ -132,7 +133,7 @@
               <p class="text-xs text-gray-400 dark:text-gray-500">{{ convo.last_message_at|timesince }} ago</p>
             {% endif %}
             {% if convo.is_window_open %}
-              <p class="text-xs text-green-600 dark:text-green-400 mt-0.5">Window open</p>
+              <p class="text-xs text-growth-600 dark:text-growth-400 mt-0.5">Window open</p>
             {% else %}
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Template only</p>
             {% endif %}

@@ -43,7 +43,7 @@
           <a href="{% url 'admin_dashboard:marketplace_detail' pk=log.marketplace.pk %}" class="text-xs text-growth-600 hover:underline">{{ log.marketplace.name }}</a>
         </td>
         <td class="px-4 py-2.5 text-xs font-mono">{{ log.event }}</td>
-        <td class="px-4 py-2.5 text-xs capitalize {% if log.status == 'failed' %}text-red-600{% elif log.status == 'success' %}text-green-600{% endif %}">{{ log.status }}</td>
+        <td class="px-4 py-2.5 text-xs capitalize {% if log.status == 'failed' %}text-red-600{% elif log.status == 'success' %}text-growth-600{% endif %}">{{ log.status }}</td>
         <td class="px-4 py-2.5 text-xs text-gray-500">{{ log.response_code|default:"—" }}</td>
         <td class="px-4 py-2.5 text-xs text-gray-500 max-w-xs truncate">{{ log.error_message|default:"—" }}</td>
       </tr>

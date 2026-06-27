@@ -155,7 +155,7 @@ class CampaignAddonPurchase(models.Model):
 PLAN_LIMITS = {
     "kova": {
         "label": "Kova",
-        "max_social_accounts": 4,
+        "max_social_accounts": 5,
         "max_posts_per_month": 9999,
         "max_seeds_per_month": 30,
         "max_photoroom_scenes_per_campaign": 12,

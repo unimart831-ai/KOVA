@@ -17,7 +17,7 @@
     {% for item in wedge_checklist.items %}
     <li class="flex items-center gap-2 text-sm">
       {% if item.done %}
-      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center text-green-600 dark:text-green-400 text-xs">✓</span>
+      <span class="flex-shrink-0 w-5 h-5 rounded-full bg-growth-100 dark:bg-growth-950 flex items-center justify-center text-growth-600 dark:text-growth-400 text-xs">✓</span>
       <span class="text-gray-500 dark:text-gray-400 line-through">{{ item.label }}</span>
       {% else %}
       <span class="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600"></span>

@@ -132,6 +132,19 @@ class UserSettingsForm(forms.ModelForm):
 
 
 class BrandProfileForm(forms.ModelForm):
+    BUSINESS_MODEL_CHOICES = [
+        ("product", "I sell products"),
+        ("service", "I offer services"),
+        ("professional", "I'm a professional / agency"),
+    ]
+
+    business_model = forms.ChoiceField(
+        choices=BUSINESS_MODEL_CHOICES,
+        widget=forms.RadioSelect(attrs={"class": "hidden peer"}),
+        required=False,
+        label="Your business type",
+    )
+
     # ── Onboarding Step 2 fields (voice & identity) ──
     TONE_CHOICES = [
         ("confident", "Confident"),
@@ -218,12 +231,13 @@ class BrandProfileForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple(attrs={"class": "rounded text-kova-600"}),
         required=False,
         label="Autopilot platforms",
-        help_text="Leave empty to use all connected platforms.",
+        help_text="Limit auto-publish and campaign generation to these platforms. Empty = all connected.",
     )
 
     class Meta:
         model = UserProfile
         fields = [
+            "business_model",
             "company_name",
             "website_url",
             "industry",
@@ -294,8 +308,11 @@ class BrandProfileForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         if self.instance:
+            if self.instance.business_model:
+                self.fields["business_model"].initial = self.instance.business_model
             if self.instance.brand_colors:
                 self.fields["brand_colors_text"].initial = ", ".join(self.instance.brand_colors)
             if self.instance.content_pillars:
@@ -329,7 +346,29 @@ class BrandProfileForm(forms.ModelForm):
             self.fields["engage_autonomy_level"].choices = allowed_levels
 
         from apps.platforms.models import SocialAccount
-        self.fields["autopilot_platforms_selection"].choices = SocialAccount.Platform.choices
+
+        user = self.user or getattr(self.instance, "user", None)
+        connected_choices = []
+        if user:
+            connected = SocialAccount.objects.filter(user=user, is_active=True).values_list(
+                "platform", flat=True,
+            )
+            label_map = dict(SocialAccount.Platform.choices)
+            connected_choices = [
+                (p, label_map.get(p, p.replace("_", " ").title()))
+                for p in sorted(set(connected))
+            ]
+        self.fields["autopilot_platforms_selection"].choices = connected_choices
+        if self.instance and self.instance.autopilot_platforms and connected_choices:
+            allowed = {c[0] for c in connected_choices}
+            self.fields["autopilot_platforms_selection"].initial = [
+                p for p in self.instance.autopilot_platforms if p in allowed
+            ]
+
+    def clean_autopilot_platforms_selection(self):
+        selected = self.cleaned_data.get("autopilot_platforms_selection") or []
+        allowed = {c[0] for c in self.fields["autopilot_platforms_selection"].choices}
+        return [p for p in selected if p in allowed]
 
     def clean_engage_autonomy_level(self):
         """Defence-in-depth: reject levels above the plan's cap.

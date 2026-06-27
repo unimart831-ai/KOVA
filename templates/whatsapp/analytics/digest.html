@@ -30,7 +30,7 @@
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{ h.title }}</span>
             {% if h.change_pct %}
               {% if h.change_pct > 0 %}
-                <span class="text-xs text-green-600 font-medium">+{{ h.change_pct }}%</span>
+                <span class="text-xs text-growth-600 font-medium">+{{ h.change_pct }}%</span>
               {% elif h.change_pct < 0 %}
                 <span class="text-xs text-red-600 font-medium">{{ h.change_pct }}%</span>
               {% endif %}

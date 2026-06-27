@@ -19,7 +19,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Total Followers</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.published }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ stats.published }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Published</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -66,7 +66,7 @@
           <div class="flex items-center gap-2">
             <span class="font-medium text-gray-900 dark:text-white">{{ ch.name }}</span>
             {% if ch.status == 'active' %}
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Active</span>
             {% elif ch.status == 'paused' %}
               <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">Paused</span>
             {% else %}
@@ -102,7 +102,7 @@
             <div class="flex items-center gap-2 mb-0.5">
               <span class="text-xs text-gray-400">{{ post.channel.name }}</span>
               {% if post.status == 'published' %}
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Published</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Published</span>
               {% elif post.status == 'scheduled' %}
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">Scheduled</span>
               {% elif post.status == 'draft' %}
@@ -126,8 +126,8 @@
   {% if not channels %}
   <div class="card border-dashed border-gray-200 dark:border-gray-700">
     <div class="card-body text-center py-14 px-6">
-      <div class="w-14 h-14 mx-auto rounded-xl bg-green-100 dark:bg-green-900 flex items-center justify-center mb-4">
-        <svg class="w-7 h-7 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+      <div class="w-14 h-14 mx-auto rounded-xl bg-growth-100 dark:bg-growth-900 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
       </div>
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Channels yet</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">

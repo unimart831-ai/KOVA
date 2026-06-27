@@ -61,37 +61,42 @@ def build_wedge_checklist(user, stats: dict | None = None) -> dict | None:
     profile = user.profile
     steps_ts = profile.onboarding_step_timestamps or {}
 
+    profile = user.profile
+    bm = getattr(profile, "business_model", "") or "product"
+
+    if bm == "professional":
+        step_defs = [
+            ("wedge_linkedin", "Connect LinkedIn", stats.get("has_linkedin"), "platforms:list"),
+            ("wedge_instagram", "Connect Instagram", stats.get("has_instagram"), "platforms:list"),
+            ("wedge_snap", "Add portfolio item", stats.get("has_snap_product"), "products:snap"),
+            ("wedge_publish_link", "First publish with CTA", stats.get("has_publish_with_link"), "content:studio"),
+            ("wedge_automation", "First lead or nurture", stats.get("has_automation_or_lead"), "leads:nurture_list"),
+        ]
+    elif bm == "service":
+        step_defs = [
+            ("wedge_whatsapp", "Connect WhatsApp", stats.get("has_whatsapp"), "platforms:list"),
+            ("wedge_instagram", "Connect Instagram", stats.get("has_instagram"), "platforms:list"),
+            ("wedge_snap", "Add a service offer", stats.get("has_snap_product"), "products:snap"),
+            ("wedge_publish_link", "First publish with booking link", stats.get("has_publish_with_link"), "content:studio"),
+            ("wedge_automation", "First lead or booking", stats.get("has_automation_or_lead"), "leads:nurture_list"),
+        ]
+    else:
+        step_defs = [
+            ("wedge_whatsapp", "Connect WhatsApp", stats.get("has_whatsapp"), "platforms:list"),
+            ("wedge_instagram", "Connect Instagram", stats.get("has_instagram"), "platforms:list"),
+            ("wedge_snap", "First Snap listing", stats.get("has_snap_product"), "products:snap"),
+            ("wedge_publish_link", "First publish with shop link", stats.get("has_publish_with_link"), "content:studio"),
+            ("wedge_automation", "First automation or lead", stats.get("has_automation_or_lead"), "leads:nurture_list"),
+        ]
+
     items = [
         {
-            "key": "wedge_whatsapp",
-            "label": "Connect WhatsApp",
-            "done": stats.get("has_whatsapp") or bool(steps_ts.get("wedge_whatsapp")),
-            "url_name": "platforms:list",
-        },
-        {
-            "key": "wedge_instagram",
-            "label": "Connect Instagram",
-            "done": stats.get("has_instagram") or bool(steps_ts.get("wedge_instagram")),
-            "url_name": "platforms:list",
-        },
-        {
-            "key": "wedge_snap",
-            "label": "First Snap listing",
-            "done": stats.get("has_snap_product") or bool(steps_ts.get("wedge_snap")),
-            "url_name": "products:snap",
-        },
-        {
-            "key": "wedge_publish_link",
-            "label": "First publish with link",
-            "done": stats.get("has_publish_with_link") or bool(steps_ts.get("wedge_publish_link")),
-            "url_name": "content:studio",
-        },
-        {
-            "key": "wedge_automation",
-            "label": "First automation or lead captured",
-            "done": stats.get("has_automation_or_lead") or bool(steps_ts.get("wedge_automation")),
-            "url_name": "leads:nurture_list",
-        },
+            "key": key,
+            "label": label,
+            "done": done or bool(steps_ts.get(key)),
+            "url_name": url_name,
+        }
+        for key, label, done, url_name in step_defs
     ]
 
     completed = sum(1 for item in items if item["done"])

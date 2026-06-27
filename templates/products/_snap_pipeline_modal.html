@@ -69,12 +69,12 @@
                   :class="{
                     'border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30': step.status === 'pending' || step.status === 'skipped',
                     'border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20': step.status === 'running',
-                    'border-green-100 dark:border-green-900 bg-green-50/30 dark:bg-green-950/20': step.status === 'completed',
+                    'border-growth-100 dark:border-growth-900 bg-growth-50/30 dark:bg-growth-950/20': step.status === 'completed',
                     'border-red-200 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20': step.status === 'failed',
                   }">
                 <span class="flex-shrink-0 mt-0.5">
                   <template x-if="step.status === 'completed'">
-                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <svg class="w-4 h-4 text-growth-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                   </template>
                   <template x-if="step.status === 'running'">
                     <span class="block w-4 h-4 border-2 border-kova-500 border-t-transparent rounded-full animate-spin"></span>

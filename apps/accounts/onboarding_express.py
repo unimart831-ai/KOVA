@@ -39,6 +39,9 @@ def record_business_model(profile, business_model: str) -> None:
 
 def apply_business_model_defaults(profile, user) -> None:
     """Set sensible defaults after business model selection."""
+    if not profile.business_model:
+        profile.business_model = BUSINESS_MODEL_SERVICE
+
     if profile.business_model == BUSINESS_MODEL_SERVICE:
         profile.default_cta_type = profile.default_cta_type or "whatsapp"
         if not profile.goals:

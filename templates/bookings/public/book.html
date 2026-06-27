@@ -37,7 +37,7 @@
   <div class="header">
     {% if brand_logo %}<img src="{{ brand_logo }}" alt="" style="max-height:48px;margin:0 auto 8px;display:block;border-radius:8px;">{% endif %}
     <h1>{{ brand_name }}</h1>
-    <p>Pick a service and time below</p>
+    <p>{% if business_model == 'professional' %}Schedule a consultation{% else %}Book your appointment{% endif %}</p>
   </div>
 
   {% if not services %}

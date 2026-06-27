@@ -1,0 +1,54 @@
+{# Score Bar — compact single-line health check replacing the hero bar + standup #}
+<div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 rounded-xl bg-gray-900 dark:bg-gray-800 border border-gray-800 dark:border-gray-700">
+
+  {# Streak #}
+  {% if brief_streak > 0 %}
+  <div class="flex items-center gap-1.5">
+    <span class="text-gold-400 text-sm">🔥</span>
+    <span class="text-xs font-bold text-white tabular-nums">{{ brief_streak }}-day streak</span>
+  </div>
+  <span class="text-gray-600 text-xs hidden sm:inline">·</span>
+  {% endif %}
+
+  {# Kova Score #}
+  {% if brief and brief.kova_score %}
+  <div class="flex items-center gap-1.5">
+    <span class="text-xs font-bold text-white tabular-nums">{{ brief.kova_score }}</span>
+    <span class="text-[10px] text-gray-400 uppercase tracking-wide">Score</span>
+  </div>
+  <span class="text-gray-600 text-xs hidden sm:inline">·</span>
+  {% endif %}
+
+  {# Revenue stat (compact) #}
+  {% if revenue_stat and revenue_stat.has_data %}
+  <a href="{% url 'analytics:revenue' %}" class="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+    <span class="text-xs font-bold text-growth-400 tabular-nums">KES {{ revenue_stat.current_kes|floatformat:0 }}</span>
+    {% if revenue_stat.direction == 'up' %}
+    <span class="text-[10px] text-growth-400">↑{{ revenue_stat.delta_pct|floatformat:0 }}%</span>
+    {% elif revenue_stat.direction == 'down' %}
+    <span class="text-[10px] text-red-400">↓{{ revenue_stat.delta_pct|floatformat:0 }}%</span>
+    {% endif %}
+    <span class="text-[10px] text-gray-500">7d</span>
+  </a>
+  <span class="text-gray-600 text-xs hidden sm:inline">·</span>
+  {% endif %}
+
+  {# Stream summary #}
+  <div class="flex items-center gap-1.5 ml-auto">
+    {% if stream_critical_count > 0 %}
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold">
+      <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+      {{ stream_critical_count }}
+    </span>
+    {% endif %}
+    {% if stream_today_count > 0 %}
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-500/20 text-gold-300 text-[10px] font-bold">
+      {{ stream_today_count }} today
+    </span>
+    {% elif stream_critical_count == 0 %}
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-growth-500/20 text-growth-300 text-[10px] font-bold">
+      ✓ All clear
+    </span>
+    {% endif %}
+  </div>
+</div>

@@ -3,11 +3,11 @@
   Requires: standup_context (dict from apps.briefs.standup.build_standup_context)
 {% endcomment %}
 {% if standup_context %}
-<div class="card border-gold-200 dark:border-gold-800/60 bg-gradient-to-br from-gold-50/80 via-white to-orange-50/50 dark:from-gold-950/25 dark:via-gray-900 dark:to-orange-950/20 overflow-hidden">
+<div class="card border-gold-200 dark:border-gold-800/60 bg-gold-50 dark:bg-gold-950/20 overflow-hidden">
   <div class="px-6 py-5">
     <div class="flex flex-col lg:flex-row lg:items-start gap-5">
       <div class="flex items-start gap-4 min-w-0 flex-1">
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-500 to-orange-600 flex items-center justify-center shrink-0 shadow-lg shadow-gold-500/20">
+        <div class="w-11 h-11 rounded-xl bg-gold-500 flex items-center justify-center shrink-0 shadow-sm">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         </div>
         <div class="min-w-0 flex-1">
@@ -17,7 +17,7 @@
             <span class="inline-flex items-center gap-1">
               <span class="font-semibold text-gray-900 dark:text-white tabular-nums">{{ standup_context.kova_score }}</span>/100
               {% if standup_context.kova_score_delta %}
-                <span class="{% if standup_context.kova_score_delta > 0 %}text-green-600{% else %}text-red-600{% endif %} font-medium">
+                <span class="{% if standup_context.kova_score_delta > 0 %}text-growth-600{% else %}text-red-600{% endif %} font-medium">
                   ({% if standup_context.kova_score_delta > 0 %}+{% endif %}{{ standup_context.kova_score_delta }})
                 </span>
               {% endif %}

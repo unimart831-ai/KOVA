@@ -44,6 +44,45 @@ BUNDLE_LABELS = {
     "tiktok_copy": "TikTok",
 }
 
+BUNDLE_PROFILES = {
+    "product": {
+        "carousel_intent": "offer",
+        "cta_primary": "Order now",
+        "cta_whatsapp": "Order on WhatsApp",
+        "cta_story": "Shop now — link in bio 👆",
+        "include_shop_link": True,
+        "reel_style": "product_showcase",
+    },
+    "service": {
+        "carousel_intent": "faq",
+        "cta_primary": "Book now",
+        "cta_whatsapp": "Book on WhatsApp",
+        "cta_story": "Book now — link in bio 👆",
+        "include_shop_link": False,
+        "reel_style": "service_showcase",
+    },
+    "professional": {
+        "carousel_intent": "educational",
+        "cta_primary": "Book a consultation",
+        "cta_whatsapp": "DM for details",
+        "cta_story": "Book a consultation — link in bio 👆",
+        "include_shop_link": False,
+        "reel_style": "authority",
+    },
+}
+
+
+def _resolve_business_model(seed) -> str:
+    profile = getattr(getattr(seed, "user", None), "profile", None)
+    bm = (getattr(profile, "business_model", None) or "").strip()
+    if bm in BUNDLE_PROFILES:
+        return bm
+    return "product"
+
+
+def get_bundle_profile(seed) -> dict[str, Any]:
+    return dict(BUNDLE_PROFILES[_resolve_business_model(seed)])
+
 
 def required_bundle_roles(connected_platforms: set[str] | list[str]) -> list[str]:
     """Ordered list of bundle slots required for the user's connected platforms."""
@@ -118,48 +157,69 @@ def build_funnel_carousel_slides(seed, *, slide_count: int = CAROUSEL_TARGET_SLI
     if strategy and strategy.slides:
         return strategy.to_carousel_slides()
 
+    profile = get_bundle_profile(seed)
     ctx = _campaign_context(seed)
     name, price, title = ctx["name"], ctx["price"], ctx["title"]
     count = max(CAROUSEL_MIN_SLIDES, min(slide_count, len(FUNNEL_SLIDE_ROLES)))
+    bm = _resolve_business_model(seed)
 
-    templates = [
-        (
-            "hook",
-            f"Wait — {name}",
-            f"Something special just dropped. Swipe to see why everyone's talking 👉",
-            f"Eye-catching hero shot of {name}, vibrant lighting, premium product photography, 1:1 square",
-        ),
-        (
-            "problem",
-            "Sound familiar?",
-            f"Tired of settling for less? You deserve {name} that actually delivers.",
-            f"Relatable lifestyle moment showing frustration, warm tones, candid feel, square crop",
-        ),
-        (
-            "solution",
-            f"Meet {name}",
-            "Designed for real life — quality you can feel from day one.",
-            f"{name} in use, clean minimal background, aspirational but authentic, square",
-        ),
-        (
-            "proof",
-            "Why customers love it",
-            "Real results. Happy customers. Repeat buyers. That's the standard.",
-            f"Happy customer with {name}, social proof mood, bright natural light, square",
-        ),
-        (
-            "offer",
-            title[:60] if title else f"Get {name} today",
-            f"{price + ' — ' if price else ''}Limited availability. Don't miss out.",
-            f"{name} with subtle promo energy, bold colors, urgency without clutter, square",
-        ),
-        (
-            "cta",
-            "Ready?",
-            f"Tap the link in bio to shop {name}. Save this post for later 💾",
-            f"Clear CTA visual for {name}, bold headline space, brand-forward, square",
-        ),
-    ]
+    if bm == "service":
+        templates = [
+            ("hook", f"Need {name}?", "Here's how we help — swipe to learn more 👉", f"Professional service hero, {name}, warm trust-building mood, square"),
+            ("problem", "Sound familiar?", "Finding reliable service shouldn't be this hard.", "Relatable client moment, candid feel, square"),
+            ("solution", f"Meet {name}", "Expert care, clear process, results you can count on.", f"{name} in action, clean professional setting, square"),
+            ("proof", "What clients say", "Real reviews from people who booked and came back.", "Testimonial-style visual, bright natural light, square"),
+            ("offer", title[:60] if title else "Ready to book?", f"{price + ' · ' if price else ''}Limited slots — reserve yours.", "Booking CTA energy, calm professional tones, square"),
+            ("cta", "Book today", profile["cta_primary"] + " — link in bio 💾", "Clear booking CTA visual, brand-forward, square"),
+        ]
+    elif bm == "professional":
+        templates = [
+            ("hook", f"Why {name}?", "The insight your industry needs — swipe 👉", f"Authority visual for {name}, polished professional, square"),
+            ("problem", "The challenge", "Most businesses struggle to stand out and convert attention.", "Business challenge visual, editorial style, square"),
+            ("solution", "The approach", f"{name} — proven expertise, measurable outcomes.", f"Expert at work, {name}, authoritative mood, square"),
+            ("proof", "Results delivered", "Case studies and client wins that speak for themselves.", "Results / portfolio visual, clean layout, square"),
+            ("offer", title[:60] if title else "Work with us", f"{price + ' · ' if price else ''}Consultation slots available.", "Consultation CTA, premium professional tone, square"),
+            ("cta", "Let's talk", profile["cta_primary"] + " — link in bio 💾", "Consultation booking CTA, square"),
+        ]
+    else:
+        templates = [
+            (
+                "hook",
+                f"Wait — {name}",
+                f"Something special just dropped. Swipe to see why everyone's talking 👉",
+                f"Eye-catching hero shot of {name}, vibrant lighting, premium product photography, 1:1 square",
+            ),
+            (
+                "problem",
+                "Sound familiar?",
+                f"Tired of settling for less? You deserve {name} that actually delivers.",
+                f"Relatable lifestyle moment showing frustration, warm tones, candid feel, square crop",
+            ),
+            (
+                "solution",
+                f"Meet {name}",
+                "Designed for real life — quality you can feel from day one.",
+                f"{name} in use, clean minimal background, aspirational but authentic, square",
+            ),
+            (
+                "proof",
+                "Why customers love it",
+                "Real results. Happy customers. Repeat buyers. That's the standard.",
+                f"Happy customer with {name}, social proof mood, bright natural light, square",
+            ),
+            (
+                "offer",
+                title[:60] if title else f"Get {name} today",
+                f"{price + ' — ' if price else ''}Limited availability. Don't miss out.",
+                f"{name} with subtle promo energy, bold colors, urgency without clutter, square",
+            ),
+            (
+                "cta",
+                "Ready?",
+                f"Tap the link in bio to shop {name}. Save this post for later 💾",
+                f"Clear CTA visual for {name}, bold headline space, brand-forward, square",
+            ),
+        ]
 
     slides = []
     for role, heading, body, image_prompt in templates[:count]:
@@ -175,8 +235,22 @@ def build_funnel_carousel_slides(seed, *, slide_count: int = CAROUSEL_TARGET_SLI
 
 def _story_frame_content(seed, frame_index: int) -> dict[str, str]:
     """Three-part story arc: hook → value → CTA."""
+    profile = get_bundle_profile(seed)
     ctx = _campaign_context(seed)
     name, price, title = ctx["name"], ctx["price"], ctx["title"]
+    bm = _resolve_business_model(seed)
+    if bm == "service":
+        value_line = f"{price + ' · ' if price else ''}Trusted by clients who book again."
+        cta_text = f"📅 {profile['cta_story']}\n\n💾 Save this!"
+        cta_headline = "Book now"
+    elif bm == "professional":
+        value_line = "Expertise you can trust — real outcomes."
+        cta_text = f"💼 {profile['cta_story']}\n\n💾 Save this!"
+        cta_headline = "Consult"
+    else:
+        value_line = f"{price + ' · ' if price else ''}Quality that speaks for itself."
+        cta_text = f"🛍️ {profile['cta_story']}\n\n💾 Save this!"
+        cta_headline = "Shop now"
     frames = [
         {
             "content_text": f"🔥 {title[:40]}\n\nSwipe up 👆",
@@ -188,7 +262,7 @@ def _story_frame_content(seed, frame_index: int) -> dict[str, str]:
             ),
         },
         {
-            "content_text": f"✨ Why {name}?\n\n{price + ' · ' if price else ''}Quality that speaks for itself.",
+            "content_text": f"✨ Why {name}?\n\n{value_line}",
             "headline": f"Why {name}?",
             "body": "The details that matter",
             "image_prompt": (
@@ -197,8 +271,8 @@ def _story_frame_content(seed, frame_index: int) -> dict[str, str]:
             ),
         },
         {
-            "content_text": f"🛍️ Shop now — link in bio 👆\n\n💾 Save this!",
-            "headline": "Shop now",
+            "content_text": cta_text,
+            "headline": cta_headline,
             "body": "Link in bio",
             "image_prompt": (
                 f"Vertical 9:16 CTA story frame, {name} with shop-now energy, "

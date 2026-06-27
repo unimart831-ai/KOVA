@@ -30,7 +30,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">AI Replies</p>
     </div>
     <div class="card px-3 py-3 text-center">
-      <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ totals.delivered }}</p>
+      <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ totals.delivered }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Delivered</p>
     </div>
     <div class="card px-3 py-3 text-center">
@@ -73,7 +73,7 @@
               <span class="font-medium text-gray-900 dark:text-white">{{ totals.sentiment_positive|floatformat:0 }}%</span>
             </div>
             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div class="bg-green-500 h-2 rounded-full" style="width: {{ totals.sentiment_positive|floatformat:0 }}%"></div>
+              <div class="bg-growth-500 h-2 rounded-full" style="width: {{ totals.sentiment_positive|floatformat:0 }}%"></div>
             </div>
           </div>
           <div class="flex items-center gap-4 mt-2 text-sm">

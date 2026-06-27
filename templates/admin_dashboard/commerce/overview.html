@@ -23,9 +23,9 @@
     <p class="text-2xl font-bold text-growth-600 mt-1">{{ public_shops }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ with_commerce_slug }} shareable links</p>
   </a>
-  <a href="{% url 'admin_dashboard:commerce_payments' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm hover:border-green-400 transition-colors">
-    <p class="text-xs font-medium text-green-600">M-Pesa payments</p>
-    <p class="text-2xl font-bold text-green-600 mt-1">{{ payment_completed }}</p>
+  <a href="{% url 'admin_dashboard:commerce_payments' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 shadow-sm hover:border-growth-400 transition-colors">
+    <p class="text-xs font-medium text-growth-600">M-Pesa payments</p>
+    <p class="text-2xl font-bold text-growth-600 mt-1">{{ payment_completed }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">KES {{ payment_revenue|floatformat:0 }} · {{ payments_7d }} this week</p>
   </a>
   <a href="{% url 'admin_dashboard:commerce_integrations' %}" class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm hover:border-kova-400 transition-colors">
@@ -114,8 +114,8 @@
 
 {# ── Stock status ───────────────────────────────────────────────────── #}
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=in_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-green-300 transition-colors">
-    <p class="text-lg font-bold text-green-600">{{ in_stock }}</p>
+  <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=in_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-growth-300 transition-colors">
+    <p class="text-lg font-bold text-growth-600">{{ in_stock }}</p>
     <p class="text-[10px] text-gray-500">In Stock</p>
   </a>
   <a href="{% url 'admin_dashboard:commerce_catalog' %}?status=low_stock" class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 text-center hover:border-gold-300 transition-colors">

@@ -7,7 +7,7 @@
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-sm font-medium text-gray-900 dark:text-white">{{ interaction.author_name }}</span>
-          <span class="badge {% if interaction.interaction_type == 'comment' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200{% elif interaction.interaction_type == 'mention' %}bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200{% elif interaction.interaction_type == 'dm' %}bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200{% elif interaction.interaction_type == 'reply' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+          <span class="badge {% if interaction.interaction_type == 'comment' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200{% elif interaction.interaction_type == 'mention' %}bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200{% elif interaction.interaction_type == 'dm' %}bg-growth-100 text-growth-800 dark:bg-growth-950 dark:text-growth-200{% elif interaction.interaction_type == 'reply' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
             {{ interaction.get_interaction_type_display }}
           </span>
           {% if interaction.social_account %}
@@ -16,7 +16,7 @@
             </span>
           {% endif %}
           {% if interaction.sentiment %}
-            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium {% if interaction.sentiment == 'positive' %}bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300{% elif interaction.sentiment == 'negative' %}bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300{% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium {% if interaction.sentiment == 'positive' %}bg-growth-50 text-growth-700 dark:bg-growth-950/50 dark:text-growth-300{% elif interaction.sentiment == 'negative' %}bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300{% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
               {{ interaction.sentiment }}
             </span>
           {% endif %}
@@ -60,7 +60,7 @@
                 Copy reply
               </button>
               {% if interaction.ai_reply_sent %}
-                <span class="text-xs text-green-600 dark:text-green-400 self-center font-medium">✓ Reply sent</span>
+                <span class="text-xs text-growth-600 dark:text-growth-400 self-center font-medium">✓ Reply sent</span>
               {% endif %}
             </div>
           </div>

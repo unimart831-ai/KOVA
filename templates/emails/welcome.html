@@ -1,14 +1,15 @@
 {% extends "emails/base_email.html" %}
 
-{% block title %}Welcome to Kova Agent{% endblock %}
-{% block header_title %}Welcome to Kova Agent!{% endblock %}
-{% block header_subtitle %}<p style="margin:4px 0 0;color:#a3e8d7;font-size:14px;">Your AI agency is working on your first posts</p>{% endblock %}
-{% block header_badge %}SETUP COMPLETE{% endblock %}
+{% block title %}Welcome to Kova{% endblock %}
+{% block header_bg %}#1E3A8A{% endblock %}
+{% block header_title %}Welcome to Kova!{% endblock %}
+{% block header_subtitle %}<p style="margin:4px 0 0;color:#ddd6fe;font-size:14px;">Your setup is complete — here's what to do first</p>{% endblock %}
+{% block header_badge %}GET STARTED{% endblock %}
 
 {% block content %}
 <h2 style="margin:0 0 12px;font-size:18px;font-weight:600;color:#111827;">Hey {{ first_name }}, you're in!</h2>
 <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
-  Your setup is complete and your AI agency is analyzing your industry, drafting starter posts, and preparing today's brief. Here's what to do next:
+  Kova is ready. Connect your platforms, review your first posts, and check Today for decisions that need you.
 </p>
 
 <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111827;">Your next steps:</h3>
@@ -22,8 +23,8 @@
             <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#1E3A8A;color:#fff;border-radius:50%;font-size:13px;font-weight:700;">1</span>
           </td>
           <td>
-            <strong style="color:#065040;font-size:14px;">Review your first AI drafts</strong>
-            <p style="margin:2px 0 0;font-size:13px;color:#0a6d60;">Open Content Studio — posts should appear within a few minutes</p>
+            <strong style="color:#065040;font-size:14px;">Connect your platforms</strong>
+            <p style="margin:2px 0 0;font-size:13px;color:#0a6d60;">Link Instagram, WhatsApp, Facebook, or LinkedIn — this unlocks publishing and inbox</p>
           </td>
         </tr>
       </table>
@@ -38,8 +39,8 @@
             <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#3b82f6;color:#fff;border-radius:50%;font-size:13px;font-weight:700;">2</span>
           </td>
           <td>
-            <strong style="color:#1e40af;font-size:14px;">Read your Daily Brief</strong>
-            <p style="margin:2px 0 0;font-size:13px;color:#1d4ed8;">Trending topics, suggested posts, and what your agents learned overnight</p>
+            <strong style="color:#1e40af;font-size:14px;">Open Today</strong>
+            <p style="margin:2px 0 0;font-size:13px;color:#1d4ed8;">Your decision queue — approve posts, reply to leads, and see what Kova prepared</p>
           </td>
         </tr>
       </table>
@@ -54,8 +55,8 @@
             <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#10B981;color:#fff;border-radius:50%;font-size:13px;font-weight:700;">3</span>
           </td>
           <td>
-            <strong style="color:#166534;font-size:14px;">Connect a platform to publish</strong>
-            <p style="margin:2px 0 0;font-size:13px;color:#15803d;">Link Instagram, Facebook, LinkedIn, or others when you're ready to go live</p>
+            <strong style="color:#166534;font-size:14px;">Create your first campaign</strong>
+            <p style="margin:2px 0 0;font-size:13px;color:#15803d;">Go to Create — one idea becomes feed, carousel, reel, and story posts</p>
           </td>
         </tr>
       </table>
@@ -67,11 +68,7 @@
 {% block cta %}
 <tr>
   <td align="center" style="padding:0 32px 28px;">
-    <a href="{{ studio_url }}" style="display:inline-block;background-color:#10B981;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;margin-right:8px;">Open Content Studio →</a>
-    <p style="margin:12px 0 0;font-size:13px;color:#6b7280;">
-      Or <a href="{{ brief_url }}" style="color:#1E3A8A;text-decoration:none;">view your Daily Brief</a>
-      · <a href="{{ platforms_url }}" style="color:#1E3A8A;text-decoration:none;">connect a platform</a>
-    </p>
+    <a href="{{ brief_url }}" style="display:inline-block;background-color:#10B981;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">Open Today →</a>
   </td>
 </tr>
 {% endblock %}

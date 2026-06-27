@@ -5,6 +5,8 @@
 <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
   {% if approve_first %}
     {{ pending_approve_count }} campaign post{{ pending_approve_count|pluralize }} ready — {{ kova_subhead }}
+  {% elif business_model == 'service' %}
+    Create content that fills your calendar — {{ kova_subhead }}
   {% elif business_model == 'professional' %}
     {{ kova_copy.sell }} Approve in Studio.
   {% else %}
@@ -15,10 +17,8 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6">
-  {% include "components/_kova_loop_strip.html" %}
 
   {% include "content/_create_tabs.html" %}
-  {% include "content/_studio_subnav.html" %}
   {% include "content/_campaign_usage_strip.html" %}
   {% include "content/_studio_assets_panel.html" %}
 
@@ -37,19 +37,26 @@
   {% endif %}
 
   {% if connected_platform_count == 0 %}
-  <div class="p-4 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800 rounded-xl flex items-start gap-3">
-    <div class="flex-1">
-      <p class="text-sm font-medium text-gold-800 dark:text-gold-300">Connect a platform to unlock Studio</p>
-      <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">You're paying for multi-platform AI — connect Instagram, Facebook, or WhatsApp to start generating posts that publish automatically.</p>
-      <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
-        Connect now
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-      </a>
+  <div class="rounded-xl border-2 border-kova-300 dark:border-kova-700 bg-kova-50 dark:bg-kova-950/30 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div class="flex-1 min-w-0">
+      <p class="text-base font-semibold text-gray-900 dark:text-white">Connect a platform to publish</p>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        {% if business_model == 'professional' %}
+        Draft authority posts now — connect LinkedIn or Instagram to publish.
+        {% elif business_model == 'service' %}
+        Build booking content now — connect WhatsApp or Instagram to publish and sync inbox.
+        {% else %}
+        Build campaigns now — connect WhatsApp or Instagram to publish and close orders from chat.
+        {% endif %}
+      </p>
     </div>
+    <a href="{% url 'platforms:list' %}" class="btn-primary shrink-0 px-5 py-2.5">
+      Connect platforms
+    </a>
   </div>
   {% endif %}
 
-  {% if not approve_first and not is_starter_plan %}
+  {% if not approve_first and not is_starter_plan and connected_platform_count > 0 %}
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-kova-50 dark:bg-kova-900/20 border border-kova-200 dark:border-kova-800 rounded-xl">
     <div class="flex items-start gap-3 min-w-0">
       <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center shrink-0">
@@ -92,7 +99,7 @@
 
   {# ━━━ Composer ━━━ #}
   <div class="card border-kova-100 dark:border-kova-900/50 shadow-kova dark:shadow-none overflow-hidden">
-    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-kova-50/80 to-white dark:from-kova-950/40 dark:to-gray-900">
+    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-kova-50 dark:bg-kova-950/30">
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Start a campaign</h2>
@@ -249,7 +256,7 @@
            hx-swap="outerHTML"
            class="card border border-kova-200 dark:border-kova-800 overflow-hidden">
         {# Animated top bar #}
-        <div class="h-1 bg-gradient-to-r from-kova-400 via-kova-400 to-pink-400 animate-pulse"></div>
+        <div class="h-1 bg-growth-500 animate-pulse"></div>
         <div class="card-body flex items-center gap-4">
           {# Pulsing AI orb #}
           <div class="relative shrink-0">

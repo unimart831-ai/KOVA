@@ -279,7 +279,7 @@ def _unsubscribe_response(success=True, email=""):
     .card {{ background: #fff; border-radius: 12px; padding: 40px; max-width: 420px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.1); }}
     h1 {{ font-size: 24px; color: #111827; margin: 0 0 12px; }}
     p {{ font-size: 14px; color: #6b7280; line-height: 1.6; margin: 0; }}
-    a {{ color: #7c3aed; text-decoration: none; }}
+    a {{ color: #1E3A8A; text-decoration: none; }}
   </style>
 </head>
 <body>

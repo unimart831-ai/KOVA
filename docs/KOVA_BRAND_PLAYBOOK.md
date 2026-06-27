@@ -926,20 +926,21 @@ Check these in onboarding Step 3 (visual grid):
 
 ### Recommended Brand Colors
 
-> **Note:** The Kova product UI uses **teal** (`kova-600 / #0d8474`) as the primary brand color.
-> The palette below is for **user marketing content** (social posts, banners, videos).
-> When building UI components, always refer to `static/css/input.css` and the Tailwind config.
+> **Design System v3 (June 2026)** — "Growth-first" visual identity.
+> The primary emotional color is **Growth Emerald** (`growth-500 / #10B981`),
+> not the legacy teal. Trust Blue supports navigation. See `docs/DESIGN_SYSTEM.md`
+> and `static/css/input.css` for authoritative tokens.
 
-| Color | Hex | Usage |
-|-------|-----|-------|
-| **Primary (Product UI)** | `#0d8474` (Kova 600 — Teal) | Product CTAs, links, nav active states |
-| **Primary (Marketing)** | `#2563EB` (Blue 600) | Marketing collateral, email headers |
-| **Secondary** | `#1E293B` (Slate 800) | Headlines, text, dark backgrounds |
-| **Accent** | `#F59E0B` (Amber 500) | Highlights, badges, energy |
-| **Success** | `#10B981` (Emerald 500) | Positive metrics, confirmations |
-| **Error** | `#EF4444` (Red 500) | Errors, destructive actions |
-| **Background** | `#F8FAFC` (Slate 50) | Light backgrounds |
-| **Dark BG** | `#0F172A` (Slate 900) | Dark mode, banners, video |
+| Role | Token | Hex | Weight | Usage |
+|------|-------|-----|--------|-------|
+| **Primary CTA / Revenue** | `growth-500` | `#10B981` | 50% | Buttons, revenue metrics, leads, hero emphasis, success |
+| **Navigation / Trust** | `kova-800` | `#1E3A8A` | 30% | Sidebar, links, secondary buttons, content metrics |
+| **Attention / Pending** | `gold-500` | `#F59E0B` | 20% | Approvals, warnings, pending states, notifications |
+| **Error** | `red-600` | `#DC2626` | Minimal | Errors, destructive actions only |
+| **Text Primary** | `gray-900` | `#0F172A` | — | Headlines, body text |
+| **Text Secondary** | `gray-600` | `#475569` | — | Supporting text |
+| **Light Background** | `gray-50` | `#F8FAFC` | — | Page backgrounds |
+| **Dark Background** | `gray-900` | `#0F172A` | — | Dark mode surfaces |
 
 ### Instagram Story Highlights
 

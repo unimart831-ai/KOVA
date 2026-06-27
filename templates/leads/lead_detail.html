@@ -103,7 +103,7 @@
             <svg class="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" class="text-gray-200 dark:text-gray-700" stroke-width="3"/>
               <circle cx="18" cy="18" r="15.9" fill="none"
-                      class="{% if lead.metadata.composite_score >= 70 %}text-green-500{% elif lead.metadata.composite_score >= 40 %}text-gold-500{% else %}text-gray-400{% endif %}"
+                      class="{% if lead.metadata.composite_score >= 70 %}text-growth-500{% elif lead.metadata.composite_score >= 40 %}text-gold-500{% else %}text-gray-400{% endif %}"
                       stroke="currentColor" stroke-width="3" stroke-linecap="round"
                       stroke-dasharray="{{ lead.metadata.composite_score }}, 100"/>
             </svg>

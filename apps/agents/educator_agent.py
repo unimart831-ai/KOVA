@@ -370,7 +370,7 @@ def _render_changelog_html(entries: list[ChangelogEntry]) -> str:
         items.append(
             f'<li style="margin-bottom:10px;">'
             f'<span style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;'
-            f'letter-spacing:0.05em;color:#7c3aed;background:#f3e8ff;padding:2px 8px;border-radius:4px;'
+            f'letter-spacing:0.05em;color:#1E3A8A;background:#EFF6FF;padding:2px 8px;border-radius:4px;'
             f'margin-right:8px;">{label}</span>'
             f'<strong style="color:#111827;">{title}</strong>'
             + (f'<div style="font-size:13px;color:#4b5563;margin-top:4px;">{body}</div>' if body else "")

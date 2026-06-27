@@ -15,7 +15,7 @@
 
           {# Header #}
           <tr>
-            <td style="background-color:{% block header_bg %}#4c6ef5{% endblock %};padding:24px 32px;">
+            <td style="background-color:{% block header_bg %}#1E3A8A{% endblock %};padding:24px 32px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
@@ -44,15 +44,17 @@
           <tr>
             <td style="background-color:#f9fafb;padding:20px 32px;text-align:center;">
               <p style="margin:0;font-size:12px;color:#9ca3af;">
-                Sent by <strong>Kova Agent</strong> — your AI social media team.<br>
-                <a href="{{ site_url }}/billing/" style="color:#4c6ef5;text-decoration:none;">Manage plan</a> · 
-                <a href="{{ site_url }}/accounts/settings/" style="color:#4c6ef5;text-decoration:none;">Email preferences</a>
+                Sent by <strong>Kova</strong> — your AI social media team.<br>
+                <a href="{{ site_url }}/brief/" style="color:#1E3A8A;text-decoration:none;">Today</a> · 
+                <a href="{{ site_url }}/platforms/" style="color:#1E3A8A;text-decoration:none;">Platforms</a> · 
+                <a href="{{ site_url }}/billing/" style="color:#1E3A8A;text-decoration:none;">Billing</a> · 
+                <a href="{{ site_url }}/accounts/settings/" style="color:#1E3A8A;text-decoration:none;">Settings</a>
                 {% if unsubscribe_url %} · 
                 <a href="{{ unsubscribe_url }}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe</a>
                 {% endif %}
               </p>
               <p style="margin:8px 0 0;font-size:11px;color:#d1d5db;">
-                © {{ current_year }} Kova Agent. All rights reserved.
+                © {{ current_year }} Kova. All rights reserved.
               </p>
             </td>
           </tr>

@@ -9,8 +9,6 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
-  {% include "components/_kova_loop_strip.html" %}
-
   <nav class="flex gap-0.5 border-b border-gray-200 dark:border-gray-700 -mb-px overflow-x-auto" aria-label="Commerce">
     <a href="{% url 'products:snap' %}" class="px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-gray-500">Snap to Sell</a>
     <a href="{% url 'products:showcase' %}" class="px-4 py-2.5 text-sm font-semibold border-b-2 border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400">Showcase</a>

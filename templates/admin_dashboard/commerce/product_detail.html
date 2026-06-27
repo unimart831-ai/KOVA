@@ -55,7 +55,7 @@
         {% for pay in payments %}
         <div class="px-5 py-3 flex justify-between text-xs">
           <span>{{ pay.currency }} {{ pay.amount|floatformat:0 }} · {{ pay.phone_number }}</span>
-          <span class="{% if pay.status == 'completed' %}text-green-600{% else %}text-gray-400{% endif %}">{{ pay.get_status_display }} · {{ pay.created_at|timesince }} ago</span>
+          <span class="{% if pay.status == 'completed' %}text-growth-600{% else %}text-gray-400{% endif %}">{{ pay.get_status_display }} · {{ pay.created_at|timesince }} ago</span>
         </div>
         {% endfor %}
       </div>

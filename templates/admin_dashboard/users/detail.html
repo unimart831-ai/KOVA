@@ -59,7 +59,7 @@
       <!-- Toggle Active -->
       <form method="post" action="{% url 'admin_dashboard:user_toggle_active' pk=target_user.pk %}">
         {% csrf_token %}
-        <button type="submit" class="px-2 py-1 text-xs font-medium rounded transition-colors {% if target_user.is_active %}bg-gold-100 text-gold-700 hover:bg-gold-200 dark:bg-gold-900/30 dark:text-gold-400{% else %}bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400{% endif %}"
+        <button type="submit" class="px-2 py-1 text-xs font-medium rounded transition-colors {% if target_user.is_active %}bg-gold-100 text-gold-700 hover:bg-gold-200 dark:bg-gold-900/30 dark:text-gold-400{% else %}bg-growth-100 text-growth-700 hover:bg-growth-200 dark:bg-growth-900/30 dark:text-growth-400{% endif %}"
                 {% if target_user == request.user %}disabled title="Cannot deactivate yourself"{% endif %}>
           {% if target_user.is_active %}Deactivate{% else %}Activate{% endif %}
         </button>
@@ -138,7 +138,7 @@
         <dt class="text-xs text-gray-500 dark:text-gray-400">Onboarded</dt>
         <dd class="text-sm">
           {% if target_user.onboarding_completed %}
-          <span class="text-green-600 dark:text-green-400">Yes</span>
+          <span class="text-growth-600 dark:text-growth-400">Yes</span>
           {% else %}
           <span class="text-gray-400">No</span>
           {% endif %}
@@ -148,7 +148,7 @@
         <dt class="text-xs text-gray-500 dark:text-gray-400">Account Status</dt>
         <dd class="text-sm">
           {% if target_user.is_active %}
-          <span class="text-green-600 dark:text-green-400">Active</span>
+          <span class="text-growth-600 dark:text-growth-400">Active</span>
           {% else %}
           <span class="text-red-600 dark:text-red-400">Inactive</span>
           {% endif %}
@@ -281,7 +281,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">Posts</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ post_stats.published|default:0 }}</p>
+    <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ post_stats.published|default:0 }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Published</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
@@ -351,7 +351,7 @@
       </div>
       <div class="ml-auto">
         {% if account.is_active %}
-        <span class="w-2.5 h-2.5 bg-green-500 rounded-full inline-block" title="Active"></span>
+        <span class="w-2.5 h-2.5 bg-growth-500 rounded-full inline-block" title="Active"></span>
         {% else %}
         <span class="w-2.5 h-2.5 bg-red-500 rounded-full inline-block" title="Inactive"></span>
         {% endif %}
@@ -420,7 +420,7 @@
         <tr>
           <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">{{ agent_type }}</td>
           <td class="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">{{ stats.total }}</td>
-          <td class="px-4 py-2 text-center text-sm text-green-600 dark:text-green-400">{{ stats.completed }}</td>
+          <td class="px-4 py-2 text-center text-sm text-growth-600 dark:text-growth-400">{{ stats.completed }}</td>
           <td class="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">{{ stats.completed|percentage:stats.total }}%</td>
           <td class="px-4 py-2 text-right text-sm text-gray-500 dark:text-gray-400">{{ stats.tokens|format_number|default:"0" }}</td>
         </tr>
@@ -504,7 +504,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">Interactions</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ interaction_stats.completed|default:0 }}</p>
+    <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ interaction_stats.completed|default:0 }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
@@ -576,7 +576,7 @@
       <div class="flex items-center justify-between mb-2">
         <p class="text-sm font-medium text-gray-900 dark:text-white">{{ brief.date|date:"l, M j, Y" }}</p>
         {% if brief.is_read %}
-        <span class="text-xs text-green-600 dark:text-green-400">Read</span>
+        <span class="text-xs text-growth-600 dark:text-growth-400">Read</span>
         {% else %}
         <span class="text-xs text-gray-400 dark:text-gray-500">Unread</span>
         {% endif %}

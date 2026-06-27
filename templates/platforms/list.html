@@ -2,12 +2,30 @@
 
 {% block page_title %}Platforms{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">OAuth connections your agents use to publish and engage</p>
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+  {% if business_model == 'professional' %}
+  Connect the channels where clients discover you — Kova publishes and replies on your behalf.
+  {% elif business_model == 'service' %}
+  Connect where you publish and where clients book — each account unlocks more of your campaign bundle.
+  {% else %}
+  Connect where you sell — WhatsApp, Instagram, and Facebook drive posts, inbox, and orders.
+  {% endif %}
+</p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-8">
-  <p class="text-sm text-gray-600 dark:text-gray-400 max-w-2xl">Connect the accounts Kova should act on. Tokens are stored securely — we never keep your password.</p>
+<div class="max-w-4xl mx-auto space-y-6">
+  {% include "platforms/_control_panel.html" %}
+
+  {% if needs_reauth_count %}
+  <div class="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50">
+    <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    <div>
+      <p class="text-sm font-semibold text-red-800 dark:text-red-300">{{ needs_reauth_count }} connection{{ needs_reauth_count|pluralize }} {% if needs_reauth_count == 1 %}needs{% else %}need{% endif %} attention</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xl">Publishing and inbox sync pause until you reconnect.</p>
+    </div>
+  </div>
+  {% endif %}
 
   {# ── Platform outage banners ── #}
   {% if platform_outages %}
@@ -49,7 +67,7 @@
                 <p class="font-medium text-gray-900 dark:text-white truncate">{{ account.display_name|default:account.username }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@{{ account.username }} · {{ account.get_platform_display }}</p>
               </div>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium {% if account.is_active %}bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200{% else %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200{% endif %}">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium {% if account.is_active %}bg-growth-100 text-growth-800 dark:bg-growth-950 dark:text-growth-200{% else %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200{% endif %}">
                 {% if account.is_active %}Active{% else %}Error{% endif %}
               </span>
             </div>
@@ -65,6 +83,12 @@
                   {% endif %}">
                   {{ account.get_account_type_display }}
                 </span>
+              </div>
+            {% endif %}
+
+            {% if account.platform == 'tiktok' and account.metadata.tiktok_self_only %}
+              <div class="mt-3 p-3 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800 rounded-lg text-xs text-gold-800 dark:text-gold-200">
+                <strong>Private-only posting.</strong> TikTok has not approved public publishing for our app yet — your videos are visible only to you. Use Instagram or Facebook for public reach.
               </div>
             {% endif %}
 
@@ -131,23 +155,14 @@
                     <p class="text-[10px] text-kova-500 dark:text-kova-400">Posts</p>
                   </div>
                 </div>
-                <div class="flex flex-wrap gap-1">
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300 border border-pink-100 dark:border-pink-900/30">💾 Save-prompt active</span>
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300 border border-pink-100 dark:border-pink-900/30">🔗 Link-in-bio strategy</span>
-                </div>
-              </div>
             {% endif %}
 
-            {# ── LinkedIn: Profile Info + Strategy Badges ── #}
+            {# ── LinkedIn: Profile Info ── #}
             {% if account.platform == 'linkedin' %}
               <div class="mt-3 space-y-2">
                 <div class="flex items-center gap-2 px-2.5 py-1.5 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-lg">
                   <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0"><svg class="w-3.5 h-3.5 text-[#0A66C2]" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></div>
                   <span class="text-xs font-medium text-blue-800 dark:text-blue-200 truncate">{{ account.display_name|default:account.username }}</span>
-                </div>
-                <div class="flex flex-wrap gap-1">
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30">💬 Link-in-first-comment strategy</span>
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30">📈 Full reach preserved</span>
                 </div>
               </div>
             {% endif %}
@@ -212,97 +227,24 @@
 
             {# ── WhatsApp: Account Info ── #}
             {% if account.platform == 'whatsapp' %}
-              <div class="mt-3 flex items-center gap-2 px-2.5 py-1.5 bg-green-50/80 dark:bg-green-950/30 border border-green-100 dark:border-green-900/40 rounded-lg">
-                <div class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center"><svg class="w-3.5 h-3.5 text-[#25D366]" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
-                <span class="text-xs font-medium text-green-800 dark:text-green-200 truncate">{{ account.metadata.display_phone_number|default:account.username }}</span>
+              <div class="mt-3 flex items-center gap-2 px-2.5 py-1.5 bg-growth-50/80 dark:bg-growth-950/30 border border-growth-100 dark:border-growth-900/40 rounded-lg">
+                <div class="w-6 h-6 rounded-full bg-growth-100 dark:bg-growth-900 flex items-center justify-center"><svg class="w-3.5 h-3.5 text-[#25D366]" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+                <span class="text-xs font-medium text-growth-800 dark:text-growth-200 truncate">{{ account.metadata.display_phone_number|default:account.username }}</span>
                 {% if account.metadata.quality_rating %}
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-medium">{{ account.metadata.quality_rating }}</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-growth-100 dark:bg-growth-900 text-growth-700 dark:text-growth-300 font-medium">{{ account.metadata.quality_rating }}</span>
                 {% endif %}
               </div>
             {% endif %}
 
-            {# ── Platform Capabilities ── #}
-            {% if account.platform == 'facebook' or account.platform == 'instagram' or account.platform == 'linkedin' or account.platform == 'tiktok' or account.platform == 'twitter' or account.platform == 'youtube' or account.platform == 'pinterest' or account.platform == 'threads' or account.platform == 'bluesky' or account.platform == 'whatsapp' %}
-              <div class="mt-3">
-                <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Capabilities</p>
-                <div class="flex flex-wrap gap-1">
-                  {% if account.platform == 'facebook' or account.platform == 'instagram' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Comments</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">DMs</span>
-                    {% if account.platform == 'instagram' %}
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Reels</span>
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Stories</span>
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Carousel</span>
-                    {% elif account.platform == 'facebook' %}
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video</span>
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Multi-photo</span>
-                    {% endif %}
-                  {% elif account.platform == 'linkedin' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Images</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Multi-image</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Articles</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Edit Post</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Delete Post</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Comments</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Reactions</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  {% elif account.platform == 'tiktok' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Photos</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Status Track</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Video List</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  {% elif account.platform == 'twitter' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Schedule</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Media</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Threads</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Mentions</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Reply</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Retweet</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Like</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Delete Tweet</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  {% elif account.platform == 'youtube' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Upload Video</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Metadata</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Comments</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Reply</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  {% elif account.platform == 'pinterest' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Create Pin</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Boards</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  {% elif account.platform == 'threads' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Images</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Carousel</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Replies</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  {% elif account.platform == 'bluesky' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Publish</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Images</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Rich Text</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Mentions</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Insights</span>
-                  {% elif account.platform == 'whatsapp' %}
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">AI Auto-Reply</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Templates</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Broadcasts</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Images</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Interactive</span>
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">Read Receipts</span>
-                  {% endif %}
-                </div>
-              </div>
-            {% endif %}
+            <p class="mt-3 text-[11px] text-gray-500 dark:text-gray-400">
+              {% if account.platform == 'whatsapp' %}Powers WhatsApp inbox, broadcasts, and booking follow-ups.
+              {% elif account.platform == 'instagram' %}Powers feed, reels, stories, carousels &amp; DMs.
+              {% elif account.platform == 'facebook' %}Powers Page posts, reels &amp; comment inbox.
+              {% elif account.platform == 'linkedin' %}Powers authority posts &amp; company page publishing.
+              {% elif account.platform == 'tiktok' %}Powers short-form video publishing.
+              {% else %}Connected for publish &amp; engage.
+              {% endif %}
+            </p>
 
             {# ── Token expiry warning banner ── #}
             {% if account.token_expires_at %}
@@ -345,9 +287,9 @@
                 {% endwith %}
               {% else %}
               {# Facebook/Instagram — auto-renews, show green confirmation #}
-              <div class="mt-3 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/40 flex items-center gap-2">
-                <svg class="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                <span class="text-xs text-green-700 dark:text-green-400 font-medium">Auto-renews · exp. {{ account.token_expires_at|date:"M j, Y" }}</span>
+              <div class="mt-3 px-3 py-2 rounded-lg bg-growth-50 dark:bg-growth-950/20 border border-growth-200 dark:border-growth-900/40 flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-growth-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span class="text-xs text-growth-700 dark:text-growth-400 font-medium">Auto-renews · exp. {{ account.token_expires_at|date:"M j, Y" }}</span>
               </div>
               {% endif %}
               {% endwith %}
@@ -365,75 +307,43 @@
               </form>
             </div>
 
-            {# ── Profile health badge (profile_audit) ── #}
-            {% if account.profile_audit %}
-              <a href="{% url 'profile_audit:detail' account.pk %}"
-                 class="mt-3 flex items-center justify-between gap-2 px-3 py-2 rounded-lg border w-full text-left transition-colors
-                   {% if account.profile_audit.completeness_score >= 85 %}border-green-200 dark:border-green-900/40 bg-green-50/50 dark:bg-green-950/20 hover:bg-green-50 dark:hover:bg-green-950/40
-                   {% elif account.profile_audit.completeness_score >= 60 %}border-gold-200 dark:border-gold-900/40 bg-gold-50/50 dark:bg-gold-950/20 hover:bg-gold-50 dark:hover:bg-gold-950/40
-                   {% else %}border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 hover:bg-red-50 dark:hover:bg-red-950/40{% endif %}">
-                <span class="flex items-center gap-2 min-w-0 flex-1">
-                  <svg class="w-3.5 h-3.5 shrink-0
-                    {% if account.profile_audit.completeness_score >= 85 %}text-green-600 dark:text-green-400
-                    {% elif account.profile_audit.completeness_score >= 60 %}text-gold-600 dark:text-gold-400
-                    {% else %}text-red-600 dark:text-red-400{% endif %}"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                  </svg>
-                  <span class="text-[11px] font-medium
-                    {% if account.profile_audit.completeness_score >= 85 %}text-green-800 dark:text-green-300
-                    {% elif account.profile_audit.completeness_score >= 60 %}text-gold-800 dark:text-gold-300
-                    {% else %}text-red-800 dark:text-red-300{% endif %}">
-                    Profile health · {{ account.profile_audit.completeness_score }}/100
-                    {% if account.profile_audit_gap_count %}<span class="text-gray-500 dark:text-gray-400 font-normal">· {{ account.profile_audit_gap_count }} gap{{ account.profile_audit_gap_count|pluralize }}</span>{% endif %}
-                  </span>
-                </span>
-                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400 shrink-0">Review →</span>
-              </a>
-            {% elif account.platform == 'facebook' or account.platform == 'instagram' or account.platform == 'linkedin' %}
-              <p class="mt-3 text-[11px] text-gray-400 dark:text-gray-500 italic">
-                Profile audit runs tonight at 02:00 UTC — <a href="{% url 'profile_audit:list' %}" class="text-kova-600 dark:text-kova-400 hover:underline">view all</a>
-              </p>
-            {% endif %}
           </div>
         </div>
       {% endfor %}
-    </div>
-  {% else %}
-    <div class="card border-dashed border-gray-200 dark:border-gray-700">
-      <div class="card-body text-center py-14 px-6">
-        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4"><svg class="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></div>
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">No platforms connected</h2>
-        <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm max-w-md mx-auto">Connect a social account so agents can draft, schedule, and monitor on your behalf.</p>
-        <a href="#connect" class="btn-primary mt-5">Connect a platform</a>
-      </div>
     </div>
   {% endif %}
 
   <div class="card" id="connect">
     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="font-semibold text-gray-900 dark:text-white">Connect a platform</h3>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Choose a network to start OAuth</p>
+      <h3 class="font-semibold text-gray-900 dark:text-white">{% if accounts %}Connect another platform{% else %}Connect your first platform{% endif %}</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Secure OAuth — we never store your password</p>
     </div>
     <div class="card-body">
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {% for p in platforms %}
-          {% if p.provider_available and not p.connected %}
+          {% if p.provider_available and not p.connected and not at_account_limit %}
             <a href="{% url 'platforms:connect' p.key %}"
-               class="flex flex-col items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-600 hover:bg-kova-50/50 dark:hover:bg-kova-950/30 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-kova-500">
+               class="relative flex flex-col items-start p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-kova-400 dark:hover:border-kova-600 hover:bg-kova-50/50 dark:hover:bg-kova-950/30 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-kova-500">
+              {% if p.recommended %}<span class="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-kova-100 dark:bg-kova-900 text-kova-700 dark:text-kova-300">Recommended</span>{% endif %}
               <span class="{{ p.color }} mb-2" aria-hidden="true">{% include "components/platform_icon.html" with platform=p.key size="w-7 h-7" %}</span>
-              <span class="text-xs font-medium text-gray-700 dark:text-gray-200 text-center">{{ p.label }}</span>
+              <span class="text-sm font-medium text-gray-900 dark:text-white">{{ p.label }}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug">{{ p.description }}</span>
             </a>
           {% elif p.connected %}
-            <div class="flex flex-col items-center p-4 rounded-xl border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/30">
+            <div class="flex flex-col items-start p-4 rounded-xl border border-growth-200 dark:border-growth-900 bg-growth-50 dark:bg-growth-950/30">
               <span class="{{ p.color }} mb-2" aria-hidden="true">{% include "components/platform_icon.html" with platform=p.key size="w-7 h-7" %}</span>
-              <span class="text-xs font-medium text-green-800 dark:text-green-200 text-center">{{ p.label }}</span>
-              <span class="text-[10px] text-green-600 dark:text-green-400 mt-1 font-medium">Connected</span>
+              <span class="text-sm font-medium text-growth-800 dark:text-growth-200">{{ p.label }}</span>
+              <span class="text-[10px] text-growth-600 dark:text-growth-400 mt-1 font-medium">Connected</span>
+            </div>
+          {% elif at_account_limit %}
+            <div class="flex flex-col items-start p-4 rounded-xl border border-gray-100 dark:border-gray-800 opacity-50" title="Account limit reached">
+              <span class="text-gray-400 mb-2 grayscale" aria-hidden="true">{% include "components/platform_icon.html" with platform=p.key size="w-7 h-7" %}</span>
+              <span class="text-sm font-medium text-gray-400">{{ p.label }}</span>
             </div>
           {% else %}
-            <div class="flex flex-col items-center p-4 rounded-xl border border-gray-100 dark:border-gray-800 opacity-50" title="Not configured">
+            <div class="flex flex-col items-start p-4 rounded-xl border border-gray-100 dark:border-gray-800 opacity-50" title="Not configured">
               <span class="text-gray-400 mb-2 grayscale" aria-hidden="true">{% include "components/platform_icon.html" with platform=p.key size="w-7 h-7" %}</span>
-              <span class="text-xs font-medium text-gray-400 text-center">{{ p.label }}</span>
+              <span class="text-sm font-medium text-gray-400">{{ p.label }}</span>
             </div>
           {% endif %}
         {% endfor %}
@@ -442,6 +352,11 @@
         Credentials are never stored — only encrypted tokens. You can disconnect anytime.
       </p>
 
+      <details class="mt-6 group">
+        <summary class="text-xs font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:text-kova-600 dark:hover:text-kova-400 list-none flex items-center gap-1">
+          <span class="group-open:rotate-90 transition-transform inline-block">›</span> Setup tips (Instagram, Facebook, LinkedIn, WhatsApp)
+        </summary>
+        <div class="mt-4 space-y-4">
       {# ── LinkedIn Company Page ── #}
       <div class="mt-6 p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-xl">
         <div class="flex items-start gap-3">
@@ -482,53 +397,13 @@
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400">
           <strong class="text-gray-700 dark:text-gray-300">Multi-page businesses:</strong>
-          If you manage multiple Facebook Pages, Kova publishes to the <strong>active page</strong> (shown with a blue check above). To switch the active page, disconnect and reconnect your Facebook account.
+          Kova publishes to the page marked <strong>Active</strong> on your connected account card. Use <strong>Set active</strong> to switch — no need to disconnect.
         </p>
       </div>
 
-      {# ── WhatsApp Business Setup ── #}
-      <div class="mt-4 p-4 bg-green-50/50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-xl">
-        <div class="flex items-start gap-3">
-          <svg class="w-6 h-6 text-[#25D366] shrink-0 mt-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          <div class="flex-1">
-            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">WhatsApp Business</h4>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Connect your WhatsApp Business account for AI-powered auto-replies, templates, and broadcasts.</p>
-            <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-2">Requires a <strong>Meta Business Account</strong> with WhatsApp Business Platform access and a permanent System User token.</p>
-            <a href="{% url 'platforms:connect' 'whatsapp' %}" class="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-              Connect WhatsApp
-            </a>
-          </div>
         </div>
-      </div>
+      </details>
     </div>
   </div>
-
-  {# ── Coming Soon (collapsed by default) ── #}
-  {% if coming_soon_platforms %}
-  <div x-data="{ showComingSoon: false }" class="card">
-    <button type="button" @click="showComingSoon = !showComingSoon"
-            class="w-full px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between text-left hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition rounded-t-xl">
-      <div>
-        <h3 class="font-semibold text-gray-700 dark:text-gray-300">More platforms on the way</h3>
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ coming_soon_platforms|length }} coming soon — not connectable yet</p>
-      </div>
-      <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400">
-        <span x-text="showComingSoon ? 'Hide' : 'Show'"></span>
-        <svg class="w-4 h-4 transition-transform" :class="showComingSoon ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-      </span>
-    </button>
-    <div x-show="showComingSoon" x-cloak class="card-body opacity-70">
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {% for p in coming_soon_platforms %}
-          <div class="flex flex-col items-center p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 cursor-not-allowed select-none" title="Not available yet">
-            <span class="{{ p.color }} mb-2 grayscale opacity-50" aria-hidden="true">{% include "components/platform_icon.html" with platform=p.key size="w-7 h-7" %}</span>
-            <span class="text-xs font-medium text-gray-400 dark:text-gray-500 text-center">{{ p.label }}</span>
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}

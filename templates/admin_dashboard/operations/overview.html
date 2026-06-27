@@ -94,7 +94,7 @@
           </div>
           <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ task.user_email }} · {{ task.category_label }}</p>
           <span class="inline-flex mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium
-            {% if task.status == 'completed' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300
+            {% if task.status == 'completed' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300
             {% elif task.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
             {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">{{ task.status }}</span>
         </div>
@@ -110,7 +110,7 @@
         <a href="{% url 'admin_dashboard:reel_music_manage' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">Manage →</a>
       </div>
       <div class="flex items-center justify-between mb-3">
-        <span class="text-xs {% if music_missing %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+        <span class="text-xs {% if music_missing %}text-red-600 dark:text-red-400{% else %}text-growth-600 dark:text-growth-400{% endif %}">
           {{ music_total }} tracks{% if music_missing %} · {{ music_missing }} missing{% else %} · all present{% endif %}
         </span>
       </div>
@@ -119,7 +119,7 @@
         <div class="flex items-center justify-between text-xs">
           <span class="text-gray-600 dark:text-gray-400">{{ track.title }} <span class="text-gray-400">({{ track.mood }})</span></span>
           {% if track.file_ok %}
-          <span class="text-green-600 dark:text-green-400">OK</span>
+          <span class="text-growth-600 dark:text-growth-400">OK</span>
           {% else %}
           <span class="text-red-600 dark:text-red-400">Missing file</span>
           {% endif %}

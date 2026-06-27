@@ -138,8 +138,17 @@ def select_carousel_template(
     objective: str = "sales",
     intent: str = "",
     target_intent: str = "",
+    business_model: str = "product",
 ) -> str:
     """Pick template key from campaign intent."""
+    if business_model == "service" and not any(
+        k for k in (target_intent, intent, objective) if k
+    ):
+        return "faq"
+    if business_model == "professional" and not any(
+        k for k in (target_intent, intent, objective) if k
+    ):
+        return "educational"
     for key in (target_intent, intent, objective):
         if not key:
             continue
@@ -153,9 +162,10 @@ def select_carousel_template(
 
 def build_carousel_strategy(seed, campaign=None) -> CarouselStrategy:
     """Build carousel strategy from campaign context (rule-based v1)."""
-    from apps.content.campaign_bundle import _campaign_context
+    from apps.content.campaign_bundle import _campaign_context, _resolve_business_model
 
     ctx = _campaign_context(seed)
+    bm = _resolve_business_model(seed)
     blueprint = getattr(seed, "blueprint", None) or {}
     objective = (
         getattr(campaign, "objective", None)
@@ -167,32 +177,58 @@ def build_carousel_strategy(seed, campaign=None) -> CarouselStrategy:
         objective=str(objective),
         intent=str(blueprint.get("proposal", {}).get("intent", "")),
         target_intent=target_intent,
+        business_model=bm,
     )
     template = CAROUSEL_TEMPLATES[template_key]
     name, price, title = ctx["name"], ctx["price"], ctx["title"]
 
-    role_copy = {
-        "hook": (f"Wait — {name}", f"Something worth your attention. Swipe 👉"),
-        "problem": ("Sound familiar?", f"Tired of settling for less? You deserve better."),
-        "solution": ("Here's the fix", f"{name} delivers what you've been missing."),
-        "proof": ("Real results", "Trusted by customers who switched and never looked back."),
-        "offer": ("Limited time", f"{price + ' — ' if price else ''}Grab yours before it's gone."),
-        "cta": ("Ready?", "Tap the link in bio to order today."),
-        "insight": ("Did you know?", f"The smartest move in {title[:40]} starts here."),
-        "example": ("See it in action", f"{name} in real life — not just hype."),
-        "question": ("Quick question", "What's holding you back?"),
-        "answer": ("The answer", f"{name} solves the #1 pain point."),
-        "challenge": ("The challenge", "Most businesses struggle with visibility."),
-        "result": ("The outcome", "More sales, less stress."),
-        "quote": ("Customer love", f'"Best decision we made." — Happy customer'),
-        "benefit": ("Why it works", "Quality + value + service."),
-        "reveal": ("Introducing", f"Meet {name}."),
-        "feature": ("Standout feature", "Built for how you actually work."),
-        "before": ("Before", "The old way wasn't cutting it."),
-        "after": ("After", f"Life with {name} — upgraded."),
-        "trend": ("Trend alert", "What's working right now in your niche."),
-        "action": ("Your move", "Apply this in your business this week."),
-    }
+    if bm == "service":
+        role_copy = {
+            "hook": (f"Questions about {name}?", "Swipe for answers 👉"),
+            "problem": ("Sound familiar?", "Finding the right provider takes too long."),
+            "solution": ("Here's how it works", f"{name} — clear process, great results."),
+            "proof": ("What clients say", "Real reviews from people who booked."),
+            "offer": ("Ready to book?", f"{price + ' · ' if price else ''}Reserve your slot."),
+            "cta": ("Book today", "Tap the link in bio to schedule."),
+            "question": ("Quick question", "What's holding you back from booking?"),
+            "answer": ("The answer", f"{name} makes it simple."),
+            "quote": ("Client love", '"Best decision — booked again."'),
+        }
+    elif bm == "professional":
+        role_copy = {
+            "hook": (f"The {name} approach", "Swipe for the insight 👉"),
+            "problem": ("The challenge", "Most teams struggle to convert attention."),
+            "solution": ("The approach", f"How {name} delivers measurable outcomes."),
+            "proof": ("Results delivered", "Case studies and client wins."),
+            "offer": ("Work with us", f"{price + ' · ' if price else ''}Consultation slots open."),
+            "cta": ("Let's connect", "Book a consultation — link in bio."),
+            "insight": ("Did you know?", f"Expert perspective on {title[:40]}."),
+            "example": ("See it in action", f"{name} — real client outcomes."),
+            "result": ("The outcome", "More leads, less guesswork."),
+        }
+    else:
+        role_copy = {
+            "hook": (f"Wait — {name}", f"Something worth your attention. Swipe 👉"),
+            "problem": ("Sound familiar?", f"Tired of settling for less? You deserve better."),
+            "solution": ("Here's the fix", f"{name} delivers what you've been missing."),
+            "proof": ("Real results", "Trusted by customers who switched and never looked back."),
+            "offer": ("Limited time", f"{price + ' — ' if price else ''}Grab yours before it's gone."),
+            "cta": ("Ready?", "Tap the link in bio to order today."),
+            "insight": ("Did you know?", f"The smartest move in {title[:40]} starts here."),
+            "example": ("See it in action", f"{name} in real life — not just hype."),
+            "question": ("Quick question", "What's holding you back?"),
+            "answer": ("The answer", f"{name} solves the #1 pain point."),
+            "challenge": ("The challenge", "Most businesses struggle with visibility."),
+            "result": ("The outcome", "More sales, less stress."),
+            "quote": ("Customer love", f'"Best decision we made." — Happy customer'),
+            "benefit": ("Why it works", "Quality + value + service."),
+            "reveal": ("Introducing", f"Meet {name}."),
+            "feature": ("Standout feature", "Built for how you actually work."),
+            "before": ("Before", "The old way wasn't cutting it."),
+            "after": ("After", f"Life with {name} — upgraded."),
+            "trend": ("Trend alert", "What's working right now in your niche."),
+            "action": ("Your move", "Apply this in your business this week."),
+        }
 
     slides: list[CarouselSlideSpec] = []
     for role in template["slide_roles"]:

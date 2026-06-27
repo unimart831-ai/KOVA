@@ -12,8 +12,8 @@
     <p class="text-xl font-bold text-gray-900 dark:text-white">{{ totals.total }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Sequences</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 text-center shadow-sm">
-    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ totals.active }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 text-center shadow-sm">
+    <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ totals.active }}</p>
     <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Active</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-blue-200 dark:border-blue-900/50 p-4 text-center shadow-sm">
@@ -72,7 +72,7 @@
         <td class="px-4 py-2.5 text-center {% if seq.due_now %}text-gold-600 font-semibold{% else %}text-gray-400{% endif %}">{{ seq.due_now }}</td>
         <td class="px-4 py-2.5 text-center">
           {% if seq.is_active %}
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">Active</span>
           {% else %}
           <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Off</span>
           {% endif %}

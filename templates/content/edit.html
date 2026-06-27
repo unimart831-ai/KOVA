@@ -11,7 +11,7 @@
   {# Post info header #}
   <div class="flex items-center flex-wrap gap-2">
     {% if post.social_account %}
-      <span class="badge {% if post.social_account.platform == 'instagram' %}bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200{% elif post.social_account.platform == 'facebook' %}bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200{% elif post.social_account.platform == 'linkedin' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% elif post.social_account.platform == 'tiktok' %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% elif post.social_account.platform == 'whatsapp' %}bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% endif %}">
+      <span class="badge {% if post.social_account.platform == 'instagram' %}bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200{% elif post.social_account.platform == 'facebook' %}bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200{% elif post.social_account.platform == 'linkedin' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200{% elif post.social_account.platform == 'tiktok' %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% elif post.social_account.platform == 'whatsapp' %}bg-growth-100 text-growth-800 dark:bg-growth-950 dark:text-growth-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% endif %}">
         {{ post.social_account.get_platform_display }}
       </span>
       <span class="text-xs text-gray-500 dark:text-gray-400">@{{ post.social_account.username }}</span>
@@ -33,7 +33,7 @@
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">Image</span>
     {% endif %}
     {% if post.predicted_engagement_score %}
-      <span class="text-xs font-medium {% if post.predicted_engagement_score >= 70 %}text-green-600 dark:text-green-400{% elif post.predicted_engagement_score >= 40 %}text-gold-600 dark:text-gold-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+      <span class="text-xs font-medium {% if post.predicted_engagement_score >= 70 %}text-growth-600 dark:text-growth-400{% elif post.predicted_engagement_score >= 40 %}text-gold-600 dark:text-gold-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
         Score: {{ post.predicted_engagement_score|floatformat:0 }}/100
       </span>
     {% endif %}

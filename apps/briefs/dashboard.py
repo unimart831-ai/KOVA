@@ -85,6 +85,9 @@ def _collect_home_stats(user, today, week_ago):
     has_instagram = SocialAccount.objects.filter(
         user=user, platform="instagram", is_active=True,
     ).exists()
+    has_linkedin = SocialAccount.objects.filter(
+        user=user, platform="linkedin", is_active=True,
+    ).exists()
 
     has_snap_product = False
     has_publish_with_link = False
@@ -137,6 +140,7 @@ def _collect_home_stats(user, today, week_ago):
         "product_tasks_week": product_tasks,
         "has_whatsapp": has_whatsapp,
         "has_instagram": has_instagram,
+        "has_linkedin": has_linkedin,
         "has_snap_product": has_snap_product,
         "has_publish_with_link": has_publish_with_link,
         "has_automation_or_lead": has_automation_or_lead,

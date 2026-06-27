@@ -15,7 +15,7 @@
     </div>
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Delivery Rate</p>
-      <p class="mt-1 text-2xl font-bold {% if delivery_rate >= 95 %}text-green-600{% elif delivery_rate >= 80 %}text-gold-600{% else %}text-red-600{% endif %}">{{ delivery_rate }}%</p>
+      <p class="mt-1 text-2xl font-bold {% if delivery_rate >= 95 %}text-growth-600{% elif delivery_rate >= 80 %}text-gold-600{% else %}text-red-600{% endif %}">{{ delivery_rate }}%</p>
       <p class="text-xs text-gray-400 mt-1">Last 7 days</p>
     </div>
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
@@ -25,7 +25,7 @@
     </div>
     <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Failed (7d)</p>
-      <p class="mt-1 text-2xl font-bold {% if failed_7d > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ failed_7d }}</p>
+      <p class="mt-1 text-2xl font-bold {% if failed_7d > 0 %}text-red-600{% else %}text-growth-600{% endif %}">{{ failed_7d }}</p>
       <p class="text-xs text-gray-400 mt-1">Bounce rate: {{ bounce_rate }}%</p>
     </div>
   </div>
@@ -57,7 +57,7 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
           <span x-text="loading ? 'Sending...' : 'Send test email'"></span>
         </button>
-        <p x-show="result" x-text="result" class="mt-2 text-xs text-center text-green-600 dark:text-green-400" x-cloak></p>
+        <p x-show="result" x-text="result" class="mt-2 text-xs text-center text-growth-600 dark:text-growth-400" x-cloak></p>
       </form>
 
       {# Broadcast #}
@@ -86,7 +86,7 @@
           <button type="submit" :disabled="sending"
                   class="w-full px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   x-text="sending ? 'Sending...' : 'Send to all active users'"></button>
-          <p x-show="result" x-text="result" class="text-xs text-center text-green-600 dark:text-green-400" x-cloak></p>
+          <p x-show="result" x-text="result" class="text-xs text-center text-growth-600 dark:text-growth-400" x-cloak></p>
         </form>
       </div>
 
@@ -125,7 +125,7 @@
         {% for item in by_status %}
         <div class="flex items-center justify-between">
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-            {% if item.status == 'delivered' or item.status == 'opened' or item.status == 'clicked' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+            {% if item.status == 'delivered' or item.status == 'opened' or item.status == 'clicked' %}bg-growth-100 text-growth-800 dark:bg-growth-900/30 dark:text-growth-300
             {% elif item.status == 'sent' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
             {% elif item.status == 'queued' %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300
             {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% endif %}">
@@ -167,7 +167,7 @@
             <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ email.subject }}</td>
             <td class="px-4 py-3 whitespace-nowrap">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                {% if email.status == 'delivered' or email.status == 'opened' or email.status == 'clicked' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+                {% if email.status == 'delivered' or email.status == 'opened' or email.status == 'clicked' %}bg-growth-100 text-growth-800 dark:bg-growth-900/30 dark:text-growth-300
                 {% elif email.status == 'sent' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
                 {% elif email.status == 'queued' %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
                 {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% endif %}">

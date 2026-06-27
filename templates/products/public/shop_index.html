@@ -7,26 +7,44 @@
 {% endblock %}
 
 {% block content %}
+{% with bm=storefront.business_model|default:'product' %}
 <section class="kc-hero">
   <div class="kc-container kc-hero-grid">
     <div class="kc-hero-copy">
       <p class="kc-hero-eyebrow">{{ brand_name }}</p>
       <h1 class="kc-hero-title">
-        {% if profile.page_headline %}{{ profile.page_headline }}{% else %}Shop {{ brand_name }}{% endif %}
+        {% if profile.page_headline %}{{ profile.page_headline }}
+        {% elif bm == 'service' %}What we offer
+        {% elif bm == 'professional' %}{{ brand_name }}
+        {% else %}Shop {{ brand_name }}{% endif %}
       </h1>
       {% if about_blurb %}
       <p class="kc-hero-lead">{{ about_blurb|truncatewords:28 }}</p>
+      {% elif bm == 'service' %}
+      <p class="kc-hero-lead">Book appointments, explore our services, and reach us on WhatsApp.</p>
+      {% elif bm == 'professional' %}
+      <p class="kc-hero-lead">Expertise, case studies, and consultation — all in one place.</p>
       {% elif wa_url %}
       <p class="kc-hero-lead">Curated products with fast WhatsApp ordering — delivery and payment confirmed in chat.</p>
       {% endif %}
       <div class="kc-hero-actions">
-        <a href="#shop-catalog" class="shop-btn shop-btn--primary shop-btn--lg">Shop our collection</a>
+        {% if bm == 'service' and booking_url %}
+        <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--lg">Book now</a>
+        {% elif bm == 'professional' and booking_url %}
+        <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--lg">Book a consultation</a>
+        {% else %}
+        <a href="#shop-catalog" class="shop-btn shop-btn--primary shop-btn--lg">
+          {% if bm == 'professional' %}View portfolio{% else %}Shop our collection{% endif %}
+        </a>
+        {% endif %}
         {% if wa_url %}
-        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--lg" target="_blank" rel="noopener">Chat on WhatsApp</a>
+        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--lg" target="_blank" rel="noopener">
+          {% if bm == 'service' %}Book via WhatsApp{% elif bm == 'professional' %}Message us{% else %}Chat on WhatsApp{% endif %}
+        </a>
         {% endif %}
         <button type="button" class="shop-btn shop-btn--outline kc-share-btn shop-share-btn" hidden
                 data-share-title="{{ brand_name }}"
-                data-share-url="{{ canonical_url }}">Share shop</button>
+                data-share-url="{{ canonical_url }}">Share</button>
       </div>
     </div>
     {% if hero_collage %}
@@ -59,6 +77,43 @@
           {% if reel.product_price %}<span>{{ reel.product_price }}</span>{% endif %}
         </div>
       </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if bm == 'professional' and portfolio_items %}
+<section class="kc-section kc-section--tight" aria-label="Portfolio">
+  <div class="kc-container">
+    <div class="kc-section-head">
+      <h2 class="kc-section-title">Portfolio</h2>
+      <p class="kc-section-sub">Selected work and case studies</p>
+    </div>
+    <div class="shop-grid shop-product-grid" role="list">
+      {% for item in portfolio_items %}
+      <article class="shop-product-card">
+        <div class="shop-product-card-body">
+          <h3 class="shop-product-card-title">{{ item.title }}</h3>
+          {% if item.summary %}<p class="shop-product-card-desc">{{ item.summary|truncatewords:24 }}</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if bm == 'service' and service_products %}
+<section class="kc-section kc-section--tight" aria-label="Services">
+  <div class="kc-container">
+    <div class="kc-section-head">
+      <h2 class="kc-section-title">Our services</h2>
+      {% if booking_url %}<a href="{{ booking_url }}" class="shop-btn shop-btn--outline shop-btn--sm">Book now</a>{% endif %}
+    </div>
+    <div class="shop-grid shop-product-grid" role="list">
+      {% for product in service_products %}
+      {% include "products/public/_shop_product_card.html" %}
       {% endfor %}
     </div>
   </div>
@@ -99,8 +154,12 @@
     <div class="kc-section-head shop-catalog-head">
       <div>
         <h2 class="kc-section-title">{% if catalog_section_label %}{{ catalog_section_label }}{% else %}Shop our collection{% endif %}</h2>
-        {% if wa_url %}
+        {% if wa_url and bm == 'product' %}
         <p class="kc-section-sub">Order on WhatsApp — we'll confirm delivery &amp; payment in chat.</p>
+        {% elif bm == 'service' %}
+        <p class="kc-section-sub">Browse services and book your appointment.</p>
+        {% elif bm == 'professional' %}
+        <p class="kc-section-sub">Explore offerings and book a consultation.</p>
         {% endif %}
       </div>
       <span class="kc-section-meta shop-section-meta" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
@@ -109,7 +168,7 @@
 
     {% if not products %}
     <div class="shop-empty-state">
-      <p class="shop-empty-title">New items coming soon</p>
+      <p class="shop-empty-title">Nothing listed yet</p>
       <p>{{ brand_name }} hasn't listed products yet.{% if wa_url %} Message us on WhatsApp to ask what's available.{% endif %}</p>
       {% if wa_url %}<a href="{{ wa_url }}" class="shop-btn shop-btn--wa" rel="noopener">Chat on WhatsApp</a>{% endif %}
     </div>
@@ -140,6 +199,22 @@
     {% endif %}
   </div>
 </section>
+
+{% if shop_testimonials %}
+<section class="kc-section kc-section--tight" aria-label="Testimonials">
+  <div class="kc-container">
+    <div class="kc-section-head"><h2 class="kc-section-title">What clients say</h2></div>
+    <div class="shop-faq-list">
+      {% for t in shop_testimonials|slice:":4" %}
+      <blockquote class="shop-faq-item p-4">
+        <p class="shop-faq-answer">"{{ t.quote }}"</p>
+        {% if t.name %}<cite class="text-xs opacity-70 mt-2 block">— {{ t.name }}</cite>{% endif %}
+      </blockquote>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
 
 {% if media_gallery %}
 <section class="kc-section kc-section--tight" aria-label="From our social">
@@ -185,13 +260,22 @@
   <p class="shop-powered kc-powered">Powered by <a href="https://kovaagents.com" rel="noopener">Kova</a></p>
   {% endif %}
 </div>
+{% endwith %}
 {% endblock %}
 
 {% block sticky %}
-{% if wa_url %}
-<div class="kc-sticky-bar" aria-label="Quick order">
+{% if wa_url or booking_url %}
+<div class="kc-sticky-bar" aria-label="Quick action">
   <span class="kc-section-sub" style="margin:0;font-weight:600">{{ brand_name }}</span>
-  <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--sm" target="_blank" rel="noopener">Order on WhatsApp</a>
+  {% if booking_url and storefront.business_model != 'product' %}
+  <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--sm">
+    {% if storefront.business_model == 'professional' %}Book consultation{% else %}Book now{% endif %}
+  </a>
+  {% elif wa_url %}
+  <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--sm" target="_blank" rel="noopener">
+    {% if storefront.business_model == 'service' %}Book on WhatsApp{% else %}Order on WhatsApp{% endif %}
+  </a>
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}

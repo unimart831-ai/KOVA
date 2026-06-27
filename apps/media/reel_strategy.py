@@ -70,9 +70,11 @@ class ReelStrategy:
 
 def build_reel_strategy(seed, campaign=None) -> ReelStrategy:
     """Build reel strategy from campaign objective and context."""
-    from apps.content.campaign_bundle import _campaign_context
+    from apps.content.campaign_bundle import _campaign_context, get_bundle_profile, _resolve_business_model
 
     ctx = _campaign_context(seed)
+    bundle = get_bundle_profile(seed)
+    bm = _resolve_business_model(seed)
     hook = ctx["hook"][:120]
     objective = (
         getattr(campaign, "objective", None)
@@ -81,7 +83,25 @@ def build_reel_strategy(seed, campaign=None) -> ReelStrategy:
     )
     objective = str(objective).lower()
 
-    if objective in ("sales", "offer", "leads"):
+    if bm == "service":
+        scenes = [
+            ReelSceneSpec(type="hook", text=f"Need {ctx['name']}?"),
+            ReelSceneSpec(type="feature", text="How it works"),
+            ReelSceneSpec(type="benefit", text="Why clients book again"),
+            ReelSceneSpec(type="cta", text="Book now"),
+        ]
+        mood = "calm"
+        cta_label = bundle["cta_whatsapp"] if ctx.get("price") else bundle["cta_primary"]
+    elif bm == "professional":
+        scenes = [
+            ReelSceneSpec(type="insight", text=hook[:80] or "Expert insight"),
+            ReelSceneSpec(type="example", text=ctx["title"][:80]),
+            ReelSceneSpec(type="benefit", text="Results we've delivered"),
+            ReelSceneSpec(type="cta", text="Book a consultation"),
+        ]
+        mood = "authoritative"
+        cta_label = bundle["cta_primary"]
+    elif objective in ("sales", "offer", "leads"):
         scenes = [
             ReelSceneSpec(type="problem", text="The struggle is real"),
             ReelSceneSpec(type="feature", text=ctx["name"]),
@@ -89,6 +109,7 @@ def build_reel_strategy(seed, campaign=None) -> ReelStrategy:
             ReelSceneSpec(type="cta", text="Link in bio"),
         ]
         mood = "urgent" if objective == "sales" else "upbeat"
+        cta_label = bundle["cta_whatsapp"] if ctx.get("price") else bundle["cta_primary"]
     elif objective in ("awareness", "announce"):
         scenes = [
             ReelSceneSpec(type="hook", text=hook),
@@ -97,6 +118,7 @@ def build_reel_strategy(seed, campaign=None) -> ReelStrategy:
             ReelSceneSpec(type="cta", text="Follow for more"),
         ]
         mood = "upbeat"
+        cta_label = "Follow for more"
     else:
         scenes = [
             ReelSceneSpec(type="insight", text="Quick tip"),
@@ -104,6 +126,7 @@ def build_reel_strategy(seed, campaign=None) -> ReelStrategy:
             ReelSceneSpec(type="cta", text="Save this"),
         ]
         mood = "upbeat"
+        cta_label = bundle.get("cta_primary", "Shop now")
 
     duration = int(sum(s.duration_sec for s in scenes))
     return ReelStrategy(
@@ -112,7 +135,7 @@ def build_reel_strategy(seed, campaign=None) -> ReelStrategy:
         duration_sec=max(12, min(30, duration)),
         scenes=scenes,
         music_mood=mood,
-        cta_label="Order on WhatsApp" if ctx.get("price") else "Shop now",
+        cta_label=cta_label,
     )
 
 

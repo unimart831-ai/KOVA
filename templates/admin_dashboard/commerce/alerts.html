@@ -55,7 +55,7 @@
             <a href="{% url 'admin_dashboard:user_detail' alert.user.pk %}" class="text-xs text-gray-600 hover:underline">{{ alert.user.email }}</a>
           </td>
           <td class="px-4 py-2.5 text-xs text-gray-500 max-w-xs truncate">{{ alert.message|truncatechars:80 }}</td>
-          <td class="px-4 py-2.5 text-center">{% if alert.is_read %}<span class="text-green-500">✓</span>{% else %}<span class="w-2 h-2 rounded-full bg-kova-500 inline-block"></span>{% endif %}</td>
+          <td class="px-4 py-2.5 text-center">{% if alert.is_read %}<span class="text-growth-500">✓</span>{% else %}<span class="w-2 h-2 rounded-full bg-kova-500 inline-block"></span>{% endif %}</td>
           <td class="px-4 py-2.5 text-right text-xs text-gray-400">{{ alert.created_at|timesince }} ago</td>
         </tr>
         {% empty %}

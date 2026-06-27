@@ -10,7 +10,7 @@
 
   {# ── Current Plan Hero ── #}
   <div class="card overflow-hidden">
-    <div class="px-6 py-5 bg-gradient-to-br from-kova-50 via-white to-kova-50/40 dark:from-kova-950/40 dark:via-gray-900 dark:to-kova-950/20 border-b border-gray-100 dark:border-gray-800">
+    <div class="px-6 py-5 bg-kova-50 dark:bg-kova-950/30 border-b border-gray-100 dark:border-gray-800">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400">Current plan</p>
@@ -107,31 +107,31 @@
 
       <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 {% if limits.daily_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.daily_brief %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           Daily AI brief
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 {% if limits.ai_image_generation %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.ai_image_generation %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           {% if limits.ai_image_generation %}AI images (Instagram, TikTok, Pinterest){% else %}AI image generation (upload your own){% endif %}
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 {% if limits.email_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.email_brief %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           Email brief reports
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 {% if limits.whatsapp_brief %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.whatsapp_brief %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           WhatsApp morning brief
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 {% if limits.engagement_agent %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.engagement_agent %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           Engagement inbox
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 {% if limits.competitor_tracking %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.competitor_tracking %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           Competitor tracking
         </li>
         <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <svg class="w-4 h-4 {% if limits.auto_approve %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg class="w-4 h-4 {% if limits.auto_approve %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           Auto-approve publishing
         </li>
       </ul>
@@ -148,7 +148,7 @@
       {# ── M-Pesa Payment Info ── #}
       <div class="card-body space-y-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center">
+          <div class="w-10 h-10 bg-growth-100 dark:bg-growth-900/50 rounded-lg flex items-center justify-center">
             
           </div>
           <div>
@@ -177,7 +177,7 @@
                     <span class="text-gray-900 dark:text-white font-medium">KSh {{ payment.amount }}</span>
                     <span class="text-gray-400 dark:text-gray-500 ml-1">— {{ payment.created_at|date:"M d" }}</span>
                   </div>
-                  <span class="{% if payment.status == 'completed' %}text-green-600 dark:text-green-400{% else %}text-red-500{% endif %} text-xs font-medium">
+                  <span class="{% if payment.status == 'completed' %}text-growth-600 dark:text-growth-400{% else %}text-red-500{% endif %} text-xs font-medium">
                     {% if payment.status == 'completed' %}Paid{% elif payment.status == 'pending' %}Pending{% else %}Failed{% endif %}
                   </span>
                 </div>

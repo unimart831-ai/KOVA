@@ -1135,6 +1135,8 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
 
     # Determine target platforms
     connected = SocialAccount.objects.filter(user=user, is_active=True)
+    from apps.accounts.autopilot_helpers import filter_social_accounts_for_autopilot
+    connected = filter_social_accounts_for_autopilot(user, connected)
     if seed.target_platforms:
         connected = connected.filter(platform__in=seed.target_platforms)
 
@@ -1970,6 +1972,8 @@ def repurpose_post(source_post: Post, target_platforms: list[str] = None) -> lis
 
     # Find target accounts
     connected = SocialAccount.objects.filter(user=user, is_active=True)
+    from apps.accounts.autopilot_helpers import filter_social_accounts_for_autopilot
+    connected = filter_social_accounts_for_autopilot(user, connected)
     if target_platforms:
         connected = connected.filter(platform__in=target_platforms)
     else:

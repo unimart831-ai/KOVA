@@ -61,7 +61,7 @@
           <td class="px-4 py-2.5 text-xs font-mono text-gray-500">{{ pay.phone_number }}</td>
           <td class="px-4 py-2.5 text-center">
             <span class="text-[10px] px-1.5 py-0.5 rounded
-              {% if pay.status == 'completed' %}bg-green-100 text-green-700{% elif pay.status == 'pending' %}bg-gold-100 text-gold-700{% else %}bg-red-100 text-red-700{% endif %}">
+              {% if pay.status == 'completed' %}bg-growth-100 text-growth-700{% elif pay.status == 'pending' %}bg-gold-100 text-gold-700{% else %}bg-red-100 text-red-700{% endif %}">
               {{ pay.get_status_display }}
             </span>
           </td>

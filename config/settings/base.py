@@ -148,6 +148,7 @@ TEMPLATES = [
                 "apps.billing.context_processors.plan_limit_notice",
                 "apps.billing.context_processors.user_plan_sidebar",
                 "apps.accounts.context_processors.nav_badges",
+                "apps.accounts.context_processors.platforms_summary",
                 "apps.accounts.context_processors.kova_voice",
                 "apps.teams.context_processors.agency_theme",
                 "apps.admin_dashboard.context_processors.admin_nav",
@@ -295,6 +296,10 @@ CELERY_BEAT_SCHEDULE = {
     "expire-stale-commerce-payments": {
         "task": "products.expire_stale_commerce_payments",
         "schedule": 300.0,  # every 5 minutes — expire pending payments >10 min old
+    },
+    "poll-tiktok-publish-status": {
+        "task": "platforms.poll_tiktok_publish_status",
+        "schedule": 300.0,  # every 5 minutes — backfill TikTok post URLs
     },
     "check-stock-alerts": {
         "task": "check-stock-alerts",

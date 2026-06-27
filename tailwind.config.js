@@ -9,7 +9,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        /* Trust Blue — navigation, links, stability (#1E3A8A) */
+        /* Brand shortcuts — solid anchors (see static/css/input.css) */
+        brand: {
+          navy: "#1E3A8A",
+          emerald: "#10B981",
+          gold: "#F59E0B",
+        },
+        /* Trust Navy — navigation, links, stability */
         kova: {
           50:  "#EFF6FF",
           100: "#DBEAFE",

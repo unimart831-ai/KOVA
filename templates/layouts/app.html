@@ -30,7 +30,7 @@
     <div class="px-6 border-b border-gray-200 dark:border-gray-800">
       <div class="flex items-center h-16">
         <a href="{% url 'brief:home' %}" class="flex items-center space-x-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-kova" style="background-color: var(--brand-accent, #7c3aed);">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-kova bg-kova-800"{% if agency_brand_theme %} style="background-color: var(--brand-accent);"{% endif %}>
             <span class="text-white font-bold text-sm">K</span>
           </div>
           <span class="text-lg font-bold text-gray-900 dark:text-white">Kova Agent</span>
@@ -52,11 +52,11 @@
       {% endif %}
     </div>
 
-    <!-- Navigation -->
-    {% comment %}Phase 2 IA: Today → Sell → Catch → Close → Grow → Settings{% endcomment %}
+    <!-- Navigation — 5 core destinations + More + Settings (no section headers, no sidebar subnavs) -->
+    {% comment %}Decision Stream IA: Today → Inbox → Create → Results; WhatsApp + More for depth{% endcomment %}
     <nav class="sidebar-scroll flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
 
-      {# ── Today (Home) ── #}
+      {# ── 1. Today ── #}
       <a href="{% url 'brief:home' %}" data-nav-group="home"
          {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}aria-current="page"{% endif %}
          class="{% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}nav-link-active{% else %}nav-link{% endif %}">
@@ -66,48 +66,8 @@
         Today
       </a>
 
-      <p class="nav-section" data-nav-group="sell">Sell</p>
-
-      <a href="{% url 'products:list' %}" data-nav-group="sell"
-         {% if '/products/' in request.path %}aria-current="page"{% endif %}
-         class="{% if '/products/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/products/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-        </svg>
-        Commerce
-      </a>
-
-      {% if '/products/' in request.path %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'products:snap' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'snap' or request.resolver_match.url_name == 'snap_launch' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Snap to Sell</a>
-        <a href="{% url 'products:snap_batch' %}" class="block text-xs py-1 px-2 rounded {% if 'snap_batch' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Batch to sell</a>
-        <a href="{% url 'products:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">My offers</a>
-      </div>
-      {% endif %}
-
-      <p class="nav-section" data-nav-group="catch">Catch</p>
-
-      {% nav_active request.path '/leads/' '/links/' '/qr/' '/walkin/' as reach_active %}
-      <a href="{% url 'leads:list' %}" data-nav-group="catch"
-         {% if reach_active %}aria-current="page"{% endif %}
-         class="{% if reach_active %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if reach_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-        Reach
-        {% if nav_badge_leads %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_leads }}</span>{% endif %}
-      </a>
-
-      {% if reach_active %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'leads:list' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'list' and request.resolver_match.namespace == 'leads' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Leads (inbox)</a>
-        <a href="{% url 'leads:pipeline' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'pipeline' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Pipeline</a>
-        <a href="{% url 'links:list' %}" class="block text-xs py-1 px-2 rounded {% if '/links/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Links</a>
-        <a href="{% url 'qr_attribution:list' %}" class="block text-xs py-1 px-2 rounded {% if '/qr/' in request.path or '/walkin/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Walk-ins</a>
-      </div>
-      {% endif %}
-
-      <a href="{% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% url 'engage:unified_inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="catch"
+      {# ── 2. Inbox (social comments & DMs) ── #}
+      <a href="{% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% url 'engage:unified_inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="inbox"
          {% if '/engage/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/engage/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/engage/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -117,16 +77,8 @@
         {% if not request.plan_limits.engagement_agent and request.plan_limits.engage_trial_enabled %}<span class="ml-auto text-[10px] font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">TRIAL</span>{% elif not request.plan_limits.engagement_agent %}<span class="ml-auto text-[10px] font-medium text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif nav_badge_inbox %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_inbox }}</span>{% endif %}
       </a>
 
-      {% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% if '/engage/' in request.path %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'engage:unified_inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'unified_inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Needs reply (all)</a>
-        <a href="{% url 'engage:dm_inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'dm_inbox' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Messages</a>
-      </div>
-      {% endif %}{% endif %}
-
-      <p class="nav-section" data-nav-group="close">Close</p>
-
-      <a href="{% if request.plan_limits.whatsapp_enabled or request.plan_limits.whatsapp_inbox_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="close"
+      {# ── 3. WhatsApp ── #}
+      <a href="{% if request.plan_limits.whatsapp_enabled or request.plan_limits.whatsapp_inbox_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}" data-nav-group="whatsapp"
          {% if '/whatsapp/' in request.path %}aria-current="page"{% endif %}
          class="{% if '/whatsapp/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if '/whatsapp/' in request.path %}text-[#25D366]{% else %}text-gray-400 dark:text-gray-500{% endif %}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -136,21 +88,9 @@
         {% if not request.plan_limits.whatsapp_enabled and not request.plan_limits.whatsapp_inbox_enabled %}<span class="ml-auto text-[10px] font-medium text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-900/30 px-1.5 py-0.5 rounded">PRO</span>{% elif not request.plan_limits.whatsapp_enabled and request.plan_limits.whatsapp_inbox_enabled %}<span class="ml-auto text-[10px] font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">INBOX</span>{% elif nav_badge_whatsapp %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_whatsapp }}</span>{% endif %}
       </a>
 
-      {% if request.plan_limits.whatsapp_inbox_enabled or request.plan_limits.whatsapp_enabled %}{% if '/whatsapp/' in request.path %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'whatsapp:inbox' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'inbox' or request.resolver_match.url_name == 'conversation' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Inbox</a>
-        {% if request.plan_limits.whatsapp_enabled %}
-        <a href="{% url 'whatsapp:template_list' %}" class="block text-xs py-1 px-2 rounded {% if 'template' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Templates</a>
-        <a href="{% url 'whatsapp:status_studio' %}" class="block text-xs py-1 px-2 rounded {% if 'status' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Status Studio</a>
-        <a href="{% url 'whatsapp:broadcast_list' %}" class="block text-xs py-1 px-2 rounded {% if 'broadcast' in request.resolver_match.url_name or 'sequence' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Broadcasts</a>
-        {% endif %}
-      </div>
-      {% endif %}{% endif %}
-
-      <p class="nav-section" data-nav-group="grow">Grow</p>
-
+      {# ── 4. Create ── #}
       {% nav_active request.path '/content/studio' '/content/queue' '/content/calendar' '/content/edit/' as create_active %}
-      <a href="{% url 'content:studio' %}" data-nav-group="grow"
+      <a href="{% url 'content:studio' %}" data-nav-group="create"
          {% if create_active %}aria-current="page"{% endif %}
          class="{% if create_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if create_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -160,17 +100,9 @@
         {% if nav_badge_queue %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_queue }}</span>{% endif %}
       </a>
 
-      {% if create_active %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'content:studio' %}" class="block text-xs py-1 px-2 rounded {% if '/content/studio' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Studio</a>
-        <a href="{% url 'content:queue' %}" class="block text-xs py-1 px-2 rounded {% if '/content/queue' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Queue list</a>
-        <a href="{% url 'content:calendar_grid' %}" class="block text-xs py-1 px-2 rounded {% if 'calendar_grid' in request.resolver_match.url_name %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Calendar</a>
-        <a href="{% url 'content:calendar' %}" class="block text-xs py-1 px-2 rounded {% if request.resolver_match.url_name == 'calendar' %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Timeline</a>
-      </div>
-      {% endif %}
-
+      {# ── 5. Results ── #}
       {% nav_active request.path '/analytics/revenue' '/analytics/attribution' '/analytics/' '!/analytics/pixel' '!/analytics/competitors' '!/analytics/screenshot-compete' '!/analytics/content' as results_active %}
-      <a href="{% url 'analytics:revenue' %}" data-nav-group="grow"
+      <a href="{% url 'analytics:revenue' %}" data-nav-group="results"
          {% if results_active %}aria-current="page"{% endif %}
          class="{% if results_active %}nav-link-active{% else %}nav-link{% endif %}">
         <svg class="mr-3 h-5 w-5 {% if results_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -179,17 +111,48 @@
         Results
       </a>
 
-      <a href="{% url 'platforms:list' %}" data-nav-group="platforms"
-         {% if '/platforms/' in request.path %}aria-current="page"{% endif %}
-         class="{% if '/platforms/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if '/platforms/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+      {# ── Bookings (service businesses) ── #}
+      {% if request.user.profile.business_model == 'service' %}
+      <a href="{% url 'bookings:list' %}" data-nav-group="bookings"
+         {% if '/bookings/' in request.path %}aria-current="page"{% endif %}
+         class="{% if '/bookings/' in request.path %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if '/bookings/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
-        Platforms
+        Bookings
       </a>
+      {% endif %}
 
-      <p class="nav-section" data-nav-group="settings">Settings</p>
+      {# ── More (secondary — collapsed unless active) ── #}
+      {% nav_active request.path '/products/' '/leads/' '/links/' '/qr/' '/walkin/' '/bookings/' as more_active %}
+      <details class="mt-2 mb-1 group" {% if more_active %}open{% endif %}>
+        <summary class="nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
+          <svg class="mr-3 h-5 w-5 text-gray-400 dark:text-gray-500 group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+          <span class="flex-1">More</span>
+          {% if nav_badge_leads %}<span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_leads }}</span>{% endif %}
+          <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <div class="ml-8 mt-1 space-y-0.5">
+          {% with bm=request.user.profile.business_model %}
+          <a href="{% url 'products:list' %}" class="block text-xs py-1.5 px-2 rounded {% if '/products/' in request.path %}text-kova-600 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            {% if bm == 'professional' %}Portfolio{% elif bm == 'service' %}Catalog{% else %}Commerce{% endif %}
+          </a>
+          {% endwith %}
+          <a href="{% url 'leads:list' %}" class="block text-xs py-1.5 px-2 rounded {% if '/leads/' in request.path %}text-kova-600 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            Leads{% if nav_badge_leads %} <span class="text-red-500 font-bold">({{ nav_badge_leads }})</span>{% endif %}
+          </a>
+          <a href="{% url 'links:list' %}" class="block text-xs py-1.5 px-2 rounded {% if '/links/' in request.path %}text-kova-600 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">Links</a>
+          <a href="{% url 'platforms:list' %}" class="block text-xs py-1.5 px-2 rounded {% if '/platforms/' in request.path %}text-kova-600 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            Platforms{% if platforms_need_attention %} <span class="text-red-500 font-bold">(!)</span>{% elif connected_platform_count == 0 %} <span class="text-kova-500">·</span>{% endif %}
+          </a>
+        </div>
+      </details>
 
+      <div class="my-3 border-t border-gray-200 dark:border-gray-800"></div>
+
+      {# ── Settings ── #}
       {% nav_active request.path '/accounts/settings' '/teams/' '/billing/' '/agents/' '/help/' '/analytics/pixel' '/ai-learning' as settings_active %}
       <a href="{% url 'accounts:settings' %}" data-nav-group="settings"
          {% if settings_active %}aria-current="page"{% endif %}
@@ -200,29 +163,7 @@
         </svg>
         Settings
       </a>
-
-      {% if settings_active %}
-      <div class="ml-8 space-y-0.5 mb-1">
-        <a href="{% url 'accounts:settings' %}" class="block text-xs py-1 px-2 rounded {% if '/accounts/settings' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Profile & Brand</a>
-        {% if request.user.is_staff %}
-        <a href="{% url 'agents:control' %}" class="block text-xs py-1 px-2 rounded {% if '/agents/' in request.path or '/ai-learning' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Agents</a>
-        {% endif %}
-        {% if request.user.profile.plan == 'agency' or request.plan_limits.max_team_members %}
-        <a href="{% url 'teams:list' %}" class="block text-xs py-1 px-2 rounded {% if '/teams/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">
-          Teams{% if request.plan_limits.max_team_members %}<span class="ml-1 text-[10px] text-gray-400">({{ request.plan_limits.max_team_members }} max)</span>{% endif %}
-        </a>
-        {% endif %}
-        <a href="{% url 'billing:overview' %}" class="block text-xs py-1 px-2 rounded {% if '/billing/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Billing</a>
-        <a href="{% url 'help:center' %}" class="block text-xs py-1 px-2 rounded {% if '/help/' in request.path %}text-kova-600 dark:text-kova-400 font-medium{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{% endif %}">Help</a>
-      </div>
-      {% endif %}
     </nav>
-
-    <!-- Brand mission strip -->
-    <div class="px-4 py-3 mx-3 mb-2 rounded-lg bg-kova-50/80 dark:bg-kova-950/30 border border-kova-100 dark:border-kova-900/50">
-      <p class="text-[10px] font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400 mb-1">{{ kova_headline }}</p>
-      <p class="text-xs text-gray-600 dark:text-gray-400 leading-snug">{{ kova_subhead }}</p>
-    </div>
 
     <!-- User menu at bottom -->
     <div class="border-t border-gray-200 dark:border-gray-800 p-3">
@@ -360,7 +301,7 @@
       {% if messages %}
         {% for message in messages %}
           <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
-                      {% if message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200
+                      {% if message.tags == 'success' %}bg-growth-50 border border-growth-200 text-growth-800 dark:bg-growth-950/40 dark:border-growth-800 dark:text-growth-200
                       {% elif message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200
                       {% elif message.tags == 'warning' %}bg-gold-50 border border-gold-200 text-gold-800 dark:bg-gold-950/40 dark:border-gold-800 dark:text-gold-200
                       {% else %}bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200{% endif %}"
@@ -377,33 +318,6 @@
     <div class="lg:hidden" style="height: calc(3.5rem + env(safe-area-inset-bottom, 0px));"></div>
   </div>
 
-  <!-- Mobile bottom navigation — visible only on small screens -->
-  <nav class="fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 lg:hidden pb-[env(safe-area-inset-bottom)]"
-       aria-label="Mobile quick navigation">
-    <div class="flex items-center justify-around h-14 px-2">
-      <a href="{% url 'brief:home' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Today">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span class="text-[10px] font-medium">Today</span>
-      </a>
-      <a href="{% url 'products:snap' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/products/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Sell">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-        <span class="text-[10px] font-medium">Sell</span>
-      </a>
-      <a href="{% url 'leads:list' %}" class="relative flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/leads/' in request.path or '/links/' in request.path or '/qr/' in request.path or '/walkin/' in request.path or '/engage/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Catch">
-        {% if nav_badge_leads or nav_badge_inbox %}<span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>{% endif %}
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span class="text-[10px] font-medium">Catch</span>
-      </a>
-      <a href="{% url 'whatsapp:inbox' %}" class="relative flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/whatsapp/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Close">
-        {% if nav_badge_whatsapp %}<span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>{% endif %}
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        <span class="text-[10px] font-medium">Close</span>
-      </a>
-      <a href="{% url 'platforms:list' %}" class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 {% if '/platforms/' in request.path %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}" aria-label="Platforms">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-        <span class="text-[10px] font-medium">Platforms</span>
-      </a>
-    </div>
-  </nav>
+  {% include "components/_mobile_bottom_nav.html" %}
 </div>
 {% endblock %}

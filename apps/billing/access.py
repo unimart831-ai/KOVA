@@ -69,13 +69,23 @@ def is_subscription_exempt_url(full_name: str) -> bool:
     """URLs that remain reachable when subscription access is blocked."""
     if not full_name:
         return False
-    exempt_prefixes = (
+    exempt = (
         "billing:",
-        "accounts:login",
+        "accounts:settings",
+        "accounts:delete_account",
         "accounts:logout",
+        "accounts:login",
         "accounts:signup",
         "accounts:password_reset",
         "accounts:password_reset_confirm",
+        "accounts:collect_phone",
+        "accounts:onboarding",
+        "accounts:onboarding_choose_path",
+        "accounts:onboarding_complete",
+        "accounts:onboarding_magic_connect",
+        "accounts:onboarding_progress",
+        "accounts:onboarding_retry",
+        "accounts:emergency_pause",
         "help:",
     )
-    return full_name.startswith(exempt_prefixes)
+    return full_name.startswith(exempt) or full_name in exempt

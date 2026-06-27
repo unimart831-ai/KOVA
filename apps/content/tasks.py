@@ -2198,6 +2198,10 @@ def check_and_publish_due_posts():
         platform_key = (post.platform or "").lower()
         if not platform_key and post.social_account_id:
             platform_key = (post.social_account.platform or "").lower()
+        from apps.accounts.autopilot_helpers import platform_allowed_for_autopilot
+        if platform_key and not platform_allowed_for_autopilot(post.user, platform_key):
+            skipped_autopilot += 1
+            continue
         if platform_key and is_outage(platform_key):
             held_outage += 1
             continue

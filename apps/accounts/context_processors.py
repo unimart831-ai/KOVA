@@ -75,3 +75,34 @@ def kova_voice(request):
     from apps.accounts.product_voice import kova_voice_for_user
 
     return kova_voice_for_user(request.user)
+
+
+def platforms_summary(request):
+    """Lightweight connected-platform state for nav nudges."""
+    if not request.user.is_authenticated:
+        return {}
+
+    cache_key = f"platforms_summary:{request.user.pk}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    from apps.platforms.models import SocialAccount
+
+    accounts = SocialAccount.objects.filter(user=request.user).defer(
+        "access_token", "refresh_token", "token_scope",
+    )
+    active_count = accounts.filter(is_active=True).count()
+    needs_attention = 0
+    for acc in accounts:
+        if not acc.is_active:
+            needs_attention += 1
+        elif acc.needs_reauth:
+            needs_attention += 1
+
+    summary = {
+        "connected_platform_count": active_count,
+        "platforms_need_attention": needs_attention,
+    }
+    cache.set(cache_key, summary, 60)
+    return summary

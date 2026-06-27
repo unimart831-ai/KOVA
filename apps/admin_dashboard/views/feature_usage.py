@@ -112,7 +112,7 @@ def feature_usage(request):
 
     # Format for Chart.js: list of {label, data[]}
     section_trend_datasets = []
-    colors = ["#7c3aed", "#2563eb", "#059669", "#d97706", "#dc2626"]
+    colors = ["#1E3A8A", "#2563eb", "#059669", "#d97706", "#dc2626"]
     for i, key in enumerate(top_5_keys):
         section_trend_datasets.append({
             "label": section_labels.get(key, key),

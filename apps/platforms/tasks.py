@@ -355,3 +355,81 @@ def _notify_token_expiring(account, error):
         )
     except Exception:
         logger.warning("Could not create token expiry notification for %s", account)
+
+
+@shared_task(name="platforms.poll_tiktok_publish_status")
+def poll_tiktok_publish_status():
+    """Poll TikTok publish status for posts missing a public URL."""
+    from apps.content.models import Post
+    from apps.platforms.providers.registry import get_provider
+
+    provider = get_provider("tiktok")
+    if not provider:
+        return {"polled": 0}
+
+    cutoff = timezone.now() - timedelta(days=7)
+    posts = (
+        Post.objects.filter(
+            platform="tiktok",
+            status=Post.Status.PUBLISHED,
+            platform_post_url="",
+            published_at__gte=cutoff,
+        )
+        .select_related("social_account", "user")
+        .order_by("-published_at")[:40]
+    )
+
+    updated = failed = 0
+    for post in posts:
+        account = post.social_account
+        if not account or not account.is_active:
+            continue
+        publish_id = post.platform_post_id
+        if not publish_id:
+            meta = post.visual_metadata or {}
+            publish_id = meta.get("publish_id") or meta.get("tiktok_publish_id")
+        if not publish_id:
+            continue
+
+        try:
+            data = provider.check_publish_status(account.access_token, publish_id)
+        except Exception as exc:
+            logger.warning("TikTok poll failed for post %s: %s", post.pk, exc)
+            continue
+
+        status = (data.get("status") or "").upper()
+        if status == "PUBLISH_COMPLETE":
+            post_ids = (
+                data.get("publicaly_available_post_id")
+                or data.get("publicly_available_post_id")
+                or []
+            )
+            if post_ids:
+                post.platform_post_id = str(post_ids[0])
+            share_url = data.get("share_url") or ""
+            if not share_url and post.platform_post_id:
+                try:
+                    videos = provider.get_own_posts(account.access_token, count=5)
+                    for vid in videos:
+                        if str(vid.get("id")) == str(post.platform_post_id):
+                            share_url = vid.get("share_url") or ""
+                            break
+                except Exception:
+                    pass
+            if share_url:
+                post.platform_post_url = share_url
+            post.publish_error = ""
+            post.save(update_fields=[
+                "platform_post_id", "platform_post_url", "publish_error", "updated_at",
+            ])
+            updated += 1
+        elif status == "FAILED":
+            reason = data.get("fail_reason") or data.get("error") or "TikTok publish failed"
+            post.publish_error = str(reason)[:500]
+            post.status = Post.Status.FAILED
+            post.save(update_fields=["status", "publish_error", "updated_at"])
+            failed += 1
+
+    if updated or failed:
+        logger.info("TikTok publish poll: %d URLs updated, %d failed", updated, failed)
+    return {"polled": posts.count(), "updated": updated, "failed": failed}

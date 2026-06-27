@@ -74,7 +74,7 @@ npm run dev:css
 
 ```
 kova_agent/
-├── apps/                    # 26 Django apps (modular monolith)
+├── apps/                    # 27 Django apps (modular monolith)
 │   ├── accounts/            # User model, auth, onboarding, brand intelligence
 │   ├── platforms/           # Social account OAuth (9 providers)
 │   ├── content/             # Posts, scheduling, A/B tests, voice briefs, media
@@ -161,14 +161,16 @@ GitHub Actions runs on every push/PR:
 | Analyst | Tracks performance, content DNA analysis, prediction scoring | All |
 | Chief Strategist | Orchestrates all agents, compiles daily briefs, weekly plans | Pro+ |
 
-## Pricing (KES)
+## Pricing
 
-| Tier | Name | Price | Key Features |
-|------|------|-------|-------------|
-| Starter | Jipange | 299/mo | 1 account, 15 posts/mo, Create + Analyst |
-| Growth | Kazi | 999/mo | 3 accounts, engagement, competitors, AI images |
-| Pro | Biashara | 1,999/mo | 10 accounts, WhatsApp, memes, teams, attribution |
-| Agency | Wakala | 2,999/mo | 25 accounts, aggressive auto-engage, API access |
+| Plan | Price | Key Features |
+|------|-------|-------------|
+| **Kova** | KES 1,300/mo (~USD 10) | 4 accounts, 30 campaigns/mo, all 6 AI agents, commerce, leads, revenue dashboard |
+| Trial | Free — 7 days, 5 campaigns | Full Kova features for evaluation |
+| Agency | Contact sales | White-label, multi-brand, API access, custom limits |
+
+> Legacy tiers (Jipange, Kazi, Biashara, Wakala) are grandfathered for existing subscribers.
+> New signups receive the single **Kova** plan. See `apps/billing/models.py` → `PLAN_LIMITS` for authoritative limits.
 
 ## Documentation
 

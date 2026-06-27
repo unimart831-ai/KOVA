@@ -10,8 +10,6 @@
 {% block content %}
 {% include "analytics/_results_tabs.html" %}
 <div class="max-w-6xl mx-auto space-y-6">
-  {% include "components/_kova_loop_strip.html" %}
-
   {# Attribution confidence (Wave 7) #}
   {% if attribution_confidence.score is not None %}
   <div class="rounded-xl border border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20 p-5">
@@ -243,7 +241,7 @@
               </span>
               <span class="text-xs text-gray-500 dark:text-gray-400">{{ item.count }} conversion{{ item.count|pluralize }}</span>
             </div>
-            <span class="text-sm font-semibold text-green-600 dark:text-green-400">KES {{ item.revenue|floatformat:0 }}</span>
+            <span class="text-sm font-semibold text-growth-600 dark:text-growth-400">KES {{ item.revenue|floatformat:0 }}</span>
           </div>
           {% endfor %}
         </div>
@@ -269,7 +267,7 @@
               </span>
               <span class="text-xs text-gray-500 dark:text-gray-400">{{ item.count }} conversion{{ item.count|pluralize }}</span>
             </div>
-            <span class="text-sm font-semibold text-green-600 dark:text-green-400">KES {{ item.revenue|floatformat:0 }}</span>
+            <span class="text-sm font-semibold text-growth-600 dark:text-growth-400">KES {{ item.revenue|floatformat:0 }}</span>
           </div>
           {% endfor %}
         </div>
@@ -312,7 +310,7 @@
         {% for row in asset_type_breakdown %}
         <div class="flex items-center justify-between text-sm">
           <span class="text-gray-700 dark:text-gray-300">{{ row.type_label }}</span>
-          <span class="font-semibold text-green-600 dark:text-green-400">
+          <span class="font-semibold text-growth-600 dark:text-growth-400">
             {% if row.revenue %}KES {{ row.revenue|floatformat:0 }}{% else %}{{ row.activity }} activity{% endif %}
           </span>
         </div>
@@ -336,7 +334,7 @@
             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.product__name }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ item.count }} sale{{ item.count|pluralize }}</p>
           </div>
-          <span class="text-sm font-semibold text-green-600 dark:text-green-400">KES {{ item.revenue|floatformat:0 }}</span>
+          <span class="text-sm font-semibold text-growth-600 dark:text-growth-400">KES {{ item.revenue|floatformat:0 }}</span>
         </div>
         {% endfor %}
       </div>
@@ -362,7 +360,7 @@
           </div>
           <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ item.post__content_text|truncatechars:120 }}</p>
         </div>
-        <span class="text-sm font-semibold text-green-600 dark:text-green-400 flex-shrink-0">KES {{ item.revenue|floatformat:0 }}</span>
+        <span class="text-sm font-semibold text-growth-600 dark:text-growth-400 flex-shrink-0">KES {{ item.revenue|floatformat:0 }}</span>
       </div>
       {% endfor %}
     </div>
@@ -518,7 +516,7 @@
           {% endif %}
         </div>
         <div class="text-right flex-shrink-0 ml-4">
-          {% if c.revenue %}<p class="text-sm font-medium text-green-600 dark:text-green-400">KES {{ c.revenue|floatformat:0 }}</p>{% endif %}
+          {% if c.revenue %}<p class="text-sm font-medium text-growth-600 dark:text-growth-400">KES {{ c.revenue|floatformat:0 }}</p>{% endif %}
           <p class="text-[10px] text-gray-400">{{ c.created_at|timesince }} ago</p>
         </div>
       </div>

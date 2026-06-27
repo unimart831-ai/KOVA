@@ -146,6 +146,7 @@ def ensure_instant_onboarding_wow(user) -> bool:
             }
         ],
         "opportunity_briefs": opportunity_briefs,
+        "source": "profile",
     }
 
     completed = AgentAction.ActionStatus.COMPLETED
@@ -173,7 +174,7 @@ def ensure_instant_onboarding_wow(user) -> bool:
     _mark_complete(
         "research",
         "research",
-        "Analyzed your industry (instant profile)",
+        "Starter plan from your profile",
         stub_research,
     )
     _mark_complete(
@@ -267,6 +268,13 @@ def finish_onboarding(user, *, skipped_platform_connect=False):
 
     send_welcome_email.delay(str(user.pk))
     bootstrap_email_automation(user)
+
+    if getattr(profile, "business_model", "") == "service":
+        from apps.bookings.service_setup import bootstrap_service_booking_link
+        try:
+            bootstrap_service_booking_link(user)
+        except Exception:
+            logger.exception("bootstrap_service_booking_link failed for %s", user.email)
 
     profile.onboarding_intelligence_started_at = timezone.now()
     profile.save(update_fields=["onboarding_intelligence_started_at"])

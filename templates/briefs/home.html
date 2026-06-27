@@ -13,65 +13,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-6">
-  {% include "components/_kova_loop_strip.html" %}
-
-  {# ── Platform connection nudge (show if no social accounts connected) ── #}
-  {% if not has_connected_platform %}
-  <div class="p-4 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800 rounded-xl flex items-start gap-3">
-    
-    <div class="flex-1">
-      <p class="text-sm font-medium text-gold-800 dark:text-gold-300">{{ segment_surface.nudge_title }}</p>
-      <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">{{ segment_surface.nudge_body }}</p>
-      <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
-        Connect now
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-      </a>
-    </div>
-  </div>
-  {% endif %}
-
-  {# ── Money chase board ── #}
-  {% include "briefs/_money_board.html" %}
-
-  {% if asset_campaign_opportunities %}
-  <div class="card p-4 sm:p-5">
-    <div class="flex items-center justify-between gap-3 mb-3">
-      <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Campaign ideas from your catalog</h2>
-      <a href="{% url 'products:asset_intake' %}" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">Add asset →</a>
-    </div>
-    <ul class="space-y-2">
-      {% for opp in asset_campaign_opportunities %}
-      <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800">
-        <div class="min-w-0">
-          <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ opp.title }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ opp.asset_type }} · {{ opp.angle }}</p>
-        </div>
-        <a href="{% url opp.proposals_url_name asset_id=opp.asset_id %}"
-           class="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg bg-kova-600 text-white hover:bg-kova-700">
-          Start campaign
-        </a>
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {# ── Wedge onboarding checklist ── #}
-  {% include "briefs/_wedge_checklist.html" %}
-
-  {# ── First-week setup checklist (auto-hides once all done or after 14 days) ── #}
-  {% include "briefs/_setup_checklist.html" %}
-
-  {% if today_compact %}
-  <div x-data="{ showMoreToday: false }" class="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-    <button type="button" @click="showMoreToday = !showMoreToday"
-            class="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Daily brief &amp; insights</span>
-      <span class="text-xs text-gray-500 dark:text-gray-400" x-text="showMoreToday ? 'Collapse ↑' : 'Expand ↓'"></span>
-    </button>
-    <div x-show="showMoreToday" x-cloak class="p-1 space-y-6">
-  {% endif %}
+<div class="max-w-3xl mx-auto space-y-4">
 
   {% if brief %}
 
@@ -91,759 +33,313 @@
     </div>
     {% endif %}
 
-    {# ━━━ HERO BAR — Streak + Kova Score ━━━ #}
-    <div class="card bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-gray-800 dark:via-gray-750 dark:to-gray-800 border-gray-700 dark:border-gray-600">
-      <div class="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {# Streak #}
+    {# ━━━ 1. SCORE BAR ━━━ #}
+    {% include "briefs/_score_bar.html" %}
+
+    {# ━━━ 2. DECISION STREAM — the single queue ━━━ #}
+    <div>
+      <div class="flex items-center justify-between px-1 mb-2">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+          {% if stream_items %}{{ stream_items|length }} item{{ stream_items|length|pluralize }} need{{ stream_items|length|pluralize:"s," }} attention{% else %}Decision stream{% endif %}
+        </h2>
+      </div>
+      {% include "briefs/_decision_stream.html" %}
+    </div>
+
+    {# ━━━ 3. STRATEGY REPORT (collapsed) ━━━ #}
+    <details class="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none select-none hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-colors">
         <div class="flex items-center gap-3">
-          {% if brief_streak > 0 %}
-          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-kova-500/15 border border-kova-500/20">
-            
-            <span class="text-sm font-bold text-kova-400 tabular-nums">Day {{ brief_streak }}</span>
+          <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-950 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           </div>
-          {% endif %}
           <div>
-            <h2 class="text-lg font-semibold text-white">Morning, {{ greeting_name }}</h2>
-            <p class="text-sm text-gray-400 mt-0.5">
-              {% if brief_is_stale %}{{ brief.date|date:"l, F j" }}{% else %}{{ brief.date|date:"l, F j" }} · Today's brief{% endif %}
-              · <a href="{% url 'brief:archive' %}" class="hover:text-white underline-offset-2 hover:underline">Past briefs</a>
-            </p>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">Strategy report</p>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">Full daily brief, trends, content ideas, and pipeline</p>
+          </div>
+        </div>
+        <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+
+      <div class="px-5 pb-5 space-y-6 border-t border-gray-100 dark:border-gray-800 pt-5">
+
+        {# Brief summary #}
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400 mb-3">Strategy check-in</p>
+          <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed [&>p]:mb-3 [&>p:last-child]:mb-0">
+            {{ brief.summary|linebreaks }}
           </div>
         </div>
 
-        {# Kova Score with tooltip breakdown #}
-        <div class="flex items-center gap-4">
-          <div class="text-right">
-            <div class="group relative inline-block">
-              <button type="button" class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-gray-300 cursor-help">
-                Kova Score
-                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              </button>
-              {# Tooltip — drops downward to stay within the card's bounds #}
-              <div class="absolute right-0 top-full mt-2 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-xl p-3 text-left opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-50">
-                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Score breakdown (0–100)</p>
-                {% if score_breakdown %}
-                <ul class="space-y-1.5 text-xs text-gray-300">
-                  {% for key, comp in score_breakdown.items %}
-                  <li class="flex justify-between gap-3">
-                    <span>{{ comp.label }}</span>
-                    <span class="text-gray-400 font-mono tabular-nums">{{ comp.points }}/{{ comp.max }}</span>
-                  </li>
-                  {% endfor %}
-                </ul>
-                {% else %}
-                <ul class="space-y-1.5 text-xs text-gray-300">
-                  <li class="flex justify-between"><span>Pipeline health</span><span class="text-gray-500 font-mono">30 pts</span></li>
-                  <li class="flex justify-between"><span>Engagement</span><span class="text-gray-500 font-mono">25 pts</span></li>
-                  <li class="flex justify-between"><span>Consistency</span><span class="text-gray-500 font-mono">25 pts</span></li>
-                  <li class="flex justify-between"><span>Agent activity</span><span class="text-gray-500 font-mono">20 pts</span></li>
-                </ul>
-                {% endif %}
-                <p class="text-[10px] text-gray-500 mt-2 border-t border-gray-700 pt-2">70+ healthy · 40–69 improving · &lt;40 needs attention</p>
-              </div>
-            </div>
-            {% if brief.kova_score > 0 %}
-            <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-3xl font-black text-white tabular-nums leading-none">{{ brief.kova_score }}</span>
-              {% if brief.kova_score_delta > 0 %}
-                <span class="text-sm font-bold text-green-400">+{{ brief.kova_score_delta }}</span>
-              {% elif brief.kova_score_delta < 0 %}
-                <span class="text-sm font-bold text-red-400">{{ brief.kova_score_delta }}</span>
-              {% endif %}
-            </div>
-            {% else %}
-            <div class="mt-0.5">
-              <span class="text-lg font-black text-white leading-none">Day 1</span>
-              <p class="text-[10px] text-gray-400 mt-0.5">Building your baseline</p>
-            </div>
-            {% endif %}
-          </div>
-          {# Score ring #}
-          <div class="relative w-14 h-14">
-            <svg class="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-              <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" fill="none" class="text-white/10"/>
-              {% if brief.kova_score > 0 %}
-              <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" fill="none"
-                      stroke-dasharray="{% widthratio brief.kova_score 100 151 %} 151"
-                      stroke-linecap="round"
-                      class="{% if brief.kova_score >= 70 %}text-green-400{% elif brief.kova_score >= 40 %}text-gold-400{% else %}text-kova-400{% endif %} transition-all duration-1000"/>
-              {% else %}
-              <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" fill="none"
-                      stroke-dasharray="38 151" stroke-linecap="round"
-                      class="text-kova-400/60 animate-pulse"/>
-              {% endif %}
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card border-kova-200 dark:border-kova-800/60 bg-gradient-to-r from-white to-kova-50/80 dark:from-gray-900 dark:to-kova-950/20">
-      <div class="px-6 py-5">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div class="max-w-2xl">
-            <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-kova-600 dark:text-kova-400">{{ segment_surface.mode_label }}</p>
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mt-2">{{ segment_surface.today_title }}</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed">{{ segment_surface.today_description }}</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            {% for action in segment_surface.today_actions %}
-            <a href="{% url action.url_name %}" class="{% if forloop.first %}btn-primary{% else %}btn-secondary{% endif %} text-sm px-4 py-2">
-              {{ action.label }}
-            </a>
-            {% endfor %}
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-2 mt-4">
-          {% for focus in segment_surface.today_focus %}
-          <span class="inline-flex items-center rounded-full border border-kova-200 dark:border-kova-800/80 bg-kova-50 dark:bg-kova-950/40 px-3 py-1 text-xs font-medium text-kova-700 dark:text-kova-300">{{ focus }}</span>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    {# ━━━ MORNING STANDUP HERO ━━━ #}
-    {% include "briefs/_morning_standup.html" %}
-
-    {# ━━━ QUICK ACTIONS BAR ━━━ #}
-    {% if quick_actions %}
-    <div class="flex flex-wrap items-center gap-3 px-1">
-      <span class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Morning to-do</span>
-      {% for action in quick_actions %}
-        <a href="{% url action.url_name %}"
-           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:border-kova-300 dark:hover:border-kova-600 hover:shadow-sm transition-all">
-          {% if action.icon == "edit" %}
-            <svg class="w-4 h-4 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          {% elif action.icon == "chat" %}
-            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-          {% elif action.icon == "user" %}
-            <svg class="w-4 h-4 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-          {% elif action.icon == "alert" %}
-            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-          {% endif %}
-          {{ action.label }}
-        </a>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50/50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/60">
-      <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      <span class="text-sm font-medium text-green-800 dark:text-green-300">All clear! Nothing needs your attention right now.</span>
-    </div>
-    {% endif %}
-
-    {# ━━━ YOUR MOVE TODAY — pinned action from strategist ━━━ #}
-    {% if your_move %}
-    <div class="card border-kova-200 dark:border-kova-800/60 bg-gradient-to-r from-kova-50/80 to-white dark:from-kova-950/30 dark:to-gray-900">
-      <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
-        <div class="w-10 h-10 rounded-xl bg-growth-500 flex items-center justify-center shrink-0 shadow-growth">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        </div>
-        <div class="min-w-0 flex-1">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-growth-600 dark:text-growth-400 mb-1">Your move today</p>
-          <p class="text-sm sm:text-base text-gray-800 dark:text-gray-200 leading-relaxed">{{ your_move }}</p>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    {# ━━━ WHILE YOU SLEPT ━━━ #}
-    {% with ow=brief.overnight_work %}
-    {% if ow.total_actions > 0 %}
-    <div class="card border-kova-200 dark:border-kova-800/60 bg-gradient-to-br from-kova-50/50 to-white dark:from-kova-950/20 dark:to-gray-900">
-      <div class="px-6 py-4 border-b border-kova-100 dark:border-kova-900/40">
-        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          
-          While you slept
-        </h3>
-        <p class="text-xs text-kova-600 dark:text-kova-400 mt-0.5">Your AI team worked through the night — {{ ow.total_actions }} action{{ ow.total_actions|pluralize }} completed</p>
-      </div>
-      <div class="px-6 py-4">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {% if ow.posts_drafted > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-kova-50 dark:bg-kova-950/30">
-            <div class="text-2xl font-bold text-kova-600 dark:text-kova-400 tabular-nums">{{ ow.posts_drafted }}</div>
-            <div class="text-[11px] text-kova-500 dark:text-kova-400 font-medium mt-0.5">Posts drafted</div>
-          </div>
-          {% endif %}
-          {% if ow.posts_published > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-green-50 dark:bg-green-950/30">
-            <div class="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">{{ ow.posts_published }}</div>
-            <div class="text-[11px] text-green-500 dark:text-green-400 font-medium mt-0.5">Posts published</div>
-          </div>
-          {% endif %}
-          {% if ow.trends_found > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-gold-50 dark:bg-gold-950/30">
-            <div class="text-2xl font-bold text-gold-600 dark:text-gold-400 tabular-nums">{{ ow.trends_found }}</div>
-            <div class="text-[11px] text-gold-500 dark:text-gold-400 font-medium mt-0.5">Trends found</div>
-          </div>
-          {% endif %}
-          {% if ow.competitors_analyzed > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-kova-50 dark:bg-kova-950/30">
-            <div class="text-2xl font-bold text-kova-600 dark:text-kova-400 tabular-nums">{{ ow.competitors_analyzed }}</div>
-            <div class="text-[11px] text-kova-500 dark:text-kova-400 font-medium mt-0.5">Competitors analyzed</div>
-          </div>
-          {% endif %}
-          {% if ow.engagements_handled > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{{ ow.engagements_handled }}</div>
-            <div class="text-[11px] text-blue-500 dark:text-blue-400 font-medium mt-0.5">Engagements handled</div>
-          </div>
-          {% endif %}
-          {% if ow.posts_created > 0 and ow.posts_created != ow.posts_drafted %}
-          <div class="text-center py-3 px-2 rounded-lg bg-kova-50 dark:bg-kova-950/30">
-            <div class="text-2xl font-bold text-kova-600 dark:text-kova-400 tabular-nums">{{ ow.posts_created }}</div>
-            <div class="text-[11px] text-kova-500 dark:text-kova-400 font-medium mt-0.5">Ideas created</div>
-          </div>
-          {% endif %}
-          {% if ow.snap_launches > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-kova-50 dark:bg-kova-950/30">
-            <div class="text-2xl font-bold text-kova-600 dark:text-kova-400 tabular-nums">{{ ow.snap_launches }}</div>
-            <div class="text-[11px] text-kova-500 dark:text-kova-400 font-medium mt-0.5">Snap to Sell</div>
-          </div>
-          {% endif %}
-          {% if ow.batch_snaps > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-orange-50 dark:bg-orange-950/30">
-            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400 tabular-nums">{{ ow.batch_snaps }}</div>
-            <div class="text-[11px] text-orange-500 dark:text-orange-400 font-medium mt-0.5">Batch Snap</div>
-          </div>
-          {% endif %}
-          {% if ow.carousels_built > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-violet-50 dark:bg-violet-950/30">
-            <div class="text-2xl font-bold text-violet-600 dark:text-violet-400 tabular-nums">{{ ow.carousels_built }}</div>
-            <div class="text-[11px] text-violet-500 dark:text-violet-400 font-medium mt-0.5">Carousels built</div>
-          </div>
-          {% endif %}
-          {% if ow.reels_composed > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-rose-50 dark:bg-rose-950/30">
-            <div class="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">{{ ow.reels_composed }}</div>
-            <div class="text-[11px] text-rose-500 dark:text-rose-400 font-medium mt-0.5">Motion reels</div>
-          </div>
-          {% endif %}
-          {% if ow.receipt_scans > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-gold-50 dark:bg-gold-950/30">
-            <div class="text-2xl font-bold text-gold-600 dark:text-gold-400 tabular-nums">{{ ow.receipt_scans }}</div>
-            <div class="text-[11px] text-gold-500 dark:text-gold-400 font-medium mt-0.5">Receipt scans</div>
-          </div>
-          {% endif %}
-          {% if ow.products_restocked > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-growth-50 dark:bg-growth-950/30">
-            <div class="text-2xl font-bold text-growth-600 dark:text-growth-400 tabular-nums">{{ ow.products_restocked }}</div>
-            <div class="text-[11px] text-growth-500 dark:text-growth-400 font-medium mt-0.5">Units restocked</div>
-          </div>
-          {% endif %}
-          {% if ow.voice_briefs > 0 %}
-          <div class="text-center py-3 px-2 rounded-lg bg-sky-50 dark:bg-sky-950/30">
-            <div class="text-2xl font-bold text-sky-600 dark:text-sky-400 tabular-nums">{{ ow.voice_briefs }}</div>
-            <div class="text-[11px] text-sky-500 dark:text-sky-400 font-medium mt-0.5">Voice briefs</div>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-    {% endwith %}
-
-    {% include "briefs/_operations_report_lazy.html" %}
-
-    <div class="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
-      <!-- Main column -->
-      <div class="lg:col-span-2 space-y-6">
-        <div class="card shadow-kova dark:shadow-none border-kova-100 dark:border-kova-900/40">
-          <div class="card-body">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              </div>
-              <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Strategy check-in</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Your daily operating brief from Kova</p>
-              </div>
-            </div>
-            <div class="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0">
-              {{ brief.summary|linebreaks }}
-            </div>
-          </div>
-        </div>
-
-        {% if decisions_needed %}
-          <div class="card border-gold-200 dark:border-gold-800/60">
-            <div class="px-6 py-4 border-b border-gold-100 dark:border-gold-900/40 bg-gold-50/50 dark:bg-gold-950/20 rounded-t-xl">
-              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-gold-600 dark:text-gold-400" aria-hidden="true">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-                </span>
-                Needs your decision
-              </h3>
-              <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">Business calls only you can make — tap through or dismiss when done</p>
-            </div>
-            <ul id="decisions-list" class="divide-y divide-gold-100 dark:divide-gold-900/30">
-              {% for d in decisions_needed %}
-                {% if forloop.counter0 not in dismissed_decisions %}
-                <li id="decision-{{ forloop.counter0 }}" class="px-6 py-4">
-                  <div class="flex items-start gap-3">
-                    {% if d.urgency == "now" %}
-                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Now</span>
-                    {% elif d.urgency == "today" %}
-                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gold-100 text-gold-700 dark:bg-gold-950 dark:text-gold-300">Today</span>
-                    {% else %}
-                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">This week</span>
-                    {% endif %}
-                    <div class="min-w-0 flex-1">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ d.item }}</p>
-                      {% if d.context %}
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ d.context }}</p>
-                      {% endif %}
-                      {% if d.recommended_action %}
-                        <p class="text-xs text-kova-600 dark:text-kova-400 mt-1 font-medium">→ {{ d.recommended_action }}</p>
-                      {% endif %}
-                      {% if d.action_url %}
-                        <a href="{{ d.action_url }}" class="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-kova-600 dark:text-kova-400 hover:underline">
-                          Take action
-                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                        </a>
-                      {% endif %}
-                    </div>
-                    <form hx-post="{% url 'brief:dismiss_decision' %}"
-                          hx-target="#decision-{{ forloop.counter0 }}"
-                          hx-swap="outerHTML"
-                          class="shrink-0">
-                      {% csrf_token %}
-                      <input type="hidden" name="brief_id" value="{{ brief.id }}">
-                      <input type="hidden" name="item_index" value="{{ forloop.counter0 }}">
-                      <button type="submit" title="Dismiss"
-                              class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                      </button>
-                    </form>
-                  </div>
-                </li>
-                {% endif %}
-              {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
-
-        {# ── Agent plan — what the AI team is doing today ── #}
+        {# Agent plan #}
         {% with agent_plan=brief.performance_summary.agent_plan %}
         {% if agent_plan %}
-          <div class="card">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                </span>
-                What your agents are doing today
-              </h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Your AI team's plan — no action needed from you</p>
-            </div>
-            <ul class="divide-y divide-gray-100 dark:divide-gray-800">
-              {% for ap in agent_plan %}
-                <li class="px-6 py-4">
-                  <div class="flex items-start gap-3">
-                    <span class="mt-0.5 shrink-0 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">{{ ap.agent }}</span>
-                    <div class="min-w-0 flex-1">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ap.action }}</p>
-                      {% if ap.why %}
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ ap.why }}</p>
-                      {% endif %}
-                    </div>
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400 mb-3">Agent plan today</p>
+          <ul class="space-y-2">
+            {% for ap in agent_plan %}
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300 mt-0.5">{{ ap.agent }}</span>
+              <div class="min-w-0">
+                <p class="text-sm text-gray-900 dark:text-white">{{ ap.action }}</p>
+                {% if ap.why %}<p class="text-xs text-gray-500 dark:text-gray-400">{{ ap.why }}</p>{% endif %}
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
         {% endif %}
         {% endwith %}
 
+        {# Performance insight #}
         {% include "briefs/_performance_insight.html" %}
 
-        {# trending_topics is normalized in the view (platforms always a list) #}
+        {# While you slept — overnight work #}
+        {% with ow=brief.overnight_work %}
+        {% if ow.total_actions > 0 %}
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400 mb-3">While you slept — {{ ow.total_actions }} action{{ ow.total_actions|pluralize }}</p>
+          <div class="flex flex-wrap gap-3">
+            {% if ow.posts_drafted > 0 %}<span class="text-xs text-gray-600 dark:text-gray-400"><span class="font-bold text-gray-900 dark:text-white tabular-nums">{{ ow.posts_drafted }}</span> drafted</span>{% endif %}
+            {% if ow.posts_published > 0 %}<span class="text-xs text-gray-600 dark:text-gray-400"><span class="font-bold text-growth-600 dark:text-growth-400 tabular-nums">{{ ow.posts_published }}</span> published</span>{% endif %}
+            {% if ow.trends_found > 0 %}<span class="text-xs text-gray-600 dark:text-gray-400"><span class="font-bold text-gray-900 dark:text-white tabular-nums">{{ ow.trends_found }}</span> trends</span>{% endif %}
+            {% if ow.engagements_handled > 0 %}<span class="text-xs text-gray-600 dark:text-gray-400"><span class="font-bold text-gray-900 dark:text-white tabular-nums">{{ ow.engagements_handled }}</span> engagements</span>{% endif %}
+            {% if ow.competitors_analyzed > 0 %}<span class="text-xs text-gray-600 dark:text-gray-400"><span class="font-bold text-gray-900 dark:text-white tabular-nums">{{ ow.competitors_analyzed }}</span> competitors</span>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {# Trending topics #}
         {% if trending_topics %}
-          <div class="card">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                </span>
-                Trending in your niche
-              </h3>
-              <div class="flex items-center justify-between mt-1">
-                <p class="text-xs text-gray-500 dark:text-gray-400">Topics your Research Agent is watching</p>
-                {# research_updated_at is a datetime object from the view (not a raw JSON string) #}
-                {% if research_updated_at %}
-                  <span class="text-[10px] text-gray-400 dark:text-gray-500">Updated {{ research_updated_at|timesince }} ago</span>
-                {% else %}
-                  <span class="text-[10px] text-gold-500 dark:text-gold-400">Trend data pending refresh</span>
-                {% endif %}
-              </div>
-            </div>
-            <div class="card-body pt-4">
-              <ul class="space-y-3">
-                {% for topic in trending_topics %}
-                  <li class="flex items-start gap-3">
-                    {% if topic.urgency == "high" %}
-                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Hot</span>
-                    {% elif topic.urgency == "medium" %}
-                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gold-100 text-gold-700 dark:bg-gold-950 dark:text-gold-300">Warm</span>
-                    {% else %}
-                      <span class="mt-0.5 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">New</span>
-                    {% endif %}
-                    <div class="min-w-0 flex-1">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ topic.topic|default:topic }}</p>
-                      {% if topic.relevance %}
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ topic.relevance }}</p>
-                      {% endif %}
-                      {% if topic.suggested_angle %}
-                        <p class="text-xs text-kova-600 dark:text-kova-400 mt-1">Angle: {{ topic.suggested_angle }}</p>
-                      {% endif %}
-                      {# Platform tags — topic.platforms is normalized to a list in the view #}
-                      {% if topic.platforms %}
-                        <div class="flex flex-wrap gap-1 mt-1.5">
-                          {% for p in topic.platforms %}
-                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{{ p }}</span>
-                          {% endfor %}
-                        </div>
-                      {% endif %}
-                      <div class="mt-2 flex flex-wrap items-center gap-3">
-                      <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="inline-flex">
-                        {% csrf_token %}
-                        <input type="hidden" name="idea" value="Trending topic: {{ topic.topic|default:topic }}{% if topic.suggested_angle %} — Angle: {{ topic.suggested_angle }}{% endif %}">
-                        <input type="hidden" name="context" value="{{ topic.relevance|default:'' }}">
-                        <input type="hidden" name="action_type" value="trend">
-                        <input type="hidden" name="platform_hint" value="{{ topic.platforms|join:',' }}">
-                        <button type="submit" class="inline-flex items-center gap-1 text-xs font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
-                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                          Create content
-                        </button>
-                      </form>
-                      </div>
-                    </div>
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
-        {% endif %}
-
-        {% if brief.suggested_posts %}
-          <div class="card">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="text-kova-600 dark:text-kova-400" aria-hidden="true">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-                </span>
-                Suggested content ideas
-              </h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Based on what's working for your brand</p>
-            </div>
-            <ul class="divide-y divide-gray-100 dark:divide-gray-800">
-              {% for suggestion in brief.suggested_posts %}
-                <li class="px-6 py-4">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ suggestion.idea }}</p>
-                  {% if suggestion.reasoning %}
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ suggestion.reasoning }}</p>
-                  {% endif %}
-                  <div class="flex flex-wrap items-center gap-2 mt-2">
-                    {% if suggestion.platform %}
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ suggestion.platform }}</span>
-                    {% endif %}
-                    {% if suggestion.content_type %}
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-kova-50 dark:bg-kova-950 text-kova-700 dark:text-kova-300">{{ suggestion.content_type }}</span>
-                    {% endif %}
-                    {% if suggestion.timing %}
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300">{{ suggestion.timing }}</span>
-                    {% endif %}
-                    <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="ml-auto">
-                      {% csrf_token %}
-                      <input type="hidden" name="idea" value="{{ suggestion.idea }}">
-                      <input type="hidden" name="context" value="{{ suggestion.reasoning|default:'' }}">
-                      <input type="hidden" name="action_type" value="suggestion">
-                      <input type="hidden" name="platform_hint" value="{{ suggestion.platform|default:'' }}">
-                      <button type="submit" class="inline-flex items-center gap-1 text-xs font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Create this
-                      </button>
-                    </form>
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
-      </div>
-
-      <!-- Side column: momentum + actions + stats + history -->
-      <div class="space-y-6 mt-6 lg:mt-0">
-
-        {% include "briefs/_customer_pulse.html" %}
-
-        {# ── Momentum — 14-day posting consistency ── #}
-        {% if momentum %}
-        <div class="card">
-          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-2">
-              
-              Momentum
-            </h3>
-          </div>
-          <div class="card-body space-y-4">
-            {# Posting consistency bar chart #}
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400">14-day posting</span>
-                <span class="text-xs font-bold {% if momentum.trend_direction == 'up' %}text-green-600 dark:text-green-400{% elif momentum.trend_direction == 'down' %}text-red-600 dark:text-red-400{% else %}text-gray-500{% endif %}">
-                  {% if momentum.trend_direction == "up" %}↑{% elif momentum.trend_direction == "down" %}↓{% else %}→{% endif %}
-                  {{ momentum.trend_pct }}% vs last week
-                </span>
-              </div>
-              <div class="flex items-end gap-0.5 h-10">
-                {% for day in momentum.days %}
-                  <div class="flex-1 rounded-t {% if day.count > 0 %}bg-kova-500 dark:bg-kova-400{% else %}bg-gray-200 dark:bg-gray-700{% endif %} transition-all"
-                       style="height: {% if day.count > 0 %}{% widthratio day.count momentum.max_count 100 %}%{% else %}15%{% endif %}; min-height: 4px;"
-                       title="{{ day.date }}: {{ day.count }} post{{ day.count|pluralize }}">
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-            {# Stats #}
-            <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Consistency</span>
-              <span class="text-sm font-bold tabular-nums {% if momentum.consistency_pct >= 50 %}text-green-600 dark:text-green-400{% elif momentum.consistency_pct >= 25 %}text-gold-600 dark:text-gold-400{% else %}text-gray-500{% endif %}">{{ momentum.consistency_pct }}%</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">This week</span>
-              <span class="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{{ momentum.this_week_total }} post{{ momentum.this_week_total|pluralize }}</span>
-            </div>
-          </div>
-        </div>
-        {% endif %}
-
-        {# ── Value-delivered summary (what Kova did this week) ── #}
-        {% include "briefs/_value_summary.html" %}
-
-        {# Pipeline status card #}
-        <div class="card">
-          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Pipeline status</h3>
-          </div>
-          <div class="card-body space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Scheduled</span>
-              <span class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{{ scheduled_count }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Published today</span>
-              <span class="text-sm font-semibold text-green-600 dark:text-green-400 tabular-nums">{{ published_today }}</span>
-            </div>
-            {% if failed_count > 0 %}
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-red-600 dark:text-red-400">Failed</span>
-              <a href="{% url 'content:queue' %}" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline tabular-nums">{{ failed_count }}</a>
-            </div>
-            {% endif %}
-            <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
-              <a href="{% url 'content:queue' %}" class="text-sm text-kova-600 dark:text-kova-400 font-medium hover:underline">View queue &rarr;</a>
-            </div>
-          </div>
-        </div>
-
-        {# ── Profile Health alerts (profile_audit) ── #}
-        {% if profile_health_alerts %}
-        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gold-200 dark:border-gold-900/40 p-4">
-          <h3 class="text-xs font-semibold text-gold-700 dark:text-gold-300 uppercase tracking-wider flex items-center gap-1.5 mb-3">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-            Profile health
-          </h3>
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400 mb-3">Trending in your niche</p>
           <ul class="space-y-2">
-            {% for alert in profile_health_alerts %}
-            <li>
-              <a href="{% url 'profile_audit:detail' alert.account_id %}" class="flex items-center justify-between gap-3 -mx-2 px-2 py-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white capitalize">{{ alert.platform }}</p>
-                  <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                    {{ alert.score }}/100
-                    {% if alert.pending %} · <span class="text-kova-600 dark:text-kova-400 font-medium">{{ alert.pending }} suggestion{{ alert.pending|pluralize }}</span>{% endif %}
-                  </p>
-                </div>
-                <span class="text-xs text-gold-600 dark:text-gold-400 shrink-0">Review →</span>
-              </a>
-            </li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
-
-        {# ── Upcoming holidays / cultural moments (calendar_intel) ── #}
-        {% if upcoming_moments or holiday_drafts_ready %}
-          {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments holiday_drafts_ready=holiday_drafts_ready ready_moment_packs=ready_moment_packs %}
-        {% endif %}
-
-        {% if superfans %}
-        <div class="card">
-          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
-
-            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Superfans to Acknowledge</h3>
-          </div>
-          <ul class="divide-y divide-gray-100 dark:divide-gray-800">
-            {% for fan in superfans %}
-            <li class="px-6 py-3 flex items-center gap-3">
-              
+            {% for topic in trending_topics %}
+            <li class="flex items-start gap-2">
+              {% if topic.urgency == "high" %}
+              <span class="mt-0.5 shrink-0 w-2 h-2 rounded-full bg-red-500"></span>
+              {% elif topic.urgency == "medium" %}
+              <span class="mt-0.5 shrink-0 w-2 h-2 rounded-full bg-gold-500"></span>
+              {% else %}
+              <span class="mt-0.5 shrink-0 w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+              {% endif %}
               <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ fan.author_name }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ fan.interaction_count }} interactions · {{ fan.get_tier_display }}</p>
+                <p class="text-sm text-gray-900 dark:text-white">{{ topic.topic|default:topic }}</p>
+                {% if topic.suggested_angle %}<p class="text-xs text-gray-500 dark:text-gray-400">{{ topic.suggested_angle }}</p>{% endif %}
+                <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="inline-flex mt-1">
+                  {% csrf_token %}
+                  <input type="hidden" name="idea" value="Trending topic: {{ topic.topic|default:topic }}{% if topic.suggested_angle %} — Angle: {{ topic.suggested_angle }}{% endif %}">
+                  <input type="hidden" name="context" value="{{ topic.relevance|default:'' }}">
+                  <input type="hidden" name="action_type" value="trend">
+                  <input type="hidden" name="platform_hint" value="{{ topic.platforms|join:',' }}">
+                  <button type="submit" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">+ Create content</button>
+                </form>
               </div>
             </li>
             {% endfor %}
           </ul>
-          <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-800">
-            <a href="{% url 'engage:inbox' %}" class="text-sm text-kova-600 dark:text-kova-400 font-medium hover:underline">View inbox &rarr;</a>
+        </div>
+        {% endif %}
+
+        {# Suggested content ideas #}
+        {% if brief.suggested_posts %}
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400 mb-3">Content ideas</p>
+          <ul class="space-y-2">
+            {% for suggestion in brief.suggested_posts %}
+            <li class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm text-gray-900 dark:text-white">{{ suggestion.idea }}</p>
+                {% if suggestion.reasoning %}<p class="text-xs text-gray-500 dark:text-gray-400">{{ suggestion.reasoning }}</p>{% endif %}
+              </div>
+              <form hx-post="{% url 'brief:action' %}" hx-swap="outerHTML" class="shrink-0">
+                {% csrf_token %}
+                <input type="hidden" name="idea" value="{{ suggestion.idea }}">
+                <input type="hidden" name="context" value="{{ suggestion.reasoning|default:'' }}">
+                <input type="hidden" name="action_type" value="suggestion">
+                <input type="hidden" name="platform_hint" value="{{ suggestion.platform|default:'' }}">
+                <button type="submit" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline">+ Create</button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        {# Pipeline + quick stats #}
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p class="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{{ scheduled_count }}</p>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Scheduled</p>
+            </div>
+            <div>
+              <p class="text-xl font-bold text-growth-600 dark:text-growth-400 tabular-nums">{{ published_today }}</p>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Published today</p>
+            </div>
+            <div>
+              <p class="text-xl font-bold {% if failed_count > 0 %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %} tabular-nums">{{ failed_count }}</p>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Failed</p>
+            </div>
+          </div>
+        </div>
+
+        {# Superfans #}
+        {% if superfans %}
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400">Superfans</p>
+            <a href="{% url 'engage:inbox' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View inbox →</a>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {% for fan in superfans %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300">
+              {{ fan.author_name }} <span class="text-gray-400">·</span> {{ fan.interaction_count }}
+            </span>
+            {% endfor %}
           </div>
         </div>
         {% endif %}
 
+        {# Upcoming holidays #}
+        {% if upcoming_moments or holiday_drafts_ready %}
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          {% include "calendar_intel/partials/_upcoming_widget.html" with moments=upcoming_moments holiday_drafts_ready=holiday_drafts_ready ready_moment_packs=ready_moment_packs %}
+        </div>
+        {% endif %}
+
+        {# Past briefs #}
         {% if recent_briefs %}
-          <div class="card">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Previous briefs</h3>
-            </div>
-            <ul class="divide-y divide-gray-100 dark:divide-gray-800">
-              {% for rb in recent_briefs %}
-                <li>
-                  <a href="{% url 'brief:detail' rb.date|date:'Y-m-d' %}"
-                     class="flex items-center justify-between gap-2 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ rb.date|date:"M j, Y" }}</span>
-                    <div class="flex items-center gap-2">
-                      {% if rb.kova_score > 0 %}
-                        <span class="text-xs font-bold tabular-nums {% if rb.kova_score >= 70 %}text-green-600 dark:text-green-400{% elif rb.kova_score >= 40 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ rb.kova_score }}</span>
-                      {% endif %}
-                      {% if rb.kova_score_delta > 0 %}
-                        <span class="text-[10px] font-bold text-green-500">↑</span>
-                      {% elif rb.kova_score_delta < 0 %}
-                        <span class="text-[10px] font-bold text-red-400">↓</span>
-                      {% endif %}
-                      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </div>
-                  </a>
-                </li>
-              {% endfor %}
-            </ul>
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Previous briefs</p>
+          <div class="flex flex-wrap gap-2">
+            {% for rb in recent_briefs %}
+            <a href="{% url 'brief:detail' rb.date|date:'Y-m-d' %}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300 hover:border-kova-300 dark:hover:border-kova-600 transition-colors">
+              {{ rb.date|date:"M j" }}
+              {% if rb.kova_score > 0 %}
+              <span class="font-bold tabular-nums {% if rb.kova_score >= 70 %}text-growth-600 dark:text-growth-400{% elif rb.kova_score >= 40 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ rb.kova_score }}</span>
+              {% endif %}
+            </a>
+            {% endfor %}
           </div>
+        </div>
         {% endif %}
       </div>
-    </div>
+    </details>
+
+    {# ━━━ 4. WHAT KOVA LEARNED (collapsed) ━━━ #}
+    {% with ps=brief.performance_summary %}
+    {% if ps.adapt_update or agent_activity %}
+    <details class="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none select-none hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-colors">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-growth-50 dark:bg-growth-950/30 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">What Kova learned</p>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">AI adaptations and agent activity</p>
+          </div>
+        </div>
+        <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+
+      <div class="px-5 pb-5 space-y-4 border-t border-gray-100 dark:border-gray-800 pt-5">
+        {% if ps.adapt_update %}
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-growth-600 dark:text-growth-400 mb-2">Adapt Agent learning</p>
+          <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ ps.adapt_update }}</p>
+        </div>
+        {% endif %}
+
+        {% if agent_activity %}
+        <div class="{% if ps.adapt_update %}border-t border-gray-100 dark:border-gray-800 pt-4{% endif %}">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Agent activity (24h)</p>
+          <div class="flex flex-wrap gap-3">
+            {% for agent in agent_activity %}
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+              <span class="text-xs font-bold
+                {% if agent.agent == 'create' %}text-growth-600 dark:text-growth-400
+                {% elif agent.agent == 'engage' %}text-gold-600 dark:text-gold-400
+                {% elif agent.agent == 'research' %}text-kova-600 dark:text-kova-400
+                {% else %}text-gray-600 dark:text-gray-400{% endif %}">{{ agent.label }}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{ agent.count }} {{ agent.verb }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </details>
+    {% endif %}
+    {% endwith %}
+
+    {# Onboarding: wedge checklist (money loop) takes priority over generic setup mission #}
+    {% include "briefs/_wedge_checklist.html" %}
+    {% if not wedge_checklist %}{% include "briefs/_setup_checklist.html" %}{% endif %}
 
   {% else %}
-    <div class="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
-      <div class="lg:col-span-2 space-y-6">
-        <div class="card max-w-none">
-          <div class="card-body py-10 px-6 sm:px-10 text-center">
-            <div class="w-14 h-14 mx-auto rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center mb-5">
-              <svg class="w-7 h-7 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-            </div>
-            {% if not strategist_active %}
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Enable your Chief Strategist</h2>
-              <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
-                Kova's daily brief is your business operating rhythm — strategy, decisions, and your one move for the day.
-                Turn on the Chief Strategist agent to start receiving it at {{ request.user.daily_brief_time|time:"g:i A" }}.
-              </p>
-              <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-                <a href="{% url 'agents:control' %}" class="btn-primary">Enable Chief Strategist</a>
-              </div>
-            {% elif not has_connected_platform %}
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Morning, {{ greeting_name }} — let's get you connected</h2>
-              <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
-                Your AI team is ready to run content, engagement, leads, and revenue tracking —
-                but they need at least one social account connected first.
-              </p>
-              <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-                <a href="{% url 'platforms:list' %}" class="btn-primary">Connect a platform</a>
-                <a href="{% url 'content:studio' %}" class="btn-secondary">Open Studio</a>
-              </div>
+    {# ━━━ NO BRIEF STATE ━━━ #}
+
+    {# Score bar still shows if we have any data #}
+    {% include "briefs/_score_bar.html" %}
+
+    {# Decision stream works without a brief — it queries live data #}
+    <div>
+      <div class="flex items-center justify-between px-1 mb-2">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+          {% if stream_items %}{{ stream_items|length }} item{{ stream_items|length|pluralize }} need{{ stream_items|length|pluralize:"s," }} attention{% else %}Decision stream{% endif %}
+        </h2>
+      </div>
+      {% include "briefs/_decision_stream.html" %}
+    </div>
+
+    <div class="card max-w-none">
+      <div class="card-body py-8 px-6 text-center">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </div>
+        {% if not strategist_active %}
+          <h2 class="text-lg font-bold text-gray-900 dark:text-white">Enable your Chief Strategist</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-md mx-auto">
+            Turn on the Chief Strategist to receive daily strategy briefs at {{ request.user.daily_brief_time|time:"g:i A" }}.
+          </p>
+          <a href="{% url 'agents:control' %}" class="btn-primary mt-4 inline-flex">Enable Chief Strategist</a>
+        {% elif not has_connected_platform %}
+          <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ segment_surface.today_title|default:"Morning" }}, {{ greeting_name }}</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-md mx-auto">
+            Connect at least one social account so your AI team can start working.
+          </p>
+          <a href="{% url 'platforms:list' %}" class="btn-primary mt-4 inline-flex">Connect a platform</a>
+        {% else %}
+          <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ segment_surface.today_title|default:"Morning" }}, {{ greeting_name }}</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-md mx-auto">
+            {% if brief_time_passed %}
+              {{ segment_surface.today_description|default:"Today's brief is being prepared — check back shortly." }}
             {% else %}
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Morning, {{ greeting_name }}</h2>
-              <p class="text-gray-600 dark:text-gray-400 mt-3 max-w-lg mx-auto text-sm leading-relaxed">
-                {% if brief_time_passed %}
-                  Today's brief is being prepared. Your live customer signals and pipeline are updating below —
-                  check back shortly or explore Create and Customers in the meantime.
-                {% else %}
-                  Your morning brief arrives at {{ request.user.daily_brief_time|time:"g:i A" }}.
-                  Until then, use the live signals on the right to stay on top of customers and content.
-                {% endif %}
-              </p>
-              <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-                <a href="{% url 'content:studio' %}" class="btn-primary">Create content</a>
-                <a href="{% url 'engage:inbox' %}" class="btn-secondary">Check inbox</a>
-              </div>
+              Your brief arrives at {{ request.user.daily_brief_time|time:"g:i A" }}.
+            {% endif %}
+          </p>
+          <div class="flex gap-3 justify-center mt-4">
+            {% if segment_surface.today_actions %}
+              {% for action in segment_surface.today_actions %}
+              <a href="{% url action.url_name %}" class="{% if forloop.first %}btn-primary{% else %}btn-secondary{% endif %}">{{ action.label }}</a>
+              {% endfor %}
+            {% else %}
+              <a href="{% url 'content:studio' %}" class="btn-primary">Create content</a>
+              <a href="{% url 'engage:inbox' %}" class="btn-secondary">Check inbox</a>
             {% endif %}
           </div>
-        </div>
-
-        {% if quick_actions %}
-        <div class="flex flex-wrap items-center gap-3 px-1">
-          <span class="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Needs attention</span>
-          {% for action in quick_actions %}
-            <a href="{% url action.url_name %}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:border-kova-300 dark:hover:border-kova-600 hover:shadow-sm transition-all">
-              {{ action.label }}
-            </a>
-          {% endfor %}
-        </div>
         {% endif %}
       </div>
-
-      <div class="space-y-6 mt-6 lg:mt-0">
-        {% include "briefs/_customer_pulse.html" %}
-        {% if momentum %}
-        <div class="card">
-          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Momentum</h3>
-          </div>
-          <div class="card-body space-y-4">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Consistency (14d)</span>
-              <span class="text-sm font-bold tabular-nums text-gray-900 dark:text-white">{{ momentum.consistency_pct }}%</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Published this week</span>
-              <span class="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{{ momentum.this_week_total }}</span>
-            </div>
-          </div>
-        </div>
-        {% endif %}
-        <div class="card">
-          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Pipeline status</h3>
-          </div>
-          <div class="card-body space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Scheduled</span>
-              <span class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{{ scheduled_count }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Published today</span>
-              <span class="text-sm font-semibold text-green-600 dark:text-green-400 tabular-nums">{{ published_today }}</span>
-            </div>
-            {% if failed_count > 0 %}
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-red-600 dark:text-red-400">Failed</span>
-              <a href="{% url 'content:queue' %}" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline tabular-nums">{{ failed_count }}</a>
-            </div>
-            {% endif %}
-            <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
-              <a href="{% url 'content:queue' %}" class="text-sm text-kova-600 dark:text-kova-400 font-medium hover:underline">View queue →</a>
-            </div>
-          </div>
-        </div>
-        {% include "briefs/_value_summary.html" %}
-      </div>
     </div>
+
+    {% include "briefs/_wedge_checklist.html" %}
+    {% if not wedge_checklist %}{% include "briefs/_setup_checklist.html" %}{% endif %}
   {% endif %}
 
-  {% if today_compact %}
-    </div>
-  </div>
-  {% endif %}
 </div>
 
 {% include "calendar_intel/_moment_pack_modal.html" %}

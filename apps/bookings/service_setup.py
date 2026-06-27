@@ -127,3 +127,29 @@ def booking_public_url(link: BookingLink) -> str:
     site = getattr(settings, "SITE_URL", "").rstrip("/")
     path = reverse("bookings:public_book", kwargs={"slug": link.slug})
     return f"{site}{path}"
+
+
+def bootstrap_service_booking_link(user) -> BookingLink:
+    """Ensure service businesses have a bookable page with starter services."""
+    profile = getattr(user, "profile", None)
+    link = ensure_primary_booking_link(
+        user,
+        label=(profile.company_name if profile else "") or "Book with us",
+        industry=(profile.industry if profile else "generic") or "generic",
+    )
+    if link.services:
+        return link
+
+    offerings = [o.strip() for o in (profile.key_offerings or []) if (o or "").strip()][:5]
+    if offerings:
+        link.services = [
+            {"name": name[:200], "duration_minutes": DEFAULT_SERVICE_DURATION, "price_kes": 0}
+            for name in offerings
+        ]
+    else:
+        link.services = [
+            {"name": "Consultation", "duration_minutes": 60, "price_kes": 0},
+            {"name": "Standard appointment", "duration_minutes": DEFAULT_SERVICE_DURATION, "price_kes": 0},
+        ]
+    link.save(update_fields=["services", "updated_at"])
+    return link

@@ -18,7 +18,7 @@
           <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ broadcast.name }}</h2>
           <div class="flex items-center gap-2 mt-1">
             {% if broadcast.status == 'completed' %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Completed</span>
             {% elif broadcast.status == 'sending' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Sending…</span>
             {% elif broadcast.status == 'scheduled' %}
@@ -58,7 +58,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Recipients</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ broadcast.sent_count }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ broadcast.sent_count }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Sent</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -91,7 +91,7 @@
   <div class="card">
     <div class="card-body">
       <h3 class="font-medium text-gray-900 dark:text-white mb-2">Template Preview</h3>
-      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-sm">
+      <div class="bg-growth-50 dark:bg-growth-900/20 rounded-lg p-4 text-sm">
         {% if broadcast.template.header_text %}
           <p class="font-bold text-gray-900 dark:text-white mb-1">{{ broadcast.template.header_text }}</p>
         {% endif %}

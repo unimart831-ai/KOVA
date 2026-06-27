@@ -16,7 +16,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">LLM Calls (24h)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold {% if stats_24h.failed > 0 %}text-red-600 dark:text-red-400{% else %}text-green-600 dark:text-green-400{% endif %}">{{ stats_24h.failed|default:"0" }}</p>
+    <p class="text-2xl font-bold {% if stats_24h.failed > 0 %}text-red-600 dark:text-red-400{% else %}text-growth-600 dark:text-growth-400{% endif %}">{{ stats_24h.failed|default:"0" }}</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Failed (24h)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
@@ -215,7 +215,7 @@
           </div>
           <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Fast
+              <span class="inline-block w-2 h-2 rounded-full bg-growth-500 mr-1"></span>Fast
               <span class="text-[10px] text-gray-400">(classification, scoring)</span>
             </label>
             <input type="text" name="model_fast" value="{{ config.model_fast }}"
@@ -306,7 +306,7 @@
                 <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Workhorse (Reasoning)
               </th>
               <th class="text-left px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Fast (Classification)
+                <span class="inline-block w-2 h-2 rounded-full bg-growth-500 mr-1"></span>Fast (Classification)
               </th>
               <th class="text-center px-3 py-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Preset</th>
             </tr>
@@ -333,7 +333,7 @@
               <td class="px-3 py-3">
                 <input type="text" name="{{ plan.code }}_fast" value="{{ plan.fast }}"
                        placeholder="{{ config.model_fast }}"
-                       class="w-full text-xs font-mono rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 {% if plan.fast %}ring-1 ring-green-400 dark:ring-green-600{% endif %}">
+                       class="w-full text-xs font-mono rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-kova-500 focus:border-kova-500 {% if plan.fast %}ring-1 ring-growth-400 dark:ring-growth-600{% endif %}">
               </td>
               <td class="px-3 py-3 text-center">
                 <div class="flex flex-col gap-1">
@@ -427,7 +427,7 @@
     {% for task in task_config %}
     <div class="px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <div class="flex items-center space-x-3">
-        <span class="w-2 h-2 rounded-full {% if task.tier == 'premium' %}bg-kova-500{% elif task.tier == 'workhorse' %}bg-blue-500{% else %}bg-green-500{% endif %}"></span>
+        <span class="w-2 h-2 rounded-full {% if task.tier == 'premium' %}bg-kova-500{% elif task.tier == 'workhorse' %}bg-blue-500{% else %}bg-growth-500{% endif %}"></span>
         <div>
           <p class="text-sm font-medium text-gray-900 dark:text-white">{{ task.label }}</p>
           <p class="text-[10px] text-gray-400 font-mono">{{ task.key }} &middot; tier: {{ task.tier }}</p>
@@ -518,7 +518,7 @@
             <td class="px-4 py-2.5 font-mono text-gray-900 dark:text-white">{{ row.model_used|truncatechars:40 }}</td>
             <td class="px-3 py-2.5 text-right text-gray-700 dark:text-gray-300">{{ row.calls }}</td>
             <td class="px-3 py-2.5 text-right">
-              <span class="{% if row.failures == 0 %}text-green-600 dark:text-green-400{% elif row.failures > row.successes %}text-red-600 dark:text-red-400{% else %}text-gold-600 dark:text-gold-400{% endif %}">
+              <span class="{% if row.failures == 0 %}text-growth-600 dark:text-growth-400{% elif row.failures > row.successes %}text-red-600 dark:text-red-400{% else %}text-gold-600 dark:text-gold-400{% endif %}">
                 {{ row.successes }}/{{ row.calls }}
               </span>
             </td>
@@ -816,7 +816,7 @@
         </h2>
         <p class="text-[10px] text-gray-400 mt-0.5">AI image models, per-plan routing, and fallback chain. Changes take effect immediately.</p>
       </div>
-      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold {% if config.image_enabled %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400{% else %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400{% endif %}">
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold {% if config.image_enabled %}bg-growth-100 text-growth-700 dark:bg-growth-900/40 dark:text-growth-400{% else %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400{% endif %}">
         {% if config.image_enabled %}ENABLED{% else %}DISABLED{% endif %}
       </span>
     </div>
@@ -924,7 +924,7 @@
             {% for model_id, description in models %}
             <div class="flex items-start gap-2 group/item cursor-pointer" onclick="navigator.clipboard.writeText('{{ model_id }}');this.querySelector('.copy-ok').classList.remove('hidden');setTimeout(()=>this.querySelector('.copy-ok').classList.add('hidden'),1500)">
               <code class="text-[10px] text-kova-600 dark:text-kova-400 font-mono break-all flex-1">{{ model_id }}</code>
-              <span class="copy-ok hidden text-[9px] text-green-600 whitespace-nowrap">✓ copied</span>
+              <span class="copy-ok hidden text-[9px] text-growth-600 whitespace-nowrap">✓ copied</span>
             </div>
             <p class="text-[10px] text-gray-400 dark:text-gray-500 -mt-0.5 ml-0">{{ description }}</p>
             {% endfor %}

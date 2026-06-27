@@ -129,7 +129,8 @@ class PlanEnforcementMiddleware:
         if limits.get("whatsapp_inbox_enabled"):
             return plan_limit_redirect(
                 request,
-                "WhatsApp broadcasts require Agency. Contact sales for Wakala access.",
+                "WhatsApp broadcasts, Status Studio, and channels require Agency (Wakala). "
+                "Kova includes WhatsApp inbox + lead capture.",
                 "whatsapp:inbox",
             )
         return plan_limit_redirect(
@@ -149,7 +150,7 @@ class PlanEnforcementMiddleware:
         full_name = f"{namespace}:{url_name}" if namespace else url_name
 
         # ── Subscription paywall (expired trial / lapsed period) ──
-        if request.method == "POST" and not is_subscription_exempt_url(full_name):
+        if not is_subscription_exempt_url(full_name):
             allowed, msg = subscription_allows_app_access(request.user)
             if not allowed:
                 return plan_limit_redirect(request, msg, "billing:pricing")

@@ -96,11 +96,23 @@ def health_check(request):
     return HttpResponse("ok", content_type="text/plain")
 
 
+def health_check_deep(request):
+    """Deep probe — DB, Redis, Celery broker, media/LLM keys."""
+    from django.http import JsonResponse
+
+    from apps.system.health_checks import run_health_checks
+
+    report = run_health_checks(deep=True)
+    status = 200 if report.get("ok") else 503
+    return JsonResponse(report, status=status)
+
+
 urlpatterns = [
     # Favicon — redirect to static icon to eliminate 404 noise
     path("favicon.ico", RedirectView.as_view(url="/static/images/icon-192.png", permanent=True)),
     # Health check (before auth — no login required)
     path("health/", health_check, name="health"),
+    path("health/deep/", health_check_deep, name="health_deep"),
     # Landing
     path("", landing_page, name="landing"),
     path("start/", landing_start, name="landing_start"),

@@ -173,7 +173,7 @@ class TestMoneyProvedKPI:
         client.force_login(pro_user)
         resp = client.get(reverse("brief:home"))
         assert resp.status_code == 200
-        assert b"Money proved this week" in resp.content
+        assert b"KES" in resp.content
 
 
 @pytest.mark.django_db

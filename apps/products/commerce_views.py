@@ -199,8 +199,17 @@ def public_shop_index(request, page_slug):
     shop_testimonials = shop_public_testimonials(user)
     portfolio_items = portfolio_items_for_shop(user) if storefront.get("show_portfolio") else []
     service_products = service_offerings_for_shop(products) if storefront.get("business_model") == "service" else []
+    booking_url = ""
+    if storefront.get("show_bookings_cta"):
+        from django.urls import reverse
+
+        booking_link = user.booking_links.filter(is_active=True).first()
+        if booking_link:
+            booking_url = request.build_absolute_uri(
+                reverse("bookings:public_book", kwargs={"slug": booking_link.slug})
+            )
     body_extra = " ".join(filter(None, [
-        "kc-shop--sticky" if commerce_ctx.get("wa_url") and products else "",
+        "kc-shop--sticky" if (commerce_ctx.get("wa_url") or booking_url) and products else "",
     ]))
 
     return render(request, "products/public/shop_index.html", {
@@ -235,6 +244,7 @@ def public_shop_index(request, page_slug):
         "shop_testimonials": shop_testimonials,
         "portfolio_items": portfolio_items,
         "service_products": service_products,
+        "booking_url": booking_url,
         **commerce_ctx,
         **seo,
     })

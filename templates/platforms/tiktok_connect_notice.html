@@ -1,0 +1,33 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Connect TikTok{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <div class="card border-gold-200 dark:border-gold-800">
+    <div class="card-body space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gold-100 dark:bg-gold-950 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-gold-700 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Before you connect TikTok</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            TikTok requires app approval before third-party tools can publish <strong>public</strong> videos.
+            Until approval completes, posts from Kova may publish as <strong>private</strong> (visible only to you).
+          </p>
+          <ul class="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+            <li>· You can still draft and schedule TikTok content in Kova</li>
+            <li>· For public reach today, connect Instagram or Facebook first</li>
+            <li>· We poll TikTok and update your post link when processing finishes</li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <a href="{{ connect_url }}" class="btn-primary text-center">I understand — connect TikTok</a>
+        <a href="{% url 'platforms:list' %}" class="btn-secondary text-center">Back to Platforms</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

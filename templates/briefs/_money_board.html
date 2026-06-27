@@ -7,7 +7,7 @@
     <span class="text-[10px] font-bold uppercase tracking-wider text-growth-700 dark:text-growth-400">Money proved this week</span>
     <span class="text-2xl font-black tabular-nums text-gray-900 dark:text-white group-hover:text-growth-700 dark:group-hover:text-growth-300">KES {{ revenue_stat.current_kes|floatformat:0 }}</span>
     {% if revenue_stat.direction == 'up' %}
-    <span class="text-xs font-semibold text-green-600 dark:text-green-400">+{{ revenue_stat.delta_pct|floatformat:0 }}% vs last week</span>
+    <span class="text-xs font-semibold text-growth-600 dark:text-growth-400">+{{ revenue_stat.delta_pct|floatformat:0 }}% vs last week</span>
     {% elif revenue_stat.direction == 'down' %}
     <span class="text-xs font-semibold text-red-600 dark:text-red-400">{{ revenue_stat.delta_pct|floatformat:0 }}% vs last week</span>
     {% endif %}

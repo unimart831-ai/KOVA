@@ -7,6 +7,7 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
+  {% include "whatsapp/_whatsapp_tabs.html" %}
 
   {# Stats #}
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -15,7 +16,7 @@
       <p class="text-xs text-gray-500 dark:text-gray-400">Broadcasts</p>
     </div>
     <div class="card px-4 py-3 text-center">
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.active_sequences }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ stats.active_sequences }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">Active Sequences</p>
     </div>
     <div class="card px-4 py-3 text-center">
@@ -90,7 +91,7 @@
               <span class="font-medium text-gray-900 dark:text-white">{{ bc.name }}</span>
               <div class="flex items-center gap-2 mt-0.5">
                 {% if bc.status == 'completed' %}
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Completed</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Completed</span>
                 {% elif bc.status == 'sending' %}
                   <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Sending</span>
                 {% elif bc.status == 'scheduled' %}
@@ -127,7 +128,7 @@
             <span class="font-medium text-gray-900 dark:text-white">{{ seq.name }}</span>
             <div class="flex items-center gap-2 mt-0.5">
               {% if seq.status == 'active' %}
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Active</span>
               {% elif seq.status == 'paused' %}
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">Paused</span>
               {% else %}

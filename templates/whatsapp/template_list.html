@@ -7,6 +7,7 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
+  {% include "whatsapp/_whatsapp_tabs.html" %}
 
   {# Create Template Card #}
   <div class="card" x-data="{ mode: 'ai', open: false }">
@@ -138,7 +139,7 @@
                 <h4 class="font-medium text-gray-900 dark:text-white">{{ tpl.name }}</h4>
                 {# Status badge #}
                 {% if tpl.status == 'approved' %}
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Approved</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Approved</span>
                 {% elif tpl.status == 'rejected' %}
                   <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Rejected</span>
                 {% elif tpl.status == 'submitted' %}

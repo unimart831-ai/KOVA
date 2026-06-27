@@ -235,7 +235,7 @@ class TestPublicShopPages:
         user.profile.page_slug = "branded-shop"
         user.profile.company_name = "Branded Co"
         user.profile.brand_logo_url = "https://cdn.example.com/logo.png"
-        user.profile.brand_colors = ["#7c3aed"]
+        user.profile.brand_colors = ["#1E3A8A"]
         user.profile.save()
         Product.objects.create(
             user=user,
@@ -248,7 +248,7 @@ class TestPublicShopPages:
         content = response.content.decode()
         assert response.status_code == 200
         assert "https://cdn.example.com/logo.png" in content
-        assert "#7c3aed" in content
+        assert "#1E3A8A" in content
 
     def test_public_commerce_page_has_seo_meta(self, client, user):
         user.profile.page_slug = "demo-shop"

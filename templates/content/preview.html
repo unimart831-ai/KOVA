@@ -361,9 +361,9 @@ Usage: {% url 'content:preview' post.id %}
       <div class="flex items-center gap-2 mb-2">
         <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Predicted Engagement</span>
         <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div class="h-full rounded-full {% if post.predicted_engagement_score >= 75 %}bg-green-500{% elif post.predicted_engagement_score >= 50 %}bg-gold-500{% else %}bg-red-400{% endif %}" style="width: {{ post.predicted_engagement_score }}%"></div>
+          <div class="h-full rounded-full {% if post.predicted_engagement_score >= 75 %}bg-growth-500{% elif post.predicted_engagement_score >= 50 %}bg-gold-500{% else %}bg-red-400{% endif %}" style="width: {{ post.predicted_engagement_score }}%"></div>
         </div>
-        <span class="text-xs font-bold {% if post.predicted_engagement_score >= 75 %}text-green-600 dark:text-green-400{% elif post.predicted_engagement_score >= 50 %}text-gold-600 dark:text-gold-400{% else %}text-red-500{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}/100</span>
+        <span class="text-xs font-bold {% if post.predicted_engagement_score >= 75 %}text-growth-600 dark:text-growth-400{% elif post.predicted_engagement_score >= 50 %}text-gold-600 dark:text-gold-400{% else %}text-red-500{% endif %}">{{ post.predicted_engagement_score|floatformat:0 }}/100</span>
       </div>
       {% endif %}
 

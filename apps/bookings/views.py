@@ -260,6 +260,7 @@ def public_book(request, slug):
         "brand_name": (profile.company_name if profile else "") or link.label,
         "brand_logo": (profile.brand_logo_url if profile else ""),
         "max_advance_days": link.max_advance_days,
+        "business_model": getattr(profile, "business_model", "") if profile else "",
     })
 
 

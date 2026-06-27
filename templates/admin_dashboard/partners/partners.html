@@ -55,19 +55,19 @@
             <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full
               {% if p.tier == 'powerhouse' %}bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400
               {% elif p.tier == 'catalyst' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
-              {% elif p.tier == 'connector' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+              {% elif p.tier == 'connector' %}bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400
               {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">
               {{ p.get_tier_display }}
             </span>
           </td>
           <td class="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">{{ p.commission_rate|floatformat:0 }}%</td>
-          <td class="px-4 py-3 text-center font-semibold text-green-600 dark:text-green-400">{{ p.active_count }}</td>
+          <td class="px-4 py-3 text-center font-semibold text-growth-600 dark:text-growth-400">{{ p.active_count }}</td>
           <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{{ p.ref_count }}</td>
           <td class="px-4 py-3 text-right text-gray-900 dark:text-white">KES {{ p.total_earned_kes|floatformat:0 }}</td>
           <td class="px-4 py-3 text-right text-gold-600 dark:text-gold-400">KES {{ p.pending_payout_kes|floatformat:0 }}</td>
           <td class="px-4 py-3 text-center">
             {% if p.is_active %}
-            <span class="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+            <span class="inline-block w-2 h-2 rounded-full bg-growth-500"></span>
             {% else %}
             <span class="inline-block w-2 h-2 rounded-full bg-red-500"></span>
             {% endif %}

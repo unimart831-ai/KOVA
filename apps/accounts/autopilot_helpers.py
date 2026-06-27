@@ -34,6 +34,32 @@ def should_auto_enroll_leads(user) -> bool:
     return bool(profile and profile.autopilot_auto_enroll_leads)
 
 
+def effective_autopilot_platforms(user) -> set[str] | None:
+    """Platforms selected for autopilot. None = all connected accounts."""
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return None
+    selected = profile.autopilot_platforms or []
+    if not selected:
+        return None
+    return {str(p).lower() for p in selected}
+
+
+def platform_allowed_for_autopilot(user, platform: str) -> bool:
+    allowed = effective_autopilot_platforms(user)
+    if allowed is None:
+        return True
+    return (platform or "").lower() in allowed
+
+
+def filter_social_accounts_for_autopilot(user, queryset):
+    """Limit SocialAccount queryset to autopilot_platforms when configured."""
+    allowed = effective_autopilot_platforms(user)
+    if allowed is not None:
+        queryset = queryset.filter(platform__in=allowed)
+    return queryset
+
+
 def should_auto_publish_approved(user) -> bool:
     profile = getattr(user, "profile", None)
     if not profile:

@@ -1,10 +1,14 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Snap to Sell{% endblock %}
+{% block page_title %}
+  {% if business_model == 'professional' %}Snap & Post{% elif business_model == 'service' %}Snap & Share{% else %}Snap to Sell{% endif %}
+{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
   {% if business_model == 'professional' %}
-  {{ kova_copy.sell }}
+  Document your expertise — Kova publishes it across your platforms.
+  {% elif business_model == 'service' %}
+  Capture your work — Kova turns it into booking content.
   {% else %}
   {{ kova_sell_subtitle }}
   {% endif %}
@@ -13,9 +17,7 @@
 
 {% block content %}
 <script type="application/json" id="snap-credit-estimates">{{ credit_estimates_json|safe }}</script>
-<div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }}, {{ lite_forced|yesno:'true,false' }}, '{{ default_polish_mode }}')">
-  {% include "components/_kova_loop_strip.html" %}
-
+<div class="max-w-lg mx-auto space-y-5" x-data="snapToSell({{ commerce_autopilot|yesno:'true,false' }}, {{ visual_credits.remaining|default:15 }}, {{ visual_credits.at_limit|yesno:'true,false' }}, {{ studio_polish_notice|yesno:'true,false' }}, {{ lite_forced|yesno:'true,false' }}, '{{ default_polish_mode }}', '{{ default_offering_type|default:'product' }}', '{{ default_scene_pack|default:'auto' }}')">
   <div class="rounded-lg border border-gold-200 dark:border-gold-900/50 bg-gold-50 dark:bg-gold-950/30 px-4 py-3 text-xs text-gold-900 dark:text-gold-200">
     Photos must follow Kova's <a href="{% url 'acceptable_use' %}" class="underline font-medium">content policy</a>.
     Explicit or violent imagery cannot be used for posts or your shop.
@@ -256,7 +258,7 @@
 </div>
 
 <script>
-function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable, liteForced, defaultPolishMode) {
+function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUnavailable, liteForced, defaultPolishMode, defaultOfferingType, defaultScenePack) {
   const proSceneDisabled = !!creditsAtLimit || (creditsRemaining !== undefined && creditsRemaining <= 0);
   let estimates = {};
   try {
@@ -269,7 +271,7 @@ function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUna
     photos: [],
     name: '',
     price: '',
-    offeringType: 'product',
+    offeringType: defaultOfferingType || 'product',
     snapMode: 'product',
     get isProfessionalAsset() {
       return this.snapMode === 'portfolio' || this.snapMode === 'case_study';
@@ -279,7 +281,7 @@ function snapToSell(autopilot, creditsRemaining, creditsAtLimit, studioPolishUna
     polishMode: initialPolish,
     liteForced: forcedLite,
     proSceneDisabled,
-    scenePack: 'auto',
+    scenePack: defaultScenePack || 'auto',
     creditEstimates: estimates,
 
     get creditEstimate() {

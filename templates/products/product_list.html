@@ -9,8 +9,6 @@
 
 {% block content %}
 <div class="space-y-6">
-  {% include "components/_kova_loop_strip.html" %}
-
   {% include "products/_products_subnav.html" %}
   {% include "products/_batch_snap_pipeline_modal.html" %}
   {% include "products/_catalog_showcase_modal.html" %}
@@ -81,9 +79,13 @@
   {% else %}
   <div class="card px-6 py-16 text-center">
     <div class="flex justify-center mb-3"><svg class="w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No offers yet</h3>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">Snap a photo and price — we handle the rest.</p>
-    <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-5 py-2">Sell your first item</a>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ segment_surface.catalog_empty_title|default:"No offers yet" }}</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">{{ segment_surface.catalog_empty_description|default:"Snap a photo and price — we handle the rest." }}</p>
+    {% if segment_surface.catalog_primary %}
+    <a href="{% url segment_surface.catalog_primary.url_name %}" class="btn-primary text-sm px-5 py-2">{{ segment_surface.catalog_primary.label }}</a>
+    {% else %}
+    <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-5 py-2">Add your first offer</a>
+    {% endif %}
   </div>
   {% endif %}
 

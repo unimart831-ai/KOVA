@@ -120,6 +120,8 @@
 
       <li class="flex gap-2"><span class="text-growth-500">✓</span> WhatsApp inbox + lead capture</li>
 
+      <li class="flex gap-2 text-gray-500 dark:text-gray-500"><span>—</span> WhatsApp broadcasts, Status Studio &amp; channels — <a href="{% url 'billing:pricing' %}#agency" class="text-kova-600 dark:text-kova-400 underline">Agency (Wakala)</a></li>
+
       <li class="flex gap-2"><span class="text-growth-500">✓</span> Revenue attribution dashboard</li>
 
     </ul>
@@ -288,7 +290,7 @@
 
           <button type="button" @click="showPhone = false" class="btn-secondary flex-1 justify-center">Cancel</button>
 
-          <button type="submit" class="flex-1 justify-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg">
+          <button type="submit" class="flex-1 justify-center px-4 py-3 bg-growth-600 hover:bg-growth-700 text-white font-medium rounded-lg">
 
             <span x-text="isTrial ? 'Start trial' : 'Pay now'"></span>
 
@@ -348,7 +350,7 @@
 
           <button type="button" @click="showAddonPhone = false" class="btn-secondary flex-1 justify-center">Cancel</button>
 
-          <button type="submit" class="flex-1 justify-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg">
+          <button type="submit" class="flex-1 justify-center px-4 py-3 bg-growth-600 hover:bg-growth-700 text-white font-medium rounded-lg">
 
             Pay with M-Pesa
 
@@ -364,7 +366,7 @@
 
 
 
-  <div x-show="currency === 'kes'" class="mt-8 text-center text-sm text-green-700 dark:text-green-400">
+  <div x-show="currency === 'kes'" class="mt-8 text-center text-sm text-growth-700 dark:text-growth-400">
 
     Pay with M-Pesa — built for Kenyan businesses
 

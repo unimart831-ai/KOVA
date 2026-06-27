@@ -378,12 +378,32 @@ def public_page(request, slug):
         if not active_form.show_message_field:
             form_instance.fields.pop("message", None)
 
+    profile = getattr(page.user, "profile", None)
+    business_model = getattr(profile, "business_model", "") or "product"
+    shop_url = ""
+    booking_url = ""
+    if profile:
+        from apps.products.commerce_seo import shop_index_url
+
+        shop_url = shop_index_url(profile, request)
+        if business_model in ("service", "professional"):
+            booking_link = page.user.booking_links.filter(is_active=True).first()
+            if booking_link:
+                from django.urls import reverse
+
+                booking_url = request.build_absolute_uri(
+                    reverse("bookings:public_book", kwargs={"slug": booking_link.slug})
+                )
+
     return render(request, "links/public_page.html", {
         "page": page,
         "links": links,
         "forms_list": forms_list,
         "active_form": active_form,
         "form_instance": form_instance,
+        "business_model": business_model,
+        "shop_url": shop_url,
+        "booking_url": booking_url,
     })
 
 

@@ -70,7 +70,7 @@ def settings_view(request):
     profile = request.user.profile
     if request.method == "POST":
         user_form = UserSettingsForm(request.POST, request.FILES, instance=request.user)
-        brand_form = BrandProfileForm(request.POST, instance=profile)
+        brand_form = BrandProfileForm(request.POST, instance=profile, user=request.user)
         brand_kit_form = PhotoroomBrandKitForm(request.POST, profile=profile)
         autopilot_form = AutopilotSettingsForm(
             request.POST, instance=profile, user=request.user,
@@ -81,15 +81,19 @@ def settings_view(request):
             and brand_kit_form.is_valid()
             and autopilot_form.is_valid()
         ):
+            old_business_model = profile.business_model
             user_form.save()
             brand_form.save()
             brand_kit_form.save(profile)
             autopilot_form.save()
+            if profile.business_model and profile.business_model != old_business_model:
+                from apps.accounts.onboarding_express import apply_business_model_defaults
+                apply_business_model_defaults(profile, request.user)
             messages.success(request, "Settings saved.")
             return redirect("accounts:settings")
     else:
         user_form = UserSettingsForm(instance=request.user)
-        brand_form = BrandProfileForm(instance=profile)
+        brand_form = BrandProfileForm(instance=profile, user=request.user)
         brand_kit_form = PhotoroomBrandKitForm(profile=profile)
         autopilot_form = AutopilotSettingsForm(instance=profile, user=request.user)
 
@@ -265,6 +269,9 @@ def onboarding_choose_path(request):
                 industry=industry_override,
                 industry_other=industry_other,
             )
+            if not profile.business_model:
+                profile.business_model = BUSINESS_MODEL_SERVICE
+                profile.save(update_fields=["business_model"])
             if goal:
                 apply_goal_choice(profile, goal)
             if preset.get("business_model"):
@@ -1004,6 +1011,24 @@ def toggle_emergency_pause(request):
         messages.success(request, "✅ Emergency pause deactivated — agents are running again.")
 
     return redirect(request.META.get("HTTP_REFERER") or reverse("accounts:settings"))
+
+
+@login_required
+@require_POST
+@ratelimit(key="user", rate="3/h", block=True)
+def delete_account(request):
+    """Self-service soft-delete — frees email for re-registration."""
+    from django.contrib.auth import logout
+
+    confirm = (request.POST.get("confirm_email") or "").strip().lower()
+    if confirm != request.user.email.lower():
+        messages.error(request, "Email confirmation did not match. Account was not deleted.")
+        return redirect("accounts:settings")
+
+    request.user.soft_delete()
+    logout(request)
+    messages.success(request, "Your account has been deleted.")
+    return redirect("landing")
 
 
 # ── AI Learning — Adapt Agent v2 controls (W3 Commit 4) ────────────────────

@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ('custom_css', models.TextField(blank=True, help_text='Pro plan: custom CSS overrides')),
                 ('background_color', models.CharField(default='#ffffff', help_text='Hex color', max_length=7)),
                 ('text_color', models.CharField(default='#111827', help_text='Hex color', max_length=7)),
-                ('accent_color', models.CharField(default='#7c3aed', help_text='Hex color for buttons', max_length=7)),
+                ('accent_color', models.CharField(default='#1E3A8A', help_text='Hex color for buttons', max_length=7)),
                 ('seo_title', models.CharField(blank=True, max_length=60)),
                 ('seo_description', models.CharField(blank=True, max_length=160)),
                 ('og_image_url', models.URLField(blank=True, help_text='Social share image')),

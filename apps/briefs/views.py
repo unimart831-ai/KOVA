@@ -372,7 +372,7 @@ def _normalize_trending_topics(brief):
 
 @login_required
 def brief_home(request):
-    """Show today's daily brief, or the most recent one while today's is pending."""
+    """Decision Stream home — single prioritized queue + collapsed report."""
     from apps.accounts.segments import build_surface_experience
     from apps.platforms.models import SocialAccount
 
@@ -390,66 +390,118 @@ def brief_home(request):
     if not request.user.onboarding_completed:
         return redirect("accounts:onboarding_choose_path")
 
-    recent_briefs = DailyBrief.objects.filter(user=request.user).exclude(
-        date=brief.date if brief else today,
-    )[:7]
+    # Decision Stream — one query, one truth
+    from apps.briefs.decision_stream import build_decision_stream
+    stream_items = build_decision_stream(request.user, brief)
+    stream_critical_count = sum(1 for s in stream_items if s.urgency == "critical")
+    stream_today_count = sum(1 for s in stream_items if s.urgency == "today")
+    stream_later_count = sum(1 for s in stream_items if s.urgency == "later")
 
-    superfans = Superfan.objects.filter(user=request.user)[:5]
+    # Agent activity (for "What Kova Learned" section)
+    agent_activity = _build_agent_activity_summary(request.user)
 
-    upcoming_moments = []
-    holiday_drafts_ready = 0
-    ready_moment_packs = []
-    moment_pack_id = ""
-
-    performance = brief.performance_summary if brief else {}
-    decisions_needed = enrich_decisions(performance.get("decisions_needed", []))
-    operations_update = performance.get("operations_update", "")
-    standup_context = build_standup_context(request.user, brief) if brief else None
-
-    from apps.billing.models import get_effective_plan_tier
+    # Cached home extras (streak, revenue, pipeline stats, checklists)
     from apps.briefs.dashboard import get_cached_home_extras
-
     home_extras = get_cached_home_extras(request.user, brief)
+
     connected_platforms = list(
         SocialAccount.objects.filter(user=request.user, is_active=True)
         .values_list("platform", flat=True)
     )
-    profile = getattr(request.user, "profile", None)
-    today_compact = get_effective_plan_tier(profile) == "starter"
 
-    from apps.briefs.asset_suggestions import asset_campaign_opportunities
-
-    asset_opportunities = asset_campaign_opportunities(request.user)
+    # Data for collapsed Strategy Report
+    recent_briefs = DailyBrief.objects.filter(user=request.user).exclude(
+        date=brief.date if brief else today,
+    )[:7]
+    superfans = Superfan.objects.filter(user=request.user)[:5]
 
     return render(request, "briefs/home.html", {
         "brief": brief,
-        "today_compact": today_compact,
         "brief_is_stale": brief_is_stale,
         "brief_time_passed": _brief_time_has_passed(request.user),
         "strategist_active": _strategist_is_active(request.user),
         "greeting_name": greeting_name(request.user),
-        "your_move": extract_your_move(brief.summary if brief else ""),
-        "decisions_needed": decisions_needed,
-        "standup_context": standup_context,
-        "score_breakdown": _get_score_breakdown(brief),
+        "has_connected_platform": home_extras.get("has_connected_platform", False),
+        # Score Bar
+        "revenue_stat": home_extras.get("revenue_stat"),
+        "brief_streak": home_extras.get("brief_streak", 0),
+        # Decision Stream
+        "stream_items": stream_items,
+        "stream_critical_count": stream_critical_count,
+        "stream_today_count": stream_today_count,
+        "stream_later_count": stream_later_count,
+        # What Kova Learned (collapsed)
+        "agent_activity": agent_activity,
+        # Strategy Report (collapsed)
         "recent_briefs": recent_briefs,
         "superfans": superfans,
-        "research_updated_at": _parse_research_updated_at(brief),
-        "dismissed_decisions": _get_dismissed_decisions(brief),
         "trending_topics": _normalize_trending_topics(brief),
-        "upcoming_moments": upcoming_moments,
-        "holiday_drafts_ready": holiday_drafts_ready,
-        "ready_moment_packs": ready_moment_packs,
-        "moment_pack_id": moment_pack_id,
-        "operations_update": operations_update,
-        "page_title": "Today",
+        "research_updated_at": _parse_research_updated_at(brief),
+        "upcoming_moments": [],
+        "holiday_drafts_ready": 0,
+        "ready_moment_packs": [],
+        "moment_pack_id": "",
+        # Pipeline stats (inside collapsed report)
+        "published_today": home_extras.get("published_today", 0),
+        "failed_count": home_extras.get("failed_count", 0),
+        "scheduled_count": home_extras.get("scheduled_count", 0),
+        # Onboarding checklists
+        "wedge_checklist": home_extras.get("wedge_checklist"),
+        "setup_checklist": home_extras.get("setup_checklist"),
         "segment_surface": build_surface_experience(
             profile=getattr(request.user, "profile", None),
             connected_platforms=connected_platforms,
         ),
-        **home_extras,
-        "asset_campaign_opportunities": asset_opportunities,
+        "kova_today_subtitle": "",
     })
+
+
+def _build_agent_activity_summary(user):
+    """Structured summary of what each AI agent did in the last 24 hours.
+
+    Returns a list of dicts: [{agent, label, count, detail}] for agents
+    that performed at least one action. The Brief template renders this as
+    an expandable "Your AI team handled..." section.
+    """
+    from datetime import timedelta
+
+    from apps.agents.models import AgentAction
+
+    cutoff = timezone.now() - timedelta(hours=24)
+    actions = (
+        AgentAction.objects.filter(user=user, created_at__gte=cutoff)
+        .values("agent_type")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    agent_labels = {
+        "create": "Create Agent",
+        "engage": "Engage Agent",
+        "research": "Research Agent",
+        "adapt": "Adapt Agent",
+        "analyst": "Analyst Agent",
+        "strategist": "Chief Strategist",
+    }
+    agent_verbs = {
+        "create": "drafted posts",
+        "engage": "handled conversations",
+        "research": "researched trends",
+        "adapt": "optimized scheduling",
+        "analyst": "analyzed performance",
+        "strategist": "planned strategy",
+    }
+
+    result = []
+    for row in actions:
+        agent = row["agent_type"]
+        result.append({
+            "agent": agent,
+            "label": agent_labels.get(agent, agent.title()),
+            "verb": agent_verbs.get(agent, "performed actions"),
+            "count": row["count"],
+        })
+    return result
 
 
 def _safe_revenue_stat(user):

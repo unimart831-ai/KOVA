@@ -20,7 +20,7 @@
             {% if profile.adapt_paused %}
               <span class="text-gold-600 dark:text-gold-400">paused</span>
             {% else %}
-              <span class="text-green-600 dark:text-green-400">active</span>
+              <span class="text-growth-600 dark:text-growth-400">active</span>
             {% endif %}
           </h2>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -57,7 +57,7 @@
           <div class="flex flex-wrap gap-2">
             {% for pillar, weight in profile.pillar_weights.items %}
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                {% if weight > 1.0 %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
+                {% if weight > 1.0 %}bg-growth-100 text-growth-700 dark:bg-growth-900/40 dark:text-growth-300
                 {% elif weight < 1.0 %}bg-gold-100 text-gold-700 dark:bg-gold-900/40 dark:text-gold-300
                 {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
                 {{ pillar }} · {{ weight }}
@@ -70,7 +70,7 @@
         {% if profile.dna_preferences.promoted %}
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Promoted patterns ({{ profile.dna_preferences.promoted|length }})</p>
-          <ul class="text-xs text-green-700 dark:text-green-400 space-y-0.5">
+          <ul class="text-xs text-growth-700 dark:text-growth-400 space-y-0.5">
             {% for p in profile.dna_preferences.promoted %}
               <li>· {% for k, v in p.combo.items %}{% if v %}{{ k }}={{ v }} {% endif %}{% endfor %}</li>
             {% endfor %}

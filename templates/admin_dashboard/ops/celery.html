@@ -12,14 +12,14 @@
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
     <div class="card px-4 py-3">
       <p class="text-[10px] uppercase tracking-wider text-gray-500">Workers</p>
-      <p class="text-2xl font-bold mt-1 {% if celery_status.status == 'online' %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+      <p class="text-2xl font-bold mt-1 {% if celery_status.status == 'online' %}text-growth-600 dark:text-growth-400{% else %}text-red-600 dark:text-red-400{% endif %}">
         {{ celery_status.workers|default:0 }}
       </p>
       <p class="text-[10px] text-gray-400 mt-1">{{ celery_status.status|default:"unknown" }}</p>
     </div>
     <div class="card px-4 py-3">
       <p class="text-[10px] uppercase tracking-wider text-gray-500">Beat scheduler</p>
-      <p class="text-2xl font-bold mt-1 {% if beat_status.status == 'online' %}text-green-600 dark:text-green-400{% elif beat_status.status == 'stale' %}text-gold-600 dark:text-gold-400{% else %}text-gray-600{% endif %}">
+      <p class="text-2xl font-bold mt-1 {% if beat_status.status == 'online' %}text-growth-600 dark:text-growth-400{% elif beat_status.status == 'stale' %}text-gold-600 dark:text-gold-400{% else %}text-gray-600{% endif %}">
         {{ beat_status.status|default:"unknown"|title }}
       </p>
       {% if beat_status.last_tick %}
@@ -68,7 +68,7 @@
           </td>
           <td class="px-4 py-2">
             {% if row.status == 'ok' %}
-              <span class="text-[10px] font-semibold uppercase text-green-600 dark:text-green-400">OK</span>
+              <span class="text-[10px] font-semibold uppercase text-growth-600 dark:text-growth-400">OK</span>
             {% elif row.status == 'stale' %}
               <span class="text-[10px] font-semibold uppercase text-gold-600 dark:text-gold-400">Stale</span>
             {% else %}

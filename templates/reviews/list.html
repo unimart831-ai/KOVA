@@ -12,7 +12,7 @@
     </div></div>
     <div class="card"><div class="card-body">
       <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Responded</p>
-      <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ responded_count }}</p>
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400 mt-1">{{ responded_count }}</p>
     </div></div>
   </div>
 
@@ -29,7 +29,7 @@
               <p class="text-sm font-medium text-gray-900 dark:text-white">{{ r.customer_name|default:r.customer_email|default:"(anonymous)" }}</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
                 {{ r.get_status_display }} · {{ r.created_at|date:"M j" }}
-                {% if r.sentiment %} · <span class="{% if r.is_positive %}text-green-600 dark:text-green-400{% elif r.is_negative %}text-red-600 dark:text-red-400{% endif %}">{{ r.get_sentiment_display }}</span>{% endif %}
+                {% if r.sentiment %} · <span class="{% if r.is_positive %}text-growth-600 dark:text-growth-400{% elif r.is_negative %}text-red-600 dark:text-red-400{% endif %}">{{ r.get_sentiment_display }}</span>{% endif %}
               </p>
             </div>
             {% if r.response_text %}<span class="text-xs text-gray-400 dark:text-gray-500">"{{ r.response_text|truncatechars:40 }}"</span>{% endif %}

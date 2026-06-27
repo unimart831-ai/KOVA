@@ -19,8 +19,8 @@
     <p class="text-xl font-bold text-gray-900 dark:text-white">{{ tests_by_status.draft|default:0 }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Draft</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-green-200 dark:border-green-900/50 p-4 shadow-sm text-center">
-    <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ tests_by_status.running|default:0 }}</p>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-growth-200 dark:border-growth-900/50 p-4 shadow-sm text-center">
+    <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ tests_by_status.running|default:0 }}</p>
     <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">Running</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-kova-200 dark:border-kova-900/50 p-4 shadow-sm text-center">
@@ -58,7 +58,7 @@
       </div>
       <div class="flex items-center justify-between">
         <dt class="text-xs text-gray-500 dark:text-gray-400">Tests This Week</dt>
-        <dd class="text-sm font-semibold text-green-600 dark:text-green-400">{{ tests_7d }}</dd>
+        <dd class="text-sm font-semibold text-growth-600 dark:text-growth-400">{{ tests_7d }}</dd>
       </div>
       <div class="flex items-center justify-between">
         <dt class="text-xs text-gray-500 dark:text-gray-400">Concluded This Week</dt>

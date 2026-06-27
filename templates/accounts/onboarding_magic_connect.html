@@ -31,22 +31,22 @@
       </div>
 
       {% if connected_accounts %}
-        <div class="mb-6 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl">
+        <div class="mb-6 p-4 bg-growth-50 dark:bg-growth-950/30 border border-growth-200 dark:border-growth-800 rounded-xl">
           {% if has_auto_connected %}
-          <p class="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
+          <p class="text-sm font-medium text-growth-800 dark:text-growth-300 mb-2">
             <svg class="w-4 h-4 inline -mt-0.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
             Auto-connected from your sign-up:
           </p>
           {% else %}
-          <p class="text-sm font-medium text-green-800 dark:text-green-300 mb-2">Already connected:</p>
+          <p class="text-sm font-medium text-growth-800 dark:text-growth-300 mb-2">Already connected:</p>
           {% endif %}
           {% for account in connected_accounts %}
-            <div class="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <div class="flex items-center gap-2 text-sm text-growth-700 dark:text-growth-400">
               <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
               {{ account.get_platform_display }} — @{{ account.username }}
             </div>
           {% endfor %}
-          <a href="/accounts/onboarding/?step=1&via=url" class="inline-flex items-center gap-1 mt-3 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+          <a href="/accounts/onboarding/?step=1&via=url" class="inline-flex items-center gap-1 mt-3 px-4 py-2 text-sm font-medium text-white bg-growth-600 hover:bg-growth-700 rounded-lg transition-colors">
             Continue to set up your brand
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </a>

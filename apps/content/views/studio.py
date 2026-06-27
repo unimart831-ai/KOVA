@@ -12,6 +12,7 @@ from django_ratelimit.decorators import ratelimit
 from apps.content.forms import ContentSeedForm
 from apps.content.models import ContentSeed, Post
 from apps.content.tasks import generate_from_seed
+from apps.accounts.autopilot_helpers import filter_social_accounts_for_autopilot
 from apps.teams.permissions import can_approve_post, get_teammate_ids
 from apps.utils import fire_task
 
@@ -67,7 +68,10 @@ def content_studio(request):
     failed_seeds = request.user.content_seeds.filter(status="failed")[:5]
 
     connected_platforms = list(
-        request.user.social_accounts.filter(is_active=True).values("platform", "username")
+        filter_social_accounts_for_autopilot(
+            request.user,
+            request.user.social_accounts.filter(is_active=True),
+        ).values("platform", "username")
     )
 
     seed_form = ContentSeedForm()
@@ -205,8 +209,12 @@ def _enrich_seed_group(seed_obj, seed_posts, *, connected_platforms=None):
     proposal = (campaign.proposal_meta if campaign else None) or seed_obj.blueprint.get("proposal") or {}
     formats = proposal.get("suggested_formats") or seed_obj.blueprint.get("suggested_formats") or []
     if connected_platforms is None:
+        from apps.accounts.autopilot_helpers import filter_social_accounts_for_autopilot
         connected_platforms = list(
-            seed_obj.user.social_accounts.filter(is_active=True).values_list("platform", flat=True)
+            filter_social_accounts_for_autopilot(
+                seed_obj.user,
+                seed_obj.user.social_accounts.filter(is_active=True),
+            ).values_list("platform", flat=True)
         )
     bundle = bundle_display_for_studio(seed_posts, connected_platforms)
     approval = campaign_approval_summary(seed_posts, bundle=bundle)

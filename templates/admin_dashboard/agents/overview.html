@@ -12,7 +12,7 @@
     <p class="text-xs text-gray-500 dark:text-gray-400">Actions (24h)</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold {% if global_success >= 95 %}text-green-600 dark:text-green-400{% elif global_success >= 80 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ global_success }}%</p>
+    <p class="text-2xl font-bold {% if global_success >= 95 %}text-growth-600 dark:text-growth-400{% elif global_success >= 80 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ global_success }}%</p>
     <p class="text-xs text-gray-500 dark:text-gray-400">Success Rate</p>
   </div>
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
@@ -28,15 +28,15 @@
 <!-- ── Agent Health Grid ─────────────────────────────────────────────── -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
   {% for agent in agents %}
-  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if agent.health == 'green' %}border-green-200 dark:border-green-900/50{% elif agent.health == 'yellow' %}border-gold-200 dark:border-gold-900/50{% else %}border-red-200 dark:border-red-900/50{% endif %} p-5 shadow-sm">
+  <div class="bg-white dark:bg-gray-900 rounded-xl border {% if agent.health == 'green' %}border-growth-200 dark:border-growth-900/50{% elif agent.health == 'yellow' %}border-gold-200 dark:border-gold-900/50{% else %}border-red-200 dark:border-red-900/50{% endif %} p-5 shadow-sm">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">{{ agent.label }}</h3>
-      <span class="w-3 h-3 rounded-full {% if agent.health == 'green' %}bg-green-500{% elif agent.health == 'yellow' %}bg-gold-500 animate-pulse{% else %}bg-red-500 animate-pulse{% endif %}"></span>
+      <span class="w-3 h-3 rounded-full {% if agent.health == 'green' %}bg-growth-500{% elif agent.health == 'yellow' %}bg-gold-500 animate-pulse{% else %}bg-red-500 animate-pulse{% endif %}"></span>
     </div>
     <dl class="space-y-2 text-xs">
       <div class="flex justify-between">
         <dt class="text-gray-500 dark:text-gray-400">Success Rate</dt>
-        <dd class="font-semibold {% if agent.success_rate >= 95 %}text-green-600 dark:text-green-400{% elif agent.success_rate >= 80 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ agent.success_rate }}%</dd>
+        <dd class="font-semibold {% if agent.success_rate >= 95 %}text-growth-600 dark:text-growth-400{% elif agent.success_rate >= 80 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">{{ agent.success_rate }}%</dd>
       </div>
       <div class="flex justify-between">
         <dt class="text-gray-500 dark:text-gray-400">Runs (24h)</dt>
@@ -99,7 +99,7 @@
         </div>
         <div class="flex justify-between">
           <dt class="text-gray-500 dark:text-gray-400">Auto-Approved</dt>
-          <dd class="font-semibold text-green-600 dark:text-green-400">{{ auto_approved_posts }}</dd>
+          <dd class="font-semibold text-growth-600 dark:text-growth-400">{{ auto_approved_posts }}</dd>
         </div>
       </dl>
     </div>
@@ -109,7 +109,7 @@
       <dl class="space-y-1.5 text-xs">
         <div class="flex justify-between">
           <dt class="text-gray-500 dark:text-gray-400">Auto-Approve ON</dt>
-          <dd class="font-semibold text-green-600 dark:text-green-400">{{ auto_approve_on }}</dd>
+          <dd class="font-semibold text-growth-600 dark:text-growth-400">{{ auto_approve_on }}</dd>
         </div>
         <div class="flex justify-between">
           <dt class="text-gray-500 dark:text-gray-400">Smart Approval</dt>
@@ -121,7 +121,7 @@
     <div>
       <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Active Automations</p>
       <div class="flex flex-wrap gap-1">
-        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Lead Scoring</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-300">Lead Scoring</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Product Promo</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">Competitor Intel</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-300">Trend Seeding</span>

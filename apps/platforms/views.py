@@ -66,7 +66,7 @@ ACTIVE_PLATFORMS = [
     },
 ]
 
-# Kova supports 4 social platforms + WhatsApp to close.
+# Kova supports 5 channels: WhatsApp, Facebook, Instagram, TikTok, LinkedIn.
 COMING_SOON_PLATFORMS = []
 
 # Flat set used for filtering throughout the app (Create Agent, content forms, etc.)
@@ -78,6 +78,18 @@ AVAILABLE_PLATFORMS = ACTIVE_PLATFORMS
 # Wedge GTM priority: WhatsApp → Instagram → Facebook first on connect page
 WEDGE_PLATFORM_ORDER = ("whatsapp", "instagram", "facebook")
 
+PLATFORM_ORDER_BY_MODEL = {
+    "product": ("whatsapp", "instagram", "facebook", "tiktok", "linkedin"),
+    "service": ("whatsapp", "instagram", "facebook", "linkedin", "tiktok"),
+    "professional": ("linkedin", "instagram", "facebook", "whatsapp", "tiktok"),
+}
+
+RECOMMENDED_BY_MODEL = {
+    "product": frozenset({"whatsapp", "instagram", "facebook"}),
+    "service": frozenset({"whatsapp", "instagram", "facebook"}),
+    "professional": frozenset({"linkedin", "instagram"}),
+}
+
 
 def _sort_platforms_wedge_first(platforms: list[dict]) -> list[dict]:
     order = {key: idx for idx, key in enumerate(WEDGE_PLATFORM_ORDER)}
@@ -85,6 +97,16 @@ def _sort_platforms_wedge_first(platforms: list[dict]) -> list[dict]:
         platforms,
         key=lambda p: (order.get(p["key"], 99), p["label"]),
     )
+
+
+def _sort_platforms_for_model(platforms: list[dict], business_model: str) -> list[dict]:
+    order = PLATFORM_ORDER_BY_MODEL.get(business_model, PLATFORM_ORDER_BY_MODEL["product"])
+    order_map = {key: idx for idx, key in enumerate(order)}
+    recommended = RECOMMENDED_BY_MODEL.get(business_model, RECOMMENDED_BY_MODEL["product"])
+    enriched = []
+    for p in platforms:
+        enriched.append({**p, "recommended": p["key"] in recommended})
+    return sorted(enriched, key=lambda p: (order_map.get(p["key"], 99), p["label"]))
 
 
 @login_required
@@ -114,12 +136,39 @@ def platform_list(request):
     from apps.platforms.outage import get_outages
     platform_outages = {p: v for p, v in get_outages().items() if v}
 
+    profile = request.user.profile
+    business_model = getattr(profile, "business_model", "") or "product"
+    active_count = accounts.filter(is_active=True).count()
+    plan_limits = getattr(request, "plan_limits", None) or {}
+    max_accounts = plan_limits.get("max_social_accounts")
+    needs_reauth = sum(
+        1 for acc in accounts
+        if not acc.is_active or getattr(acc, "needs_reauth", False)
+    )
+
+    from apps.accounts.segments import build_surface_experience
+
+    connected_list = list(connected_platforms)
+    segment_surface = build_surface_experience(
+        profile=profile,
+        connected_platforms=connected_list,
+    )
+
+    sorted_platforms = _sort_platforms_for_model(platforms, business_model)
+
     return render(request, "platforms/list.html", {
         "accounts": accounts,
-        "platforms": _sort_platforms_wedge_first(platforms),
+        "platforms": sorted_platforms,
         "coming_soon_platforms": COMING_SOON_PLATFORMS,
         "platform_outages": platform_outages,
-        "page_title": "Connected Platforms",
+        "page_title": "Platforms",
+        "business_model": business_model,
+        "segment_surface": segment_surface,
+        "connected_count": active_count,
+        "connected_platform_count": active_count,
+        "accounts_limit": max_accounts,
+        "at_account_limit": bool(max_accounts and active_count >= max_accounts),
+        "needs_reauth_count": needs_reauth,
     })
 
 
@@ -135,6 +184,15 @@ def connect_platform(request, platform):
     if not provider:
         messages.error(request, f"Platform '{platform}' is not available.")
         return redirect("platforms:list")
+
+    # TikTok — require acknowledgment before OAuth (posts may be private until app audit)
+    if platform == "tiktok" and request.GET.get("ack") != "1":
+        return render(request, "platforms/tiktok_connect_notice.html", {
+            "page_title": "Connect TikTok",
+            "connect_url": (
+                reverse("platforms:connect", kwargs={"platform": "tiktok"}) + "?ack=1"
+            ),
+        })
 
     # WhatsApp — Embedded Signup (primary) or manual token (fallback)
     if platform == "whatsapp":
@@ -362,6 +420,27 @@ def oauth_callback(request, platform):
         )
         action = "connected" if created else "reconnected"
         messages.success(request, f"Successfully {action} {account.get_platform_display()} — @{account.username}")
+
+        if platform == "tiktok":
+            try:
+                snap = provider.audit_profile(result.access_token)
+                meta = dict(account.metadata or {})
+                if "privacy_level" in (snap.fields_thin or []):
+                    meta["tiktok_self_only"] = True
+                    account.metadata = meta
+                    account.save(update_fields=["metadata", "updated_at"])
+                    messages.warning(
+                        request,
+                        "TikTok connected. Until TikTok approves our app for public posting, "
+                        "your videos publish as private (visible only to you). "
+                        "Instagram and Facebook are recommended for public reach today.",
+                    )
+                else:
+                    meta["tiktok_self_only"] = False
+                    account.metadata = meta
+                    account.save(update_fields=["metadata", "updated_at"])
+            except Exception as exc:
+                logger.warning("TikTok creator audit failed: %s", exc)
 
         # Facebook: preserve the user's previously selected Page across reconnects.
         # update_or_create overwrites metadata on every reconnect, which would
