@@ -192,6 +192,7 @@ def product_detail(request, product_id):
 
     import json
 
+    from apps.products.asset_pack import build_asset_pack
     from apps.products.gallery_preferences import build_gallery_scenes, polish_actions_for_product
     from apps.products.photoroom_review import summarize_review_state
     from apps.products.scene_packs import marketplace_channel_image_urls
@@ -201,6 +202,7 @@ def product_detail(request, product_id):
     gallery_scenes = build_gallery_scenes(product)
     polish_actions = list(polish_actions_for_product(product)[:50])
     review_state = summarize_review_state(polish_actions)
+    asset_pack = build_asset_pack(product)
     media_plan = None
     asset = getattr(product, "business_asset", None)
     if asset and isinstance(asset.metadata, dict):
@@ -236,6 +238,8 @@ def product_detail(request, product_id):
         "has_google_shopping_exports": bool(
             marketplace_channel_image_urls(product.additional_images)
         ),
+        "asset_pack": asset_pack,
+        "asset_pack_has_polish": any(g.id != "original" for g in asset_pack),
     })
 
 
@@ -811,7 +815,12 @@ def expand_product_photos_view(request, product_id):
         return redirect("products:detail", product_id=product.pk)
 
     visual_mode = normalize_visual_mode(request.POST.get("visual_mode", product.visual_mode))
-    if visual_mode not in (Product.VisualMode.AS_IS, VISUAL_MODE_PRO_SCENE):
+    allowed_modes = (
+        Product.VisualMode.AS_IS,
+        Product.VisualMode.ENHANCE_LIGHTING,
+        VISUAL_MODE_PRO_SCENE,
+    )
+    if visual_mode not in allowed_modes:
         visual_mode = normalize_visual_mode(product.visual_mode)
 
     if visual_mode == VISUAL_MODE_PRO_SCENE:
@@ -823,6 +832,19 @@ def expand_product_photos_view(request, product_id):
         product.visual_mode = visual_mode
         product.save(update_fields=["visual_mode", "updated_at"])
         messages.info(request, f"Using '{product.name}' photos as uploaded — no enhancement applied.")
+        return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
+
+    if visual_mode == Product.VisualMode.ENHANCE_LIGHTING:
+        allowed, msg = check_visual_credit_limit(request.user)
+        if not allowed:
+            return plan_limit_redirect(request, msg, "products:detail", product_id=product.pk)
+        product.visual_mode = visual_mode
+        product.save(update_fields=["visual_mode", "updated_at"])
+        fire_task(expand_product_photo_set, str(product.pk))
+        messages.success(
+            request,
+            f"Enhancing lighting for '{product.name}' — no AI backgrounds, just better phone photos.",
+        )
         return redirect(f"{reverse('products:detail', kwargs={'product_id': product.pk})}?snap=1")
 
     product.visual_mode = visual_mode
@@ -1197,7 +1219,11 @@ def snap_launch(request):
     description = request.POST.get("description", "").strip()
     photo_context = request.POST.get("photo_context", "").strip()
     raw_visual = request.POST.get("visual_mode", Product.VisualMode.PRO_SCENE).strip()
-    if raw_visual not in (Product.VisualMode.AS_IS, Product.VisualMode.PRO_SCENE):
+    if raw_visual not in (
+        Product.VisualMode.AS_IS,
+        Product.VisualMode.ENHANCE_LIGHTING,
+        Product.VisualMode.PRO_SCENE,
+    ):
         raw_visual = Product.VisualMode.PRO_SCENE
     visual_mode = normalize_visual_mode(raw_visual)
 
@@ -1230,6 +1256,13 @@ def snap_launch(request):
                     messages.warning(request, f"{notice} Using Lite polish instead.")
         if polish_mode == POLISH_MODE_LITE:
             messages.info(request, LITE_POLISH_NOTICE)
+    elif visual_mode == Product.VisualMode.ENHANCE_LIGHTING:
+        from apps.billing.visual_credits import check_visual_credit_limit
+
+        allowed, msg = check_visual_credit_limit(request.user)
+        if not allowed:
+            messages.error(request, msg)
+            return redirect("products:snap")
 
     # Validate offering_type
     valid_types = {c[0] for c in Product.OfferingType.choices}

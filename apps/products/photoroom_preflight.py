@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 REPAIR_ORDER = (
     "photofix",
+    "ai_ironing",
     "beautify_nocutout",
     "smart_crop",
     "text_removal",
@@ -179,6 +180,14 @@ def build_repair_plan(
 
     triggers: dict[str, bool] = {
         "photofix": force_photofix or needs_beautify,
+        "ai_ironing": (
+            cat in ("apparel", "apparel_mitumba", "footwear")
+            and (
+                (commerce_source or "") in SNAP_COMMERCE_SOURCES
+                or needs_beautify
+            )
+            and getattr(settings, "PHOTOROOM_IRONING_ENABLED", True)
+        ),
         "beautify_nocutout": (
             cat in ("food", "beauty", "general")
             and needs_beautify

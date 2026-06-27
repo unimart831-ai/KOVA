@@ -172,6 +172,7 @@ class Product(models.Model):
 
     class VisualMode(models.TextChoices):
         AS_IS = "as_is", "Use as-is"
+        ENHANCE_LIGHTING = "enhance_lighting", "Enhance lighting only"
         QUICK_POLISH = "quick_polish", "Quick polish"
         PRO_SCENE = "pro_scene", "Studio polish"
 
@@ -186,6 +187,11 @@ class Product(models.Model):
     def uses_upload_images_only(self) -> bool:
         """Merchant chose Use as-is — skip Photoroom expansion; use uploads for content."""
         return (self.visual_mode or "") == self.VisualMode.AS_IS
+
+    @property
+    def uses_photofix_only(self) -> bool:
+        """Enhance lighting only — PhotoFix preflight, no AI scene expansion."""
+        return (self.visual_mode or "") == self.VisualMode.ENHANCE_LIGHTING
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

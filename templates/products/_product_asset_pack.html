@@ -1,0 +1,59 @@
+{% if asset_pack_has_polish %}
+<div class="card p-5" x-data="{ tab: '{{ asset_pack.0.id }}' }">
+  <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Asset pack</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        Polished exports by channel — download or use in Studio posts.
+      </p>
+    </div>
+    {% if has_google_shopping_exports %}
+    <a href="{% url 'products:export_google_shopping' product_id=product.pk %}"
+       class="btn-primary text-xs px-3 py-2 shrink-0 inline-flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Google Shopping ZIP
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-wrap gap-1.5 mb-4">
+    {% for group in asset_pack %}
+    <button type="button"
+            @click="tab = '{{ group.id }}'"
+            class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+            :class="tab === '{{ group.id }}'
+              ? 'bg-kova-600 text-white dark:bg-kova-500'
+              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'">
+      {{ group.label }}
+      <span class="opacity-75 ml-0.5">({{ group.urls|length }})</span>
+    </button>
+    {% endfor %}
+  </div>
+
+  {% for group in asset_pack %}
+  <div x-show="tab === '{{ group.id }}'" x-cloak class="space-y-3">
+    <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ group.hint }}</p>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {% for url in group.urls %}
+      <a href="{{ url }}" target="_blank" rel="noopener"
+         class="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <img src="{{ url }}" alt="{{ group.label }} export" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+        <span class="absolute bottom-0 inset-x-0 text-[9px] font-semibold text-center text-white bg-black/55 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          Open full size
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not has_google_shopping_exports %}
+  <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+    Marketplace PNG/JPEG exports appear after Studio polish with the Marketplace pack enabled.
+  </p>
+  {% endif %}
+</div>
+{% endif %}

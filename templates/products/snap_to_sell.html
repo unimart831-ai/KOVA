@@ -175,18 +175,26 @@
         {% if not commerce_autopilot %}
         <div class="card p-4 space-y-2">
           <p class="text-sm font-semibold text-gray-900 dark:text-white">Photo polish</p>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-sm"
                    :class="visualMode === 'as_is' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700'">
               <input type="radio" name="visual_mode" value="as_is" class="sr-only" x-model="visualMode">
               <span>Use as-is</span>
             </label>
             <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-sm"
+                   :class="visualMode === 'enhance_lighting' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700'">
+              <input type="radio" name="visual_mode" value="enhance_lighting" class="sr-only" x-model="visualMode">
+              <span>Enhance lighting only</span>
+            </label>
+            <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-sm"
                    :class="visualMode === 'pro_scene' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700'">
               <input type="radio" name="visual_mode" value="pro_scene" class="sr-only" x-model="visualMode">
-              <span>Polish photos</span>
+              <span>Studio polish</span>
             </label>
           </div>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400" x-show="visualMode === 'enhance_lighting'">
+            PhotoFix only — better lighting and color, no AI backgrounds or scene expansion.
+          </p>
           <div class="grid grid-cols-2 gap-2" x-show="visualMode === 'pro_scene'" x-cloak>
             <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-xs"
                    :class="[polishMode === 'studio' ? 'border-kova-500' : 'border-gray-200 dark:border-gray-700', (liteForced || proSceneDisabled) ? 'opacity-50 pointer-events-none' : '']">

@@ -21,6 +21,7 @@ ALTERATION_REVIEW_VARIANT_IDS = frozenset({
     "edit_ai_angle",
     "ai_touchup",
     "photofix",
+    "ai_ironing",
 })
 
 
@@ -102,3 +103,62 @@ def summarize_review_state(actions: list) -> dict:
         "review_pending_count": len(pending),
         "review_pending": pending,
     }
+
+
+def review_state_for_product(product) -> dict:
+    """Aggregate review flags for a product's polish outputs."""
+    from apps.products.gallery_preferences import polish_actions_for_product
+
+    actions = list(polish_actions_for_product(product)[:80])
+    return summarize_review_state(actions)
+
+
+def post_blocked_by_alteration_review(post) -> tuple[bool, str]:
+    """
+    Block autopublish when alteration-prone polish outputs are pending review.
+
+    Returns (blocked, human-readable reason).
+    """
+    if not review_alterations_enabled():
+        return False, ""
+
+    product = getattr(post, "product", None)
+    if not product:
+        return False, ""
+
+    state = review_state_for_product(product)
+    if not state.get("alteration_review_required"):
+        return False, ""
+
+    count = int(state.get("review_pending_count") or 0)
+    pending = state.get("review_pending") or []
+    labels = ", ".join(
+        (p.get("label") or p.get("variant") or "scene")[:24]
+        for p in pending[:3]
+    )
+    suffix = f" ({labels})" if labels else ""
+    reason = (
+        f"{count} polished scene{'s' if count != 1 else ''} need your approval "
+        f"before publish{suffix}."
+    )
+    return True, reason
+
+
+def block_post_for_alteration_review(post, *, source: str = "publish") -> None:
+    """Move post to pending approval and notify merchant."""
+    from apps.content.models import Post
+    from apps.notifications.models import Notification
+
+    blocked, reason = post_blocked_by_alteration_review(post)
+    if not blocked:
+        return
+
+    post.status = Post.Status.PENDING_APPROVAL
+    post.ai_reasoning = f"ALTERATION REVIEW ({source}): {reason}"[:500]
+    post.save(update_fields=["status", "ai_reasoning", "updated_at"])
+    Notification.create_for_user(
+        post.user,
+        "system",
+        f"Publish paused — approve polished scenes on the product page. {reason[:120]}",
+        related_post=post,
+    )

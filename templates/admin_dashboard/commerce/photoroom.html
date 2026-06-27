@@ -24,7 +24,7 @@
 </nav>
 
 {% if tab == "overview" %}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
   <div class="bg-white dark:bg-gray-900 rounded-xl border p-4 shadow-sm {% if enabled %}border-growth-200 dark:border-growth-900/50{% else %}border-gold-200 dark:border-gold-900/50{% endif %}">
     <p class="text-[10px] font-semibold text-gray-400 uppercase">Status</p>
     <p class="text-lg font-bold mt-1 {% if enabled %}text-growth-600{% else %}text-gold-600{% endif %}">
@@ -53,6 +53,17 @@
     <p class="text-lg font-bold text-kova-600 dark:text-kova-400 mt-1">{{ usage_30d|format_number }}</p>
     <p class="text-[10px] text-gray-400 mt-0.5">{{ usage_month|format_number }} this calendar month</p>
   </div>
+  <div class="bg-white dark:bg-gray-900 rounded-xl border p-4 shadow-sm {% if basic_routing_active %}border-growth-200 dark:border-growth-900/50{% else %}border-gold-200 dark:border-gold-900/50{% endif %}">
+    <p class="text-[10px] font-semibold text-gray-400 uppercase">Basic API</p>
+    <p class="text-lg font-bold mt-1 {% if basic_routing_active %}text-growth-600{% else %}text-gold-600{% endif %}">
+      {% if basic_routing_active %}Routing on{% else %}Not configured{% endif %}
+    </p>
+    <p class="text-[10px] font-mono text-gray-500 mt-0.5">{{ basic_api_key_display }}</p>
+    <p class="text-[10px] text-gray-400 mt-0.5">
+      {{ basic_usage_30d|format_number }} Basic · {{ plus_usage_30d|format_number }} Plus
+      {% if usage_30d %}({{ basic_routing_pct }}% Basic){% endif %}
+    </p>
+  </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -61,7 +72,8 @@
     <dl class="space-y-2 text-xs">
       <div class="flex justify-between gap-4"><dt class="text-gray-500">Endpoint</dt><dd class="font-mono text-gray-800 dark:text-gray-200 text-right">{{ api_endpoint }}</dd></div>
       <div class="flex justify-between gap-4"><dt class="text-gray-500">AI shadows model</dt><dd class="font-mono text-gray-800 dark:text-gray-200 text-right truncate">{{ ai_shadows_model }}</dd></div>
-      <div class="flex justify-between gap-4"><dt class="text-gray-500">Basic routing (30d)</dt><dd class="text-gray-800 dark:text-gray-200">{{ basic_usage_30d|format_number }} Basic · {{ plus_usage_30d|format_number }} Plus</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-gray-500">Basic routing (30d)</dt><dd class="text-gray-800 dark:text-gray-200">{{ basic_usage_30d|format_number }} Basic · {{ plus_usage_30d|format_number }} Plus{% if usage_30d %} ({{ basic_routing_pct }}% Basic){% endif %}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-gray-500">Video animate (30d)</dt><dd class="text-gray-800 dark:text-gray-200">{{ video_animate_30d|format_number }} calls · separate from polish pool</dd></div>
       <div class="flex justify-between gap-4"><dt class="text-gray-500">Variant catalog</dt><dd class="text-gray-800 dark:text-gray-200">{{ variant_count }} scenes</dd></div>
       <div class="flex justify-between gap-4"><dt class="text-gray-500">Cost assumption</dt><dd class="text-gray-800 dark:text-gray-200">${{ pool.cost_usd_monthly|floatformat:0 }}/mo · ${{ pool.cost_per_image|floatformat:4 }}/call</dd></div>
     </dl>
@@ -165,6 +177,7 @@
       <tr>
         <th class="px-4 py-3 font-semibold text-gray-500">Plan</th>
         <th class="px-4 py-3 font-semibold text-gray-500">Studio credits / mo</th>
+        <th class="px-4 py-3 font-semibold text-gray-500">Video animate / mo</th>
         <th class="px-4 py-3 font-semibold text-gray-500">Max scenes / product</th>
         <th class="px-4 py-3 font-semibold text-gray-500">Premium flag</th>
       </tr>
@@ -174,6 +187,7 @@
       <tr>
         <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ row.label }}</td>
         <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ row.credits|format_number }}</td>
+        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ row.video_animate|format_number }}</td>
         <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ row.max_variants }}</td>
         <td class="px-4 py-3">{% if row.premium %}<span class="text-growth-600">Yes</span>{% else %}—{% endif %}</td>
       </tr>

@@ -295,6 +295,7 @@ def photoroom_config(request):
                 "tier": tier,
                 "label": limits.get("label", tier),
                 "credits": limits.get("visual_enhancements_per_month", 0),
+                "video_animate": limits.get("video_animate_per_month", 0),
                 "max_variants": limits.get("plus_max_variants_per_product", 3),
                 "premium": limits.get("visual_enhance_premium", False),
             }
@@ -341,6 +342,18 @@ def photoroom_config(request):
         input_data__provider="photoroom_basic",
     ).count()
     plus_usage_30d = max(0, usage_30d - basic_usage_30d)
+    basic_routing_pct = round(basic_usage_30d / usage_30d * 100, 1) if usage_30d else 0
+
+    basic_api_key = getattr(settings, "PHOTOROOM_BASIC_API_KEY", "") or ""
+    basic_api_key_set = bool(basic_api_key.strip())
+    basic_routing_active = basic_api_key_set and bool(
+        getattr(settings, "PHOTOROOM_BASIC_ROUTING_ENABLED", True)
+    )
+
+    video_animate_30d = AgentAction.objects.filter(
+        action_type="commerce.video_animate",
+        created_at__gte=days_30,
+    ).count()
 
     recent_actions = (
         studio_qs.select_related("user")
@@ -388,7 +401,12 @@ def photoroom_config(request):
             "ai_bg_seeds": AI_BG_SEEDS,
             "basic_usage_30d": basic_usage_30d,
             "plus_usage_30d": plus_usage_30d,
-            "basic_routing_enabled": bool(getattr(settings, "PHOTOROOM_BASIC_API_KEY", "")),
+            "basic_routing_pct": basic_routing_pct,
+            "basic_api_key_display": _mask_api_key(basic_api_key),
+            "basic_api_key_set": basic_api_key_set,
+            "basic_routing_active": basic_routing_active,
+            "basic_routing_enabled": basic_routing_active,
+            "video_animate_30d": video_animate_30d,
             "product_categories": PRODUCT_CATEGORIES,
             "usage_month": usage_month,
             "usage_30d": usage_30d,

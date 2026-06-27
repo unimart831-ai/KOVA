@@ -1314,6 +1314,17 @@ def publish_post(self, post_id: str):
         logger.info("QA GATE blocked publish for post %s: %s", post_id, qa_reason)
         return {"error": qa_reason, "qa_score": qa_score}
 
+    # ── Alteration review gate — block until merchant approves AI-altered scenes ──
+    from apps.products.photoroom_review import post_blocked_by_alteration_review
+
+    review_blocked, review_reason = post_blocked_by_alteration_review(post)
+    if review_blocked:
+        from apps.products.photoroom_review import block_post_for_alteration_review
+
+        block_post_for_alteration_review(post, source="publish")
+        logger.info("ALTERATION REVIEW blocked publish for post %s: %s", post_id, review_reason)
+        return {"error": review_reason, "alteration_review": True}
+
     # ── Content safety gate — last line of defense before going live ──
     from apps.content.safety import (
         POLICY_BLOCK_MESSAGE,
@@ -2241,6 +2252,12 @@ def check_and_publish_due_posts():
     held_outage = 0
     for post in due_posts:
         if not should_auto_publish_approved(post.user):
+            skipped_autopilot += 1
+            continue
+        from apps.products.photoroom_review import post_blocked_by_alteration_review
+
+        review_blocked, _review_reason = post_blocked_by_alteration_review(post)
+        if review_blocked:
             skipped_autopilot += 1
             continue
         platform_key = (post.platform or "").lower()

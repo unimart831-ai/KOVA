@@ -22,6 +22,26 @@ REEL_RAW_SNAP_MARKERS = ("product_images/",)
 REEL_MAX_SLIDES = 5
 REEL_MAX_AI_SCENES = 4
 REEL_MIN_SLIDES = 3
+STORY_EXPORT_MARKERS = ("channel_story_uncrop", "channel_story")
+
+
+def story_export_urls(urls: list[str]) -> list[str]:
+    """Native Photoroom 9:16 exports — prefer uncrop before cropped story."""
+    uncrop = [u for u in urls if u and "channel_story_uncrop" in u.lower()]
+    story = [u for u in urls if u and "channel_story" in u.lower() and u not in uncrop]
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for url in uncrop + story:
+        if url in seen:
+            continue
+        seen.add(url)
+        ordered.append(url)
+    return ordered
+
+
+def _is_native_story_export(url: str) -> bool:
+    u = (url or "").lower()
+    return any(m in u for m in STORY_EXPORT_MARKERS)
 
 
 def _is_raw_snap_url(url: str) -> bool:
@@ -158,6 +178,20 @@ def curate_reel_image_urls(
     promo = [u for u in result if "promo_frame" in u]
     if promo:
         result = [u for u in result if "promo_frame" not in u] + promo
+
+    # Prefer native 9:16 story exports as opening hero frames (before FFmpeg reframe).
+    story_frames = story_export_urls(pool)
+    if story_frames:
+        body = [u for u in result if not _is_native_story_export(u)]
+        result = story_frames[:2] + body
+        seen_story: set[str] = set()
+        deduped: list[str] = []
+        for url in result:
+            if url in seen_story:
+                continue
+            seen_story.add(url)
+            deduped.append(url)
+        result = deduped[:max_slides]
 
     if len(pool) >= REEL_MIN_SLIDES and len(result) < REEL_MIN_SLIDES:
         for url in ordered:

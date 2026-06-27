@@ -125,12 +125,37 @@ def _branded_story_background(target_w: int, target_h: int) -> Image.Image:
     return bg
 
 
-def fit_image_to_story_frame(image_bytes: bytes, *, slide_index: int = 0) -> Image.Image:
+def _is_native_story_source(source: str) -> bool:
+    u = (source or "").lower()
+    return "channel_story" in u
+
+
+def fit_native_story_export(image_bytes: bytes) -> Image.Image:
+    """Use Photoroom channel_story / channel_story_uncrop with minimal reframe."""
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
+    aspect = img.width / max(img.height, 1)
+    target_aspect = target_w / target_h
+    if abs(aspect - target_aspect) < 0.04:
+        return img.resize((target_w, target_h), method=Image.LANCZOS)
+    return ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS, centering=(0.5, 0.42))
+
+
+def fit_image_to_story_frame(
+    image_bytes: bytes,
+    *,
+    slide_index: int = 0,
+    source_hint: str = "",
+) -> Image.Image:
     """
     Fit any aspect ratio into 9:16 with background + foreground.
     Studio white-bg products get a dark branded canvas instead of blurred white.
     User uploads (product_images/) prefer cover-crop when far from 9:16.
+    Native Photoroom story exports skip blur-letterbox compositing.
     """
+    if _is_native_story_source(source_hint):
+        return fit_native_story_export(image_bytes)
+
     img = Image.open(BytesIO(image_bytes)).convert("RGB")
     target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
     aspect = img.width / max(img.height, 1)
@@ -694,7 +719,9 @@ def compose_motion_reel(
                     position=pos,
                 )
             else:
-                frame = fit_image_to_story_frame(image_bytes, slide_index=idx)
+                frame = fit_image_to_story_frame(
+                    image_bytes, slide_index=idx, source_hint=source,
+                )
                 if slide_count > 1 and show_progress_bars():
                     frame = render_progress_bar(
                         frame, slide_index=idx, slide_count=slide_count,

@@ -104,10 +104,13 @@ def apply_ai_detected_product_fields(product, analysis: dict) -> list[str]:
 def initial_commerce_post_status(user, product=None) -> str:
     """Post status for Snap-generated carousel/reel posts."""
     from apps.partners.marketplace_rules import initial_marketplace_post_status
+    from apps.products.photoroom_review import review_state_for_product
 
     marketplace_status = initial_marketplace_post_status(user, product)
     if marketplace_status:
         return marketplace_status
+    if product and review_state_for_product(product).get("alteration_review_required"):
+        return Post.Status.PENDING_APPROVAL
     if should_auto_publish_commerce(user):
         return Post.Status.APPROVED
     return Post.Status.PENDING_APPROVAL

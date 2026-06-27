@@ -46,10 +46,21 @@ def polished_carousel_sources(product, *, max_images: int = 5) -> list[str]:
 
 def polished_reel_sources(product) -> list[str]:
     from apps.content.tasks import _normalize_reel_image_source
-    from apps.products.reel_curation import curate_reel_image_urls
+    from apps.products.reel_curation import curate_reel_image_urls, story_export_urls
 
     upload_only = getattr(product, "uses_upload_images_only", False)
-    urls = polished_carousel_sources(product, max_images=5)
+    if upload_only:
+        urls = list(product.all_image_urls or [])
+    else:
+        # Full gallery — story exports are excluded from carousel but are reel heroes.
+        urls = list(product.all_image_urls or [])
+        if not urls:
+            urls = polished_carousel_sources(product, max_images=8)
+        else:
+            story = story_export_urls(urls)
+            if story:
+                rest = [u for u in urls if u not in story]
+                urls = story + rest
     sources: list[str] = []
     for url in curate_reel_image_urls(urls, upload_only=upload_only):
         normalized = _normalize_reel_image_source(url)
@@ -258,5 +269,7 @@ def product_has_usable_gallery(product) -> bool:
     if not product:
         return False
     if getattr(product, "uses_upload_images_only", False):
+        return bool(product.all_image_urls)
+    if getattr(product, "uses_photofix_only", False):
         return bool(product.all_image_urls)
     return product_has_polished_gallery(product)

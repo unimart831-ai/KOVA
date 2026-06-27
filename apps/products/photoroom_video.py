@@ -74,6 +74,9 @@ def generate_product_video(
     prompt: str = "Slowly rotate the product with soft lighting",
     duration_seconds: int = 5,
     aspect_ratio: str = "9:16",
+    *,
+    user=None,
+    product_id: str | None = None,
 ) -> str | None:
     """
     Generate a product video from a static image via Photoroom Video API.
@@ -82,6 +85,14 @@ def generate_product_video(
     """
     from apps.products.photoroom import _api_key_headers
     from apps.products.photoroom_api import check_sandbox_quota, record_sandbox_call
+
+    if user is not None:
+        from apps.billing.video_credits import check_video_animate_limit
+
+        allowed, limit_msg = check_video_animate_limit(user)
+        if not allowed:
+            logger.info("Photoroom video animate skipped: %s", limit_msg)
+            return None
 
     allowed, limit_msg = check_sandbox_quota()
     if not allowed:
@@ -142,6 +153,12 @@ def generate_product_video(
         filename = f"{VIDEO_FOLDER}/{uuid.uuid4().hex}.mp4"
         saved_path = default_storage.save(filename, ContentFile(video_bytes))
         logger.info("Product video saved: %s (%d bytes)", saved_path, len(video_bytes))
+
+        if user is not None and product_id:
+            from apps.billing.video_credits import record_video_animate
+
+            record_video_animate(user, product_id=str(product_id))
+
         return saved_path
 
     except requests.Timeout:
@@ -169,6 +186,8 @@ def generate_product_reel_video(product, image_url: str | None = None) -> str | 
         prompt=prompt,
         duration_seconds=5,
         aspect_ratio="9:16",
+        user=product.user,
+        product_id=str(product.pk),
     )
 
     if path:
@@ -182,7 +201,7 @@ def generate_product_reel_video(product, image_url: str | None = None) -> str | 
                 description=f"Generated product video for {product.name}",
                 status=AgentAction.ActionStatus.COMPLETED,
                 input_data={"product_id": str(product.pk), "prompt": prompt},
-                output_data={"video_path": path},
+                output_data={"video_path": path, "credit_pool": "video_animate"},
             )
         except Exception:
             pass

@@ -34,6 +34,7 @@ PRESET_DARK_PREMIUM = "dark_premium"
 PRESET_PROMO_FRAME = "promo_frame"
 
 VISUAL_MODE_AS_IS = "as_is"
+VISUAL_MODE_ENHANCE_LIGHTING = "enhance_lighting"
 VISUAL_MODE_QUICK_POLISH = "quick_polish"
 VISUAL_MODE_PRO_SCENE = "pro_scene"  # DB value — UI label: Studio polish
 VISUAL_MODE_STUDIO_POLISH = "studio_polish"  # alias
@@ -46,7 +47,13 @@ def is_studio_polish_mode(mode: str | None) -> bool:
     """True when Snap should run photo expansion (studio or lite polish)."""
     if mode == VISUAL_MODE_QUICK_POLISH:
         return True  # legacy DB value → polish path (lite or studio via polish_mode)
+    if mode == VISUAL_MODE_ENHANCE_LIGHTING:
+        return True  # PhotoFix-only path
     return mode in STUDIO_POLISH_MODES
+
+
+def is_photofix_only_mode(mode: str | None) -> bool:
+    return mode == VISUAL_MODE_ENHANCE_LIGHTING
 
 
 def is_lite_polish_mode(product) -> bool:
@@ -62,6 +69,8 @@ def normalize_visual_mode(mode: str | None) -> str:
         return VISUAL_MODE_PRO_SCENE
     if mode == VISUAL_MODE_AS_IS:
         return VISUAL_MODE_AS_IS
+    if mode == VISUAL_MODE_ENHANCE_LIGHTING:
+        return VISUAL_MODE_ENHANCE_LIGHTING
     if mode == VISUAL_MODE_PRO_SCENE:
         return VISUAL_MODE_PRO_SCENE
     return VISUAL_MODE_PRO_SCENE
@@ -562,6 +571,14 @@ def expand_product_photos(
     if mode == VISUAL_MODE_AS_IS:
         return {"skipped": True, "reason": "as_is", "variations_created": 0}
 
+    if mode == VISUAL_MODE_ENHANCE_LIGHTING:
+        return _expand_photofix_only(
+            product,
+            analysis,
+            commerce_source=commerce_source,
+            polish_session=polish_session,
+        )
+
     from apps.products.polish_mode import POLISH_MODE_LITE, resolve_polish_mode
     from apps.products.scene_packs import get_product_scene_pack, normalize_scene_pack
 
@@ -592,6 +609,115 @@ def _studio_polish_error(reason: str, *, limit_message: str = "") -> dict:
         "variations_created": 0,
         "mode": VISUAL_MODE_PRO_SCENE,
         "limit_message": limit_message,
+    }
+
+
+def _expand_photofix_only(
+    product,
+    analysis: dict | None = None,
+    *,
+    commerce_source: str | None = None,
+    polish_session=None,
+) -> dict:
+    """PhotoFix-only — lighting/beautify repair without AI scene expansion."""
+    from apps.billing.models import get_effective_plan_tier
+    from apps.billing.visual_credits import (
+        check_visual_credit_limit,
+        finish_studio_polish_session,
+        record_studio_polish,
+    )
+    from apps.products.photoroom import save_studio_polish_image
+    from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG, run_plus_variant
+    from apps.products.photoroom_preflight import run_preflight_repairs
+
+    if not product.image:
+        return {"skipped": True, "reason": "no_image", "variations_created": 0}
+
+    allowed, limit_msg = check_visual_credit_limit(product.user)
+    if not allowed:
+        return _studio_polish_error("credit_limit", limit_message=limit_msg)
+
+    try:
+        source = product.image.url
+    except Exception:
+        return {"skipped": True, "reason": "no_image", "variations_created": 0}
+
+    plan_tier = get_effective_plan_tier(getattr(product.user, "profile", None))
+    brand_colors = None
+    try:
+        from apps.branding.models import BrandKit
+
+        kit = BrandKit.objects.filter(user=product.user).first()
+        if kit:
+            brand_colors = kit.as_color_dict()
+    except Exception:
+        pass
+
+    preflight = run_preflight_repairs(
+        source,
+        product,
+        analysis,
+        brand_colors,
+        budget=2,
+        plan_tier=plan_tier,
+        commerce_source=commerce_source,
+    )
+    product.refresh_from_db(fields=["additional_images"])
+
+    urls: list[str] = []
+    for variant_id in preflight.repairs_run:
+        marker = f"preflight_{variant_id}"
+        for u in product.additional_images or []:
+            if marker in (u or "") and u not in urls:
+                urls.append(u)
+                break
+
+    if not urls and preflight.master_url and preflight.master_url != source:
+    if not urls and preflight.master_url and preflight.master_url != source:
+        urls.append(preflight.master_url)
+    elif not urls:
+        master_url = preflight.master_url or source
+        spec = PLUS_VARIANT_CATALOG.get("photofix")
+        if spec:
+            edit_result = run_plus_variant(
+                master_url, spec, product, analysis, brand_colors,
+            )
+            if edit_result.ok:
+                try:
+                    url = save_studio_polish_image(
+                        product.pk, edit_result.content, suffix="photofix_only",
+                    )
+                    urls.append(url)
+                    record_studio_polish(
+                        product.user,
+                        product_id=str(product.pk),
+                        provider="photoroom_plus",
+                        output_data={
+                            "variant": "photofix",
+                            "label": "PhotoFix",
+                            "url": url,
+                            "mode": "enhance_lighting",
+                        },
+                    )
+                except Exception as exc:
+                    logger.warning("PhotoFix-only save failed: %s", exc)
+
+    if urls:
+        extras = list(product.additional_images or [])
+        for url in urls:
+            if url not in extras:
+                extras.append(url)
+        product.additional_images = extras
+        product.save(update_fields=["additional_images", "updated_at"])
+
+    if polish_session:
+        finish_studio_polish_session(polish_session, success=bool(urls))
+
+    return {
+        "variations_created": len(urls),
+        "urls": urls,
+        "mode": VISUAL_MODE_ENHANCE_LIGHTING,
+        "preflight_repairs": preflight.repairs_run,
     }
 
 

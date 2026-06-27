@@ -343,6 +343,19 @@ def _studio_variant_headers(variant_id: str, extra: dict[str, str] | None = None
     return headers
 
 
+FRAGILE_HD_CATEGORIES = frozenset({"jewelry", "beauty", "watches", "accessories"})
+
+
+def hd_cutout_headers_for_product(product, analysis: dict | None = None) -> dict[str, str]:
+    """HD background removal for fine edges on jewelry/beauty (pairs with studio_safe)."""
+    if not getattr(settings, "PHOTOROOM_HD_CUTOUT_ENABLED", True):
+        return {}
+    category = detect_product_category(product, analysis)
+    if category in FRAGILE_HD_CATEGORIES:
+        return {"pr-hd-background-removal": "auto"}
+    return {}
+
+
 PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
     # ── Core studio (every product) ──────────────────────────────────────
     "studio_white": PlusVariantSpec(
@@ -657,6 +670,20 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         categories=(),
         min_plan="starter",
         priority=90,
+        pack_eligible=False,
+    ),
+    "ai_ironing": PlusVariantSpec(
+        id="ai_ironing",
+        label="AI ironing",
+        params={
+            "ironing.mode": "ai.auto",
+            "removeBackground": "false",
+            "referenceBox": "originalImage",
+            **_export_defaults(),
+        },
+        categories=("apparel", "apparel_mitumba", "footwear"),
+        min_plan="growth",
+        priority=89,
         pack_eligible=False,
     ),
     "beautify_nocutout": PlusVariantSpec(
@@ -2486,6 +2513,8 @@ def run_plus_variant(
     )
     params = apply_variant_layout(params, spec.id, layout_index)
     headers = {**spec.headers, **_studio_variant_headers(spec.id)}
+    if params.get("removeBackground", "").lower() in ("true", "1"):
+        headers.update(hd_cutout_headers_for_product(product, analysis))
 
     if is_basic_routable_variant(spec.id, params):
         content = run_basic_white_cutout(image_url, params)
