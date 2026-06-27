@@ -1,0 +1,30 @@
+<section class="kc-value-props" aria-label="Why shop here">
+  <div class="kc-container">
+    <div class="kc-value-grid">
+      {% if wa_url %}
+      <div class="kc-value-card">
+        <div class="kc-value-icon" aria-hidden="true">💬</div>
+        <p class="kc-value-title">WhatsApp ordering</p>
+        <p class="kc-value-desc">Chat directly — confirm delivery and payment in one thread.</p>
+      </div>
+      {% endif %}
+      {% if mpesa_shop_enabled %}
+      <div class="kc-value-card">
+        <div class="kc-value-icon" aria-hidden="true">📱</div>
+        <p class="kc-value-title">M-Pesa checkout</p>
+        <p class="kc-value-desc">Pay securely from your phone on supported products.</p>
+      </div>
+      {% endif %}
+      <div class="kc-value-card">
+        <div class="kc-value-icon" aria-hidden="true">✨</div>
+        <p class="kc-value-title">Curated catalog</p>
+        <p class="kc-value-desc">Every listing is managed and kept up to date by {{ brand_name }}.</p>
+      </div>
+      <div class="kc-value-card">
+        <div class="kc-value-icon" aria-hidden="true">🚀</div>
+        <p class="kc-value-title">No website needed</p>
+        <p class="kc-value-desc">Share this shop link anywhere — social, bio, or WhatsApp status.</p>
+      </div>
+    </div>
+  </div>
+</section>

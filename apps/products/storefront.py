@@ -249,7 +249,7 @@ def storefront_body_classes(storefront: dict[str, Any], *, extra: str = "") -> s
         "shop-site--v2",
         f"shop-site--{storefront.get('archetype', 'catalog')}",
         f"shop-site--vibe-{storefront.get('vibe', 'classic_shop')}",
-        f"shop-site--surface-{storefront.get('surface_mode', 'dark')}",
+        f"shop-site--surface-{storefront.get('surface_mode', 'light')}",
         f"shop-site--hero-{storefront.get('hero_mode', 'compact')}",
         f"shop-site--model-{storefront.get('business_model', 'product')}",
     ]

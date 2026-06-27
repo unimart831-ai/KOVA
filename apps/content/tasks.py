@@ -1621,6 +1621,14 @@ def publish_post(self, post_id: str):
                 )
                 publish_content = stripped
 
+        from apps.content.post_copy import polish_post_caption
+
+        publish_content = polish_post_caption(
+            publish_content,
+            account.platform,
+            post_format=post.post_format or "text",
+        )
+
         # ── Diagnostic: content audit at publish time ─────────────────
         _db_len = len(post.content_text) if post.content_text else 0
         _pub_len = len(publish_content) if publish_content else 0

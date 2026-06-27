@@ -23,8 +23,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% if storefront and storefront.archetype == 'boutique' %}
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  {% elif storefront and storefront.archetype == 'studio' %}
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+  {% endif %}
   <link rel="stylesheet" href="{% static 'css/commerce.css' %}">
-  <style>:root { --kc-accent: {{ commerce_branding.theme_primary_color|default:'#0f172a' }}; }</style>
+  <style>
+    :root {
+      --kc-accent: {{ commerce_branding.theme_primary_color|default:'#10B981' }};
+      {% if storefront and storefront.archetype == 'boutique' %}--kc-font-display: "Playfair Display", Georgia, serif;{% endif %}
+      {% if storefront and storefront.archetype == 'studio' %}--kc-font-display: "DM Serif Display", Georgia, serif;{% endif %}
+    }
+  </style>
   {% if shop_footer.has_kova_extras %}<script defer src="{% static 'js/vendor/htmx.min.js' %}"></script>{% endif %}
   {% block extra_head %}{% endblock %}
 </head>

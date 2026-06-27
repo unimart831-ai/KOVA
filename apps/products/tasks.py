@@ -616,27 +616,18 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
         logger.info("create_product_carousel_posts: no carousel-eligible accounts for user %s", user.email)
         return
 
-    price_label = product.display_price or ""
-    base_caption = product.name
-    if product.description:
-        lead = product.description.split("\n\n")[0].strip()
-        if lead:
-            base_caption += f"\n\n{lead}"
-
     posts_created = 0
     initial_status = initial_commerce_post_status(user)
     for account in accounts:
-        caption = base_caption
-        if key_features:
-            from apps.products.product_copy import format_feature_bullets
+        from apps.content.post_copy import build_commerce_caption
 
-            caption += "\n\n" + format_feature_bullets(
-                key_features,
-                seed=str(product.pk),
-                platform=account.platform,
-            )
-        if price_label:
-            caption += f"\n\n💰 {price_label}"
+        caption = build_commerce_caption(
+            product,
+            platform=account.platform,
+            key_features=key_features,
+            analysis=analysis,
+            post_format="carousel",
+        )
 
         post = Post.objects.create(
             user=user,
@@ -819,17 +810,15 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
         if source_post:
             visual_metadata["source_carousel_post_id"] = str(source_post.pk)
 
-        caption = product.name
-        if key_features:
-            from apps.products.product_copy import format_feature_bullets
+        from apps.content.post_copy import build_commerce_caption
 
-            caption += "\n\n" + format_feature_bullets(
-                key_features,
-                seed=str(product.pk),
-                platform=account.platform,
-            )
-        if price_label:
-            caption += f"\n\n💰 {price_label}"
+        caption = build_commerce_caption(
+            product,
+            platform=account.platform,
+            key_features=key_features,
+            analysis=analysis if isinstance(analysis, dict) else {},
+            post_format="reel",
+        )
 
         post = Post.objects.create(
             user=user,
@@ -1164,15 +1153,6 @@ def quick_post_product_photo(product_id: str):
         return {"error": "no_image"}
 
     image_url = _normalize_reel_image_source(product.all_image_urls[0])
-    from apps.products.product_cta import resolve_product_cta_url
-
-    shop_link = resolve_product_cta_url(product)
-    caption_parts = [product.name]
-    if product.display_price:
-        caption_parts.append(f"💰 {product.display_price}")
-    if shop_link:
-        caption_parts.append(f"🛒 {shop_link}")
-    caption = "\n\n".join(caption_parts)
 
     accounts = SocialAccount.objects.filter(user=user, is_active=True)
     if not accounts.exists():
@@ -1181,6 +1161,9 @@ def quick_post_product_photo(product_id: str):
     status = initial_commerce_post_status(user)
     posts_created = 0
     for account in accounts:
+        from apps.content.post_copy import build_quick_post_caption
+
+        caption = build_quick_post_caption(product, platform=account.platform)
         post = Post.objects.create(
             user=user,
             product=product,

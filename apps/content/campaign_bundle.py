@@ -560,11 +560,11 @@ def bundle_display_for_studio(posts: list, connected_platforms=None) -> dict[str
 
 
 def _adapt_caption(text: str, platform: str, max_len: int = 2200) -> str:
-    cleaned = re.sub(r"\s+", " ", (text or "").strip())
+    from apps.content.post_copy import polish_post_caption
+
+    cleaned = polish_post_caption(text or "", platform)
     if not cleaned:
         return ""
-    if platform == "linkedin" and len(cleaned) > 3000:
-        return cleaned[:2997] + "…"
     if len(cleaned) > max_len:
         return cleaned[: max_len - 1] + "…"
     return cleaned

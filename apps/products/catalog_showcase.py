@@ -54,33 +54,30 @@ def select_products_for_showcase(user, *, limit: int = MAX_PRODUCT_SLIDES):
 
 
 def build_catalog_showcase_caption(user, products) -> str:
+    from apps.content.post_copy import polish_post_caption
+
     profile = getattr(user, "profile", None)
     brand = (getattr(profile, "company_name", None) or "").strip() or "Our shop"
 
-    lines = [f"🛍️ {brand} — what's in stock"]
+    intro = f"What's in stock at {brand} this week 🛍️"
+    lines = [intro, ""]
     for product in products:
-        line = f"• {product.name}"
+        line = product.name
         if product.display_price:
             line += f" — {product.display_price}"
         lines.append(line)
 
     more = promotable_catalog_queryset(user).count() - len(products)
+    lines.append("")
     if more > 0:
-        lines.append(f"\n+ {more} more in our catalog — swipe for prices 👉")
+        lines.append(f"+ {more} more in our catalog. Swipe through for prices 👉")
     else:
-        lines.append("\nSwipe through for prices 👉")
+        lines.append("Swipe through for prices 👉")
 
-    from apps.products.product_cta import resolve_product_cta_url
+    lines.append("")
+    lines.append("Tap the link in bio to shop 👆")
 
-    shop_urls = []
-    for product in products[:3]:
-        url = resolve_product_cta_url(product)
-        if url and url not in shop_urls:
-            shop_urls.append(url)
-    if shop_urls:
-        lines.append("\n🛒 " + shop_urls[0])
-
-    return "\n".join(lines)
+    return polish_post_caption("\n".join(lines), "instagram", post_format="carousel")
 
 
 def weekly_showcase_due(profile) -> bool:

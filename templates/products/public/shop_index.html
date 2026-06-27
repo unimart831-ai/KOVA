@@ -1,6 +1,6 @@
 {% extends "products/public/base_shop.html" %}
 
-{% block body_class %}{{ storefront_body_class|default:'' }}{% if wa_url %} kc-shop--sticky{% endif %}{% endblock %}
+{% block body_class %}{{ storefront_body_class|default:'' }}{% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">{{ structured_data_json|default:shop_schema_json|safe }}</script>
@@ -8,67 +8,28 @@
 
 {% block content %}
 {% with bm=storefront.business_model|default:'product' %}
-<section class="kc-hero">
-  <div class="kc-container kc-hero-grid">
-    <div class="kc-hero-copy">
-      <p class="kc-hero-eyebrow">{{ brand_name }}</p>
-      <h1 class="kc-hero-title">
-        {% if profile.page_headline %}{{ profile.page_headline }}
-        {% elif bm == 'service' %}What we offer
-        {% elif bm == 'professional' %}{{ brand_name }}
-        {% else %}Shop {{ brand_name }}{% endif %}
-      </h1>
-      {% if about_blurb %}
-      <p class="kc-hero-lead">{{ about_blurb|truncatewords:28 }}</p>
-      {% elif bm == 'service' %}
-      <p class="kc-hero-lead">Book appointments, explore our services, and reach us on WhatsApp.</p>
-      {% elif bm == 'professional' %}
-      <p class="kc-hero-lead">Expertise, case studies, and consultation — all in one place.</p>
-      {% elif wa_url %}
-      <p class="kc-hero-lead">Curated products with fast WhatsApp ordering — delivery and payment confirmed in chat.</p>
-      {% endif %}
-      <div class="kc-hero-actions">
-        {% if bm == 'service' and booking_url %}
-        <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--lg">Book now</a>
-        {% elif bm == 'professional' and booking_url %}
-        <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--lg">Book a consultation</a>
-        {% else %}
-        <a href="#shop-catalog" class="shop-btn shop-btn--primary shop-btn--lg">
-          {% if bm == 'professional' %}View portfolio{% else %}Shop our collection{% endif %}
-        </a>
-        {% endif %}
-        {% if wa_url %}
-        <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--lg" target="_blank" rel="noopener">
-          {% if bm == 'service' %}Book via WhatsApp{% elif bm == 'professional' %}Message us{% else %}Chat on WhatsApp{% endif %}
-        </a>
-        {% endif %}
-        <button type="button" class="shop-btn shop-btn--outline kc-share-btn shop-share-btn" hidden
-                data-share-title="{{ brand_name }}"
-                data-share-url="{{ canonical_url }}">Share</button>
-      </div>
-    </div>
-    {% if hero_collage %}
-    <div class="kc-hero-collage" aria-hidden="true">
-      {% for item in hero_collage|slice:":4" %}
-      <img src="{{ item.image }}" alt="" class="kc-collage-{% cycle 'a' 'b' 'c' 'd' %}" loading="lazy">
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
-</section>
+
+{% include "products/public/_shop_trust_strip.html" %}
+
+{% include "products/public/_shop_hero.html" %}
+
+{% include "products/public/_shop_value_props.html" %}
+
+{% include "products/public/_shop_promo_banners.html" %}
 
 {% if flash_reels %}
 <section class="kc-reels reels-section" aria-label="Shop reels">
   <div class="kc-container">
     <div class="kc-section-head">
       <div>
-        <h2 class="kc-section-title">Shop reels</h2>
-        <p class="kc-section-sub">See products in motion — tap to explore</p>
+        <h2 class="kc-section-title">See it in action</h2>
+        <p class="kc-section-sub">Product reels — tap to shop</p>
       </div>
     </div>
     <div class="kc-reels-track shop-hero-carousel">
       {% for reel in flash_reels %}
       <article class="kc-reel-card">
+        {% if reel.flash_badge %}<span class="kc-reel-flash">{{ reel.flash_badge }}</span>{% endif %}
         <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}" class="kc-reel-link" aria-label="Explore {{ reel.product_name }}"></a>
         <video class="reel-video" src="{{ reel.video_url }}" poster="{{ reel.thumbnail_url }}" muted autoplay loop playsinline preload="metadata"></video>
         <button type="button" class="reel-unmute-btn" aria-label="Toggle sound">🔇</button>
@@ -95,7 +56,7 @@
       <article class="shop-product-card">
         <div class="shop-product-card-body">
           <h3 class="shop-product-card-title">{{ item.title }}</h3>
-          {% if item.summary %}<p class="shop-product-card-desc">{{ item.summary|truncatewords:24 }}</p>{% endif %}
+          {% if item.summary %}<p class="shop-product-card-teaser">{{ item.summary|truncatewords:24 }}</p>{% endif %}
         </div>
       </article>
       {% endfor %}
@@ -123,10 +84,15 @@
 {% if category_nav %}
 <nav class="kc-container kc-section--tight" aria-label="Categories">
   <div class="kc-categories">
-    <a href="#shop-catalog" class="category-chip kc-category-chip is-active" data-target="#shop-catalog">All</a>
+    <a href="#shop-catalog" class="category-chip kc-category-chip is-active" data-target="#shop-catalog">
+      <span class="kc-cat-icon" aria-hidden="true">🛍️</span> All
+    </a>
     {% for cat in category_nav %}
     {% if cat.slug != 'all' %}
-    <a href="{{ cat.anchor }}" class="category-chip kc-category-chip" data-target="{{ cat.anchor }}">{{ cat.name }}</a>
+    <a href="{{ cat.anchor }}" class="category-chip kc-category-chip" data-target="{{ cat.anchor }}">
+      {% if cat.icon %}<span class="kc-cat-icon" aria-hidden="true">{{ cat.icon }}</span>{% endif %}
+      {{ cat.name }}
+    </a>
     {% endif %}
     {% endfor %}
   </div>
@@ -200,15 +166,24 @@
   </div>
 </section>
 
+{% if about_blurb %}
+<section class="kc-about-strip" aria-label="About {{ brand_name }}">
+  <div class="kc-container kc-about-inner">
+    <h2 class="kc-about-title">About {{ brand_name }}</h2>
+    <p class="kc-about-text">{{ about_blurb }}</p>
+  </div>
+</section>
+{% endif %}
+
 {% if shop_testimonials %}
 <section class="kc-section kc-section--tight" aria-label="Testimonials">
   <div class="kc-container">
     <div class="kc-section-head"><h2 class="kc-section-title">What clients say</h2></div>
-    <div class="shop-faq-list">
+    <div class="kc-testimonials-grid">
       {% for t in shop_testimonials|slice:":4" %}
-      <blockquote class="shop-faq-item p-4">
-        <p class="shop-faq-answer">"{{ t.quote }}"</p>
-        {% if t.name %}<cite class="text-xs opacity-70 mt-2 block">— {{ t.name }}</cite>{% endif %}
+      <blockquote class="kc-testimonial-card">
+        <p class="kc-testimonial-quote">"{{ t.quote }}"</p>
+        {% if t.name %}<cite class="kc-testimonial-author">— {{ t.name }}</cite>{% endif %}
       </blockquote>
       {% endfor %}
     </div>

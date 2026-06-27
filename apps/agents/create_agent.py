@@ -491,9 +491,14 @@ def build_system_prompt(user) -> str:
         "- Match the brand voice EXACTLY. Adapt frameworks to their tone, not the other way around.",
         "- Write content people would SAVE, SHARE, or SCREENSHOT — not just scroll past.",
         "",
+    ]
+    from apps.content.post_copy import HUMAN_COPY_RULES
+
+    parts.append(HUMAN_COPY_RULES)
+    parts.extend([
         CONTENT_FRAMEWORKS,
         ENGAGEMENT_ENGINEERING,
-    ]
+    ])
 
     # Brand voice
     if profile.brand_voice:
@@ -750,6 +755,11 @@ For each platform, consider:
 
     prompt += f"""### TARGET PLATFORMS
 {platform_section}
+
+### COPY QUALITY CHECK
+Before returning JSON, read each content_text aloud. It must sound like a real person
+typed it on their phone — warm paragraphs with blank lines between sections, not a
+spec sheet or emoji bullet dump.
 
 ### OUTPUT FORMAT
 Respond with a JSON object. No markdown code fences. Structure:
@@ -1418,6 +1428,7 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
             draft = PostDraft.from_llm_dict(pd)
             # Strip invisible Unicode characters + markdown syntax at creation time.
             # Both are safety nets: the prompt says no markdown, but LLMs still slip.
+            from apps.content.post_copy import polish_post_caption
             from apps.content.tasks import sanitize_content, strip_markdown, _PLAIN_TEXT_PLATFORMS
             content_text = sanitize_content(draft.content_text)
             if content_text != draft.content_text:
@@ -1433,6 +1444,11 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
                         platform,
                     )
                     content_text = md_stripped
+            content_text = polish_post_caption(
+                content_text,
+                platform,
+                post_format=(getattr(draft, "post_format", None) or pd.get("post_format") or "text"),
+            )
 
             # Diagnostic: warn if content seems suspiciously short
             # (may indicate LLM token-limit truncation salvaged by JSON repair)
@@ -1920,7 +1936,18 @@ Respond with a JSON object. No markdown code fences.
         draft = PostDraft.from_llm_dict(data)
 
         # Keep existing content_text if the LLM returned nothing usable
-        post.content_text = draft.content_text or post.content_text
+        from apps.content.post_copy import polish_post_caption
+        from apps.content.tasks import sanitize_content, strip_markdown, _PLAIN_TEXT_PLATFORMS
+
+        refreshed = draft.content_text or post.content_text
+        refreshed = sanitize_content(refreshed)
+        if platform in _PLAIN_TEXT_PLATFORMS:
+            refreshed = strip_markdown(refreshed)
+        post.content_text = polish_post_caption(
+            refreshed,
+            platform,
+            post_format=post.post_format or "text",
+        )
         post.ai_angle = draft.angle
         post.ai_framework = draft.framework_used
         post.ai_reasoning = draft.reasoning

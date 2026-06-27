@@ -94,10 +94,19 @@
         {% endif %}
       </div>
       {% if product_highlights %}
-      <ul class="offer-highlights offer-highlights--compact" aria-label="Key benefits">
+      <ul class="offer-highlights offer-highlights--pills" aria-label="Key benefits">
         {% for highlight in product_highlights %}<li>{{ highlight }}</li>{% endfor %}
       </ul>
       {% endif %}
+      <div class="offer-guarantee-strip" aria-label="Purchase confidence">
+        {% if wa_url %}
+        <div class="offer-guarantee-item"><span>💬</span> WhatsApp support</div>
+        {% endif %}
+        {% if mpesa_available %}
+        <div class="offer-guarantee-item"><span>📱</span> M-Pesa ready</div>
+        {% endif %}
+        <div class="offer-guarantee-item"><span>✓</span> Verified seller</div>
+      </div>
       {% if can_purchase %}
       {% include "products/public/_checkout_whatsapp_first.html" %}
       {% endif %}
