@@ -440,11 +440,10 @@ def build_ken_burns_variants(slide_roles: list[str]) -> list[int]:
 
 
 def _sources_have_baked_captions(urls: list[str]) -> bool:
-    """Carousel / promo JPEGs already include headlines — skip reel lower-third hooks."""
+    """Carousel JPEGs already include headlines — skip reel lower-third hooks on those slides."""
     markers = (
         "/carousels/",
         "product_carousel",
-        "promo_frame",
         "catalog_carousel",
     )
     for url in urls:
@@ -452,6 +451,34 @@ def _sources_have_baked_captions(urls: list[str]) -> bool:
         if any(marker in lowered for marker in markers):
             return True
     return False
+
+
+def _cta_hook_for_plan(
+    *,
+    slide_count: int,
+    slide_roles: list[str],
+    price_label: str,
+    cta_label: str,
+) -> tuple[int, str] | None:
+    """Price + action for the closing CTA beat when earlier slides are text-free."""
+    roles = list(slide_roles or [])
+    while len(roles) < slide_count:
+        roles.append("")
+    cta_indices = [i for i, r in enumerate(roles) if r == SLIDE_ROLE_CTA]
+    if not cta_indices:
+        return None
+    cta_idx = cta_indices[-1]
+    price = (price_label or "").strip()[:32]
+    cta = _short_cta(cta_label)
+    if price and cta:
+        line = f"{price}\n{cta}"
+    elif price:
+        line = price
+    elif cta:
+        line = cta
+    else:
+        return None
+    return cta_idx, line
 
 
 def build_reel_plan(
@@ -506,6 +533,15 @@ def build_reel_plan(
     mood = RECIPE_MOODS.get(recipe, "upbeat")
     if skip_hooks:
         hooks = [""] * len(ordered)
+        cta_hook = _cta_hook_for_plan(
+            slide_count=len(ordered),
+            slide_roles=roles,
+            price_label=price_label,
+            cta_label=cta_label,
+        )
+        if cta_hook:
+            cta_idx, cta_line = cta_hook
+            hooks[cta_idx] = cta_line
     else:
         hooks = build_hook_texts(
             slide_count=len(ordered),

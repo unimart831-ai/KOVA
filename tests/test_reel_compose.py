@@ -17,7 +17,12 @@ from apps.content.reel_music import (
     replace_track_file,
     resolve_track_path,
 )
-from apps.content.video_compose import ffmpeg_available, fit_image_to_story_frame, is_video_url
+from apps.content.video_compose import (
+    ffmpeg_available,
+    fit_composite_slide_to_story,
+    fit_image_to_story_frame,
+    is_video_url,
+)
 
 
 @pytest.fixture
@@ -82,6 +87,20 @@ class TestVideoComposeHelpers:
         img.save(buf, format="JPEG")
         frame = fit_image_to_story_frame(buf.getvalue())
         assert frame.size == (1080, 1920)
+
+    def test_fit_promo_frame_letterboxes_centered(self):
+        img = Image.new("RGB", (1080, 1080), color=(200, 100, 50))
+        buf = BytesIO()
+        img.save(buf, format="JPEG")
+        data = buf.getvalue()
+        frame = fit_composite_slide_to_story(data)
+        assert frame.size == (1080, 1920)
+        center = frame.getpixel((540, 960))
+        assert center[0] > 150
+
+        hinted = fit_image_to_story_frame(data, source_hint="/media/studio/promo_frame_abc.jpg")
+        assert hinted.size == (1080, 1920)
+        assert hinted.getpixel((540, 960))[0] > 150
 
     @pytest.mark.skipif(not ffmpeg_available(), reason="FFmpeg not installed")
     def test_compose_single_image_reel(self):

@@ -139,7 +139,7 @@ def render_cta_beat_frame(
     brand: BeatFrameBrand | dict | None = None,
     product_image_bytes: bytes | None = None,
 ) -> Image.Image:
-    """Closing beat — price + CTA on designed card (never over product pixels)."""
+    """Closing beat — hero product centered, price + CTA in a bottom panel."""
     brand = _brand_from_context(brand)
     w, h = STORY_WIDTH, STORY_HEIGHT
     primary = _hex_to_rgb(brand.primary)
@@ -150,52 +150,64 @@ def render_cta_beat_frame(
     draw = ImageDraw.Draw(canvas)
     _draw_vertical_gradient(draw, w, h, (8, 12, 24), primary)
 
-    card_h = int(h * 0.42)
-    card_y = int(h * 0.30)
-    card_margin = int(w * 0.08)
+    panel_top = int(h * 0.62)
+    panel_margin = int(w * 0.07)
     draw.rounded_rectangle(
-        [(card_margin, card_y), (w - card_margin, card_y + card_h)],
-        radius=28,
+        [(panel_margin, panel_top), (w - panel_margin, h - int(h * 0.08))],
+        radius=32,
         fill=(255, 255, 255),
     )
 
     if product_image_bytes:
         try:
-            thumb = Image.open(BytesIO(product_image_bytes)).convert("RGB")
-            thumb_size = int(w * 0.28)
-            thumb = ImageOps.fit(thumb, (thumb_size, thumb_size), method=Image.LANCZOS)
-            thumb_x = w - card_margin - thumb_size - int(w * 0.04)
-            thumb_y = card_y + int(card_h * 0.12)
-            mask = Image.new("L", (thumb_size, thumb_size), 0)
-            mdraw = ImageDraw.Draw(mask)
-            mdraw.rounded_rectangle([(0, 0), (thumb_size, thumb_size)], radius=16, fill=255)
-            canvas.paste(thumb, (thumb_x, thumb_y), mask)
-        except Exception:
-            pass
+            product = Image.open(BytesIO(product_image_bytes)).convert("RGBA")
+            max_w = int(w * 0.78)
+            max_h = int(h * 0.42)
+            product.thumbnail((max_w, max_h), Image.LANCZOS)
+            px = (w - product.width) // 2
+            py = int(h * 0.06) + max((panel_top - int(h * 0.06) - product.height) // 2, 0)
 
-    inner_x = card_margin + int(w * 0.06)
-    inner_y = card_y + int(card_h * 0.14)
+            shadow = Image.new("RGBA", (product.width + 40, product.height + 40), (0, 0, 0, 0))
+            sh_draw = ImageDraw.Draw(shadow)
+            sh_draw.rounded_rectangle(
+                [(20, 24), (product.width + 20, product.height + 28)],
+                radius=20,
+                fill=(0, 0, 0, 70),
+            )
+            shadow = shadow.filter(ImageFilter.GaussianBlur(radius=12))
+            canvas.paste(shadow, (px - 20, py - 12), shadow)
+            canvas.paste(product, (px, py), product if product.mode == "RGBA" else None)
+            draw = ImageDraw.Draw(canvas)
+        except Exception:
+            draw = ImageDraw.Draw(canvas)
+
+    inner_x = panel_margin + int(w * 0.06)
+    inner_w = w - 2 * panel_margin - int(w * 0.12)
     price = (price_label or "").strip()
     cta = (cta_label or "Shop on WhatsApp").strip()[:36]
 
+    content_y = panel_top + int(h * 0.045)
     if price:
-        price_font = _get_font(int(h * 0.052), bold=True)
-        draw.text((inner_x, inner_y), price, font=price_font, fill=primary)
+        price_font = _get_font(int(h * 0.056), bold=True)
+        price_bbox = draw.textbbox((0, 0), price, font=price_font)
+        pw = price_bbox[2] - price_bbox[0]
+        draw.text(((w - pw) // 2, content_y), price, font=price_font, fill=primary)
+        content_y += int(h * 0.075)
 
     cta_font = _get_font(int(h * 0.034), bold=True)
-    cta_y = inner_y + (int(h * 0.07) if price else 0)
-    btn_h = int(h * 0.055)
-    btn_w = int(w * 0.52)
+    btn_h = int(h * 0.058)
+    btn_w = min(inner_w, int(w * 0.72))
+    btn_x = (w - btn_w) // 2
     draw.rounded_rectangle(
-        [(inner_x, cta_y), (inner_x + btn_w, cta_y + btn_h)],
-        radius=14,
+        [(btn_x, content_y), (btn_x + btn_w, content_y + btn_h)],
+        radius=16,
         fill=secondary,
     )
     cta_bbox = draw.textbbox((0, 0), cta, font=cta_font)
     cw = cta_bbox[2] - cta_bbox[0]
     ch = cta_bbox[3] - cta_bbox[1]
     draw.text(
-        (inner_x + (btn_w - cw) // 2, cta_y + (btn_h - ch) // 2 - 2),
+        (btn_x + (btn_w - cw) // 2, content_y + (btn_h - ch) // 2 - 2),
         cta,
         font=cta_font,
         fill=(255, 255, 255),
@@ -203,16 +215,19 @@ def render_cta_beat_frame(
 
     if brand.brand_name:
         foot_font = _get_font(int(h * 0.026))
+        name = brand.brand_name
+        nb = draw.textbbox((0, 0), name, font=foot_font)
+        nw = nb[2] - nb[0]
         draw.text(
-            (inner_x, card_y + card_h - int(h * 0.055)),
-            brand.brand_name,
+            ((w - nw) // 2, h - int(h * 0.055)),
+            name,
             font=foot_font,
-            fill=(100, 110, 130),
+            fill=(180, 190, 210),
         )
 
-    accent_bar = int(w * 0.12)
+    accent_bar = int(w * 0.14)
     draw.rounded_rectangle(
-        [(w - accent_bar) // 2, h - int(h * 0.12), (w + accent_bar) // 2, h - int(h * 0.12) + 5],
+        [(w - accent_bar) // 2, panel_top - int(h * 0.018), (w + accent_bar) // 2, panel_top - int(h * 0.018) + 5],
         radius=2,
         fill=accent,
     )
@@ -267,7 +282,7 @@ def write_beat_frame(
             brand=brand,
             product_image_bytes=hero,
         )
-    elif role == "cta" and text.strip():
+    elif role == "cta":
         price, cta = parse_cta_text(text)
         frame = render_cta_beat_frame(
             price_label=price,

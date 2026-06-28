@@ -1193,6 +1193,9 @@ def compose_reel_video(post_id: str):
         from apps.content.video_compose import compose_from_plan
 
         brand_ctx = brand_context_for_post(post).__dict__
+        if post.product:
+            brand_ctx["price_label"] = (post.product.display_price or "").strip()
+        brand_ctx["cta_label"] = meta.get("reel_cta_label", "Order on WhatsApp")
         mp4_bytes = None
         if reel_plan:
             from apps.media.remotion_bridge import compose_via_remotion

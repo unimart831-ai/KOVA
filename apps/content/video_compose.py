@@ -130,6 +130,36 @@ def _is_native_story_source(source: str) -> bool:
     return "channel_story" in u
 
 
+def _is_composite_slide_source(source: str) -> bool:
+    """Designed carousel / promo JPEGs — already have layout; never thumbnail into hero zone."""
+    u = (source or "").lower()
+    return any(
+        marker in u
+        for marker in ("promo_frame", "/carousels/", "product_carousel", "catalog_carousel")
+    )
+
+
+def fit_composite_slide_to_story(image_bytes: bytes) -> Image.Image:
+    """Letterbox a designed square or landscape slide into 9:16 — centered, full width."""
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
+
+    scale = target_w / max(img.width, 1)
+    new_w = target_w
+    new_h = int(img.height * scale)
+    if new_h > target_h:
+        scale = target_h / max(img.height, 1)
+        new_w = int(img.width * scale)
+        new_h = target_h
+
+    resized = img.resize((new_w, new_h), Image.LANCZOS)
+    canvas = _branded_story_background(target_w, target_h)
+    x = (target_w - new_w) // 2
+    y = (target_h - new_h) // 2
+    canvas.paste(resized, (x, y))
+    return canvas
+
+
 def fit_native_story_export(image_bytes: bytes) -> Image.Image:
     """Use Photoroom channel_story / channel_story_uncrop with minimal reframe."""
     img = Image.open(BytesIO(image_bytes)).convert("RGB")
@@ -155,6 +185,9 @@ def fit_image_to_story_frame(
     """
     if _is_native_story_source(source_hint):
         return fit_native_story_export(image_bytes)
+
+    if _is_composite_slide_source(source_hint):
+        return fit_composite_slide_to_story(image_bytes)
 
     img = Image.open(BytesIO(image_bytes)).convert("RGB")
     target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
@@ -426,8 +459,16 @@ def _ken_burns_ease(progress_expr: str) -> str:
     return f"(3*pow({progress_expr},2)-2*pow({progress_expr},3))"
 
 
-def _ken_burns_filter(slide_frames: int, variant: int = 0) -> str:
+def _ken_burns_filter(slide_frames: int, variant: int = 0, *, static: bool = False) -> str:
     """zoompan filter — eased Ken Burns with directional pan, zoom in/out, and drift."""
+    h, w = OUTPUT_HEIGHT, OUTPUT_WIDTH
+    d = max(slide_frames, 1)
+    if static:
+        return (
+            f"zoompan=z='1':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+            f"d={slide_frames}:s={w}x{h}:fps={DEFAULT_FPS}"
+        )
+
     v = variant % 10
     h, w = OUTPUT_HEIGHT, OUTPUT_WIDTH
     pan_y = int(h * 0.10)
@@ -681,15 +722,24 @@ def compose_motion_reel(
     try:
         frame_paths: list[Path] = []
         texts = hook_texts or []
-        roles = slide_roles or []
+        roles = list(slide_roles or [])
+        if not roles:
+            for src in sources:
+                sl = (src or "").lower()
+                if "promo_frame" in sl:
+                    roles.append("cta")
+                elif "channel_story" in sl:
+                    roles.append("hook")
+                else:
+                    roles.append("hero")
         slide_count = len(sources)
         use_beat_frames = False
         hero_bytes: bytes | None = None
-        if roles:
-            from apps.content.reel_frame_studio import beat_frames_enabled, write_beat_frame
+        from apps.content.reel_frame_studio import beat_frames_enabled, write_beat_frame
 
-            use_beat_frames = beat_frames_enabled()
-            if use_beat_frames and sources:
+        if beat_frames_enabled():
+            use_beat_frames = True
+            if sources:
                 try:
                     hero_bytes = _download_bytes(sources[0])
                 except Exception:
@@ -699,17 +749,26 @@ def compose_motion_reel(
             frame_path = workdir / f"frame_{idx:02d}.jpg"
             text = texts[idx] if idx < len(texts) else ""
             role = roles[idx] if idx < len(roles) else ""
+            if not role and _is_composite_slide_source(source):
+                role = "cta"
             if role in ("hero", "staging", "angle", "desire"):
                 text = ""
             image_bytes = _download_bytes(source)
+            is_closing = role == "cta" or _is_composite_slide_source(source)
 
-            if use_beat_frames and role in ("hook", "cta") and text.strip():
+            if use_beat_frames and (role == "hook" and text.strip() or is_closing):
                 from apps.content.reel_frame_studio import write_beat_frame
 
+                beat_text = text
+                if is_closing and not beat_text.strip():
+                    ctx = brand_context or {}
+                    price = (ctx.get("price_label") or "").strip()
+                    cta = (ctx.get("cta_label") or "Shop on WhatsApp").strip()
+                    beat_text = f"{price}\n{cta}" if price else cta
                 write_beat_frame(
                     frame_path,
-                    role=role,
-                    text=text,
+                    role="cta" if is_closing else role,
+                    text=beat_text,
                     image_bytes=image_bytes,
                     brand=brand_context,
                     slide_index=idx,
@@ -728,9 +787,12 @@ def compose_motion_reel(
                     source_hint=source,
                 )
             else:
-                frame = fit_image_to_story_frame(
-                    image_bytes, slide_index=idx, source_hint=source,
-                )
+                if _is_composite_slide_source(source):
+                    frame = fit_composite_slide_to_story(image_bytes)
+                else:
+                    frame = fit_image_to_story_frame(
+                        image_bytes, slide_index=idx, source_hint=source,
+                    )
                 if slide_count > 1 and show_progress_bars():
                     frame = render_progress_bar(
                         frame, slide_index=idx, slide_count=slide_count,
@@ -762,7 +824,10 @@ def compose_motion_reel(
             kb_variant = idx
             if ken_burns_variants and idx < len(ken_burns_variants):
                 kb_variant = ken_burns_variants[idx]
-            vf = _ken_burns_filter(slide_frames, variant=kb_variant)
+            role_for_kb = roles[idx] if idx < len(roles) else ""
+            src = source_list[idx] if idx < len(source_list) else ""
+            kb_static = role_for_kb == "cta" or _is_composite_slide_source(src)
+            vf = _ken_burns_filter(slide_frames, variant=kb_variant, static=kb_static)
             cmd = [
                 "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                 "-loop", "1", "-i", str(frame_path),

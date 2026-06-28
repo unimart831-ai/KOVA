@@ -62,8 +62,7 @@ def test_lifestyle_story_orders_edit_ai_slides():
     assert len(plan.image_urls) == 5
     assert "channel_story" in plan.image_urls[0]
     assert any("edit_ai_staging" in u for u in plan.image_urls)
-    # promo_frame URLs are carousel slides — hooks are baked in, no FFmpeg overlay
-    assert all(h == "" for h in plan.hook_texts)
+    assert plan.hook_texts[0]  # opening hook on channel_story beat
     assert plan.template == "story_arc"
 
 
@@ -86,7 +85,9 @@ def test_flash_drop_uses_flash_template_and_boost():
     assert plan.template == "flash_commerce"
     assert plan.cta_audio_boost is True
     assert plan.transition_sec == 0.35
-    assert all(h == "" for h in plan.hook_texts)
+    assert plan.hook_texts[0] == "Speaker"
+    assert "KES 500" in plan.hook_texts[-1]
+    assert plan.slide_roles[-1] == "cta"
 
 
 def test_build_reel_plan_assigns_role_aware_hooks():
@@ -124,4 +125,6 @@ def test_baked_carousel_urls_skip_hook_overlay():
         price_label="KES 850",
     )
     assert plan is not None
-    assert all(h == "" for h in plan.hook_texts)
+    assert plan.hook_texts[0] == ""
+    assert plan.hook_texts[1] == ""
+    assert "KES 850" in plan.hook_texts[-1]
