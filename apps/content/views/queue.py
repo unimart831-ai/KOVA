@@ -13,6 +13,8 @@ from apps.content.models import ContentSeed, Post
 from apps.teams.permissions import can_approve_post, get_teammate_ids
 from apps.utils import fire_task
 
+QUEUE_SECTION_CAP = 50
+
 
 def _apply_queue_filters(qs, platform_filter=None, format_filter=None, search_query=None):
     if platform_filter:
@@ -100,10 +102,10 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
         published_count=Count("id", filter=Q(status="published")),
     )
 
-    failed = list(failed_qs)
-    publishing = list(publishing_qs)
-    ready = list(ready_qs)
-    scheduled = list(scheduled_qs)
+    failed = list(failed_qs[:QUEUE_SECTION_CAP])
+    publishing = list(publishing_qs[:QUEUE_SECTION_CAP])
+    ready = list(ready_qs[:QUEUE_SECTION_CAP])
+    scheduled = list(scheduled_qs[:QUEUE_SECTION_CAP])
     published = list(published_qs)
 
     ready_batches, ready_ungrouped = _group_queue_by_seed(ready)

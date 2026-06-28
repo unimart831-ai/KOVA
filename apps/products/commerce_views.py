@@ -33,7 +33,6 @@ from apps.products.storefront import (
     featured_products,
     hero_carousel_slides,
     hero_promo_products,
-    portfolio_items_for_shop,
     products_by_category,
     resolve_hero_layout,
     resolve_storefront,
@@ -149,17 +148,20 @@ def public_shop_index(request, page_slug):
 
     user = profile.user
     brand = brand_name(profile, user)
+    page_slug = resolve_page_slug(profile)
     wa_text = f"Hi! I'd like to browse your offers — {brand}."
-    commerce_ctx = _commerce_context(profile, user, wa_text=wa_text)
-    shop_reels = get_public_shop_reels(profile)
-    from apps.products.commerce_gallery import get_published_media_gallery
+    commerce_ctx = _commerce_context(profile, user, wa_text=wa_text, request=request)
 
-    media_gallery = get_published_media_gallery(user)
+    from apps.products.commerce_cache import get_commerce_branding_cached, load_shop_auxiliary
+
+    aux = load_shop_auxiliary(profile, user, page_slug)
+    shop_reels = aux["shop_reels"]
+    media_gallery = aux["media_gallery"]
+    shop_testimonials = aux["shop_testimonials"]
+    portfolio_items_prefetch = aux["portfolio_items"]
     storefront = resolve_storefront(profile, user, products, shop_reels)
     seo = build_shop_page_seo(request, profile, user, products, shop_reels=shop_reels)
-    from apps.teams.branding import get_commerce_branding
-
-    commerce_branding = get_commerce_branding(user, profile)
+    commerce_branding = get_commerce_branding_cached(user, profile)
     if commerce_branding.get("custom_domain"):
         seo["canonical_url"] = f"https://{commerce_branding['custom_domain']}/shop/{resolve_page_slug(profile)}/"
 
@@ -174,7 +176,6 @@ def public_shop_index(request, page_slug):
         shop_category_nav,
         shop_hero_collage,
         shop_promo_banners,
-        shop_public_testimonials,
     )
 
     for p in products:
@@ -196,8 +197,7 @@ def public_shop_index(request, page_slug):
     promo_banner_left, promo_banner_right = shop_promo_banners(
         products, featured, reels=shop_reels,
     )
-    shop_testimonials = shop_public_testimonials(user)
-    portfolio_items = portfolio_items_for_shop(user) if storefront.get("show_portfolio") else []
+    portfolio_items = portfolio_items_prefetch if storefront.get("show_portfolio") else []
     service_products = service_offerings_for_shop(products) if storefront.get("business_model") == "service" else []
     booking_url = ""
     if storefront.get("show_bookings_cta"):

@@ -53,15 +53,14 @@ def product_list(request):
     paginator = Paginator(products, 24)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    # Stats
-    all_products = Product.objects.filter(user=request.user, is_active=True)
-    stats = {
-        "total": all_products.count(),
-        "in_stock": all_products.filter(stock_status=Product.StockStatus.IN_STOCK).count(),
-        "low_stock": all_products.filter(stock_status=Product.StockStatus.LOW_STOCK).count(),
-        "out_of_stock": all_products.filter(stock_status=Product.StockStatus.OUT_OF_STOCK).count(),
-        "featured": all_products.filter(is_featured=True).count(),
-    }
+    # Stats — one round-trip
+    stats = Product.objects.filter(user=request.user, is_active=True).aggregate(
+        total=Count("id"),
+        in_stock=Count("id", filter=Q(stock_status=Product.StockStatus.IN_STOCK)),
+        low_stock=Count("id", filter=Q(stock_status=Product.StockStatus.LOW_STOCK)),
+        out_of_stock=Count("id", filter=Q(stock_status=Product.StockStatus.OUT_OF_STOCK)),
+        featured=Count("id", filter=Q(is_featured=True)),
+    )
 
     categories = ProductCategory.objects.filter(user=request.user, is_active=True)
     unread_alerts = StockAlert.objects.filter(user=request.user, is_read=False).count()

@@ -109,13 +109,15 @@ class ProfilePrefetchMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if getattr(request, "user", None) and request.user.is_authenticated and request.user.pk:
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated and user.pk:
             from apps.accounts.profile_utils import ensure_user_profile
 
-            ensure_user_profile(request.user)
-            User = get_user_model()
-            try:
-                request.user = User.objects.select_related("profile").get(pk=request.user.pk)
-            except User.DoesNotExist:
-                pass
+            ensure_user_profile(user)
+            if "profile" not in user.__dict__:
+                User = get_user_model()
+                try:
+                    request.user = User.objects.select_related("profile").get(pk=user.pk)
+                except User.DoesNotExist:
+                    pass
         return self.get_response(request)

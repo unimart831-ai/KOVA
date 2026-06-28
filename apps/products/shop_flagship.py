@@ -204,8 +204,24 @@ def product_whatsapp_order_url(product, brand: str, profile, user, *, request=No
 
 
 def attach_product_wa_urls(products: list, brand: str, profile, user, *, request=None) -> None:
-    """Mutate products in-place with wa_order_url for templates."""
+    """Mutate products in-place with wa_order_url — one WhatsApp lookup for the whole grid."""
+    from urllib.parse import quote
+
+    from apps.products.commerce_social import resolve_shop_whatsapp
+    from apps.products.commerce_wa_orders import _absolute_redirect_base, build_wa_order_token
+
+    phone = resolve_shop_whatsapp(profile, user)
+    if not phone:
+        for product in products:
+            product.wa_order_url = ""
+        return
+
+    base = _absolute_redirect_base(request)
+    sep = "&" if "?" in base else "?"
+
     for product in products:
-        product.wa_order_url = product_whatsapp_order_url(
-            product, brand, profile, user, request=request,
-        )
+        if not product or not getattr(product, "pk", None):
+            product.wa_order_url = ""
+            continue
+        token = build_wa_order_token(product_id=str(product.pk), source="shop")
+        product.wa_order_url = f"{base}{sep}t={quote(token)}"

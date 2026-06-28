@@ -18,6 +18,7 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 STREAM_CAP = 12
+STREAM_CACHE_TTL = 45
 
 
 @dataclass
@@ -40,6 +41,19 @@ def build_decision_stream(user, brief=None) -> list[StreamItem]:
     stream and is capped individually so no single category floods the
     list. The final stream is capped at STREAM_CAP items.
     """
+    from django.core.cache import cache
+
+    cache_key = f"brief:stream:{user.pk}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    stream = _build_decision_stream_uncached(user, brief)
+    cache.set(cache_key, stream, STREAM_CACHE_TTL)
+    return stream
+
+
+def _build_decision_stream_uncached(user, brief=None) -> list[StreamItem]:
     stream: list[StreamItem] = []
 
     stream += _failed_posts(user)

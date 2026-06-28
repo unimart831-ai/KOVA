@@ -173,7 +173,21 @@
           retryDelay = Math.min(retryDelay * 2, maxRetry);
         };
       }
-      connect();
+      function scheduleConnect() {
+        if (window.__kovaWsScheduled) return;
+        window.__kovaWsScheduled = true;
+        var run = function() { connect(); };
+        if (window.requestIdleCallback) {
+          requestIdleCallback(run, { timeout: 4000 });
+        } else {
+          setTimeout(run, 2500);
+        }
+      }
+      if (document.readyState === "complete") {
+        scheduleConnect();
+      } else {
+        window.addEventListener("load", scheduleConnect);
+      }
     })();
   </script>
   {% endif %}

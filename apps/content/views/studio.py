@@ -158,11 +158,15 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     if source_filter == "holiday":
         posts = posts.filter(generated_by_agent="holiday_watcher")
 
+    STUDIO_POST_CAP = 120
+    total_pending = posts.count()
+    posts_page = list(posts[:STUDIO_POST_CAP])
+
     seed_groups = []
     grouped = defaultdict(list)
     ungrouped = []
 
-    for post in posts:
+    for post in posts_page:
         if post.seed_id:
             grouped[post.seed_id].append(post)
         else:
@@ -190,7 +194,7 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
             ))
 
     seed_groups.sort(key=lambda g: g["seed"].created_at, reverse=True)
-    return seed_groups, ungrouped, posts.count()
+    return seed_groups, ungrouped, total_pending
 
 
 def _enrich_seed_group(seed_obj, seed_posts, *, connected_platforms=None):

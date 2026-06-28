@@ -63,6 +63,7 @@ def primary_kova_page(user):
 
     return (
         KovaPage.objects.filter(user=user, is_published=True)
+        .prefetch_related("links", "forms")
         .order_by("-created_at")
         .first()
     )
@@ -112,7 +113,11 @@ def build_unified_shop_footer(profile, user, request=None) -> dict:
 
     if page:
         shop_url = canonical_shop_path(profile)
-        for link in page.links.filter(is_active=True).order_by("order", "-created_at"):
+        active_links = sorted(
+            (link for link in page.links.all() if link.is_active),
+            key=lambda link: (link.order, link.created_at or link.pk),
+        )
+        for link in active_links:
             if link.link_type == KovaLink.LinkType.HEADER:
                 continue
             href = _link_public_href(link, page.slug)
@@ -129,7 +134,12 @@ def build_unified_shop_footer(profile, user, request=None) -> dict:
                 "external": href.startswith(("http://", "https://", "mailto:", "tel:")),
             })
 
-        for form in page.forms.filter(is_active=True).order_by("-created_at"):
+        active_forms = sorted(
+            (form for form in page.forms.all() if form.is_active),
+            key=lambda form: form.created_at or form.pk,
+            reverse=True,
+        )
+        for form in active_forms:
             kova_forms.append({
                 "id": str(form.pk),
                 "title": form.title,
@@ -141,7 +151,7 @@ def build_unified_shop_footer(profile, user, request=None) -> dict:
                 ),
             })
 
-        first_form = page.forms.filter(is_active=True).first()
+        first_form = active_forms[0] if active_forms else None
         if first_form:
             active_form = first_form
             form_instance = PublicFormSubmissionForm()
