@@ -270,7 +270,16 @@ if SENTRY_DSN:
             None if event.get("transaction") == "/health/" else event
         ),
     )
-else:\n    # start.sh already prints the SENTRY_DSN shell warning before the server\n    # starts — a second Python logger.warning on every settings import creates\n    # duplicate noise in the Railway log. Use DEBUG so it stays diagnostic but\n    # silent in production log filters.\n    import logging as _logging\n\n    _logging.getLogger("django").debug(\n        "SENTRY_DSN not set — Sentry disabled (see start.sh warning above)"\n    )
+else:
+    # start.sh already prints the SENTRY_DSN shell warning before the server
+    # starts — a second Python logger.warning on every settings import creates
+    # duplicate noise in the Railway log. Use DEBUG so it stays diagnostic but
+    # silent in production log filters.
+    import logging as _logging
+
+    _logging.getLogger("django").debug(
+        "SENTRY_DSN not set — Sentry disabled (see start.sh warning above)"
+    )
 
 # ─── CONTENT SAFETY ──────────────────────────────────────────────────────────
 CONTENT_SAFETY_ENABLED = env.bool("CONTENT_SAFETY_ENABLED", default=True)  # noqa: F405
