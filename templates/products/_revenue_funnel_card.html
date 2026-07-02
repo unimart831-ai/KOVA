@@ -1,0 +1,45 @@
+{# Revenue Funnel attribution card. Expects `revenue_funnel` in context. #}
+{% if revenue_funnel %}
+<div class="app-surface p-4 sm:p-5 space-y-3">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300">Revenue Funnel</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Attributed sales for this product</p>
+    </div>
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      {% if revenue_funnel.status == 'converted' %}bg-growth-100 text-growth-800 dark:bg-growth-950 dark:text-growth-200
+      {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+      {{ revenue_funnel.get_status_display }}
+    </span>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Conversions</p>
+      <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white mt-0.5">{{ revenue_funnel.conversions }}</p>
+    </div>
+    <div class="p-3 rounded-lg bg-kova-50 dark:bg-kova-950/40">
+      <p class="text-xs text-gray-500 dark:text-gray-400">Attributed Revenue</p>
+      <p class="text-xl font-bold tabular-nums text-kova-700 dark:text-kova-300 mt-0.5">
+        {{ revenue_funnel.currency }} {{ revenue_funnel.attributed_revenue|floatformat:0|intcomma }}
+      </p>
+    </div>
+  </div>
+
+  {# Funnel stages progress #}
+  {% if revenue_funnel.stages %}
+  <div class="flex items-center gap-1">
+    {% for stage in revenue_funnel.STAGES %}
+    {% with done=revenue_funnel.stages|get_dict_value:stage %}
+    <div class="flex-1 h-1.5 rounded-full {% if done.done %}bg-kova-600{% else %}bg-gray-200 dark:bg-gray-700{% endif %}"></div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+  <div class="flex justify-between text-[10px] text-gray-400 -mt-1">
+    {% for stage in revenue_funnel.STAGES %}
+    <span>{{ stage|title }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}

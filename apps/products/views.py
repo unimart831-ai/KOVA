@@ -211,6 +211,14 @@ def product_detail(request, product_id):
         and any(not s.get("is_original") for s in gallery_scenes)
     )
 
+    # Revenue Funnel — attributed revenue for this product
+    funnel = None
+    try:
+        from apps.products.models import RevenueFunnel
+        funnel = RevenueFunnel.objects.filter(user=request.user, product=product).first()
+    except Exception:
+        funnel = None
+
     return render(request, "products/product_detail.html", {
         "product": product,
         "stock_history": stock_history,
@@ -239,6 +247,7 @@ def product_detail(request, product_id):
         ),
         "asset_pack": asset_pack,
         "asset_pack_has_polish": any(g.id != "original" for g in asset_pack),
+        "revenue_funnel": funnel,
     })
 
 

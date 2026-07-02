@@ -18,10 +18,10 @@
   {% if brief %}
 
     {% if brief_is_stale %}
-    <div class="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-      <svg class="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl bg-accent-50 dark:bg-accent-950/30 border border-accent-200 dark:border-accent-800">
+      <svg class="w-5 h-5 text-accent-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-blue-900 dark:text-blue-100">
+        <p class="text-sm font-medium text-accent-900 dark:text-accent-100">
           {% if brief_time_passed %}
             Today's brief is being prepared — showing {{ brief.date|date:"M j" }} for now
           {% else %}
@@ -29,12 +29,25 @@
           {% endif %}
         </p>
       </div>
-      <a href="{% url 'brief:archive' %}" class="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline shrink-0">Past briefs →</a>
+      <a href="{% url 'brief:archive' %}" class="text-sm font-medium text-accent-700 dark:text-accent-300 hover:underline shrink-0">Past briefs →</a>
     </div>
     {% endif %}
 
     {# ━━━ 1. SCORE BAR ━━━ #}
     {% include "briefs/_score_bar.html" %}
+
+    {# ━━━ BEST NEXT ACTION — the single most important move right now ━━━ #}
+    {% if best_next_action %}
+    <div class="flex items-start gap-4 px-5 py-4 rounded-xl bg-kova-700 text-white shadow-kova">
+      <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold uppercase tracking-widest text-white/70 mb-0.5">Best next action</p>
+        <p class="text-base font-semibold text-white leading-snug">{{ best_next_action }}</p>
+      </div>
+    </div>
+    {% endif %}
 
     {# ━━━ 2. DECISION STREAM — the single queue ━━━ #}
     <div>

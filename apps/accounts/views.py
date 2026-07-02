@@ -1113,6 +1113,40 @@ def ai_learning_reset(request):
     return redirect("accounts:ai_learning")
 
 
+@login_required
+def business_brain_view(request):
+    """The Business Brain — what Kova understands about your business.
+
+    Shows all 6 DNA layers (business, brand, customer, growth, market,
+    learning) in a readable format so the owner can watch Kova become
+    smarter and fill in any gaps.
+    """
+    from apps.accounts.business_brain import brain_completeness, build_brain_snapshot
+    from apps.agents.models import AgentAction
+
+    profile = request.user.profile
+    snapshot = build_brain_snapshot(profile)
+
+    # Recent learning history (Adapt mutations, last 30)
+    recent_learning = list(
+        AgentAction.objects.filter(
+            user=request.user, agent_type="adapt",
+        ).order_by("-created_at")[:30]
+    )
+    things_learned = AgentAction.objects.filter(
+        user=request.user, agent_type__in=["adapt", "research", "analyst"],
+    ).count()
+
+    return render(request, "accounts/business_brain.html", {
+        "profile": profile,
+        "snapshot": snapshot,
+        "completeness": snapshot.get("completeness", 0),
+        "recent_learning": recent_learning,
+        "things_learned": things_learned,
+        "page_title": "Business Brain",
+    })
+
+
 @ratelimit(key="ip", rate="20/m", block=True)
 def facebook_signup_connect(request):
     """

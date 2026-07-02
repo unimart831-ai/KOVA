@@ -1,0 +1,296 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Business Brain — {{ profile.company_name|default:"Your Business" }}{% endblock %}
+{% block page_title %}Business Brain{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">What Kova understands about {{ profile.company_name|default:"your business" }}</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  {# ── Completeness card ── #}
+  <div class="app-surface p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300">Business Brain</p>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mt-0.5">
+          {% if completeness >= 80 %}Kova deeply understands your business
+          {% elif completeness >= 50 %}Kova has a solid picture — keep teaching it
+          {% else %}Kova is still learning — a few more details will make a big difference
+          {% endif %}
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          {{ things_learned|default:0 }} thing{{ things_learned|default:0|pluralize }} learned so far
+        </p>
+      </div>
+      <div class="text-right shrink-0">
+        <div class="text-4xl font-black tabular-nums leading-none {% if completeness >= 75 %}text-kova-700 dark:text-kova-400{% elif completeness >= 50 %}text-gold-500{% else %}text-gray-400{% endif %}">
+          {{ completeness }}<span class="text-base text-gray-400 font-bold">%</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Brain completeness</p>
+      </div>
+    </div>
+    <div class="mt-4 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+      <div class="h-full rounded-full bg-kova-600 transition-all duration-700"
+           style="width: {{ completeness }}%"></div>
+    </div>
+  </div>
+
+  {# ── Business DNA ── #}
+  {% with bd=snapshot.business %}
+  <div class="app-surface overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-950 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-kova-700 dark:text-kova-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 dark:text-white">Business DNA</h3>
+      <span class="ml-auto text-xs text-gray-400">How you make money</span>
+    </div>
+    <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Business name</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ bd.company_name|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Industry</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ profile.get_industry_display|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Business model</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ profile.get_business_model_display|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Website</p>
+        <p class="text-sm text-gray-900 dark:text-white truncate">{{ bd.website_url|default:"—" }}</p>
+      </div>
+      {% if profile.key_offerings %}
+      <div class="sm:col-span-2">
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Offerings</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for o in profile.key_offerings %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200">{{ o }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}
+
+  {# ── Brand DNA ── #}
+  {% with br=snapshot.brand %}
+  <div class="app-surface overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div class="w-8 h-8 rounded-lg bg-gold-100 dark:bg-gold-950/40 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 dark:text-white">Brand DNA</h3>
+      <span class="ml-auto text-xs text-gray-400">Your voice and story</span>
+    </div>
+    <div class="p-5 space-y-4">
+      {% if br.brand_voice %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Brand voice</p>
+        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{{ br.brand_voice|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+      {% if br.founder_story %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Founder story</p>
+        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed italic">"{{ br.founder_story|truncatewords:50 }}"</p>
+      </div>
+      {% endif %}
+      {% if br.tone_attributes %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Tone</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for t in br.tone_attributes %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{{ t }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% if not br.brand_voice and not br.founder_story %}
+      <p class="text-sm text-gray-400 italic">Not set yet — <a href="{% url 'accounts:settings' %}" class="text-kova-600 dark:text-kova-400 hover:underline">add your brand voice</a> so Kova writes in your style.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}
+
+  {# ── Customer DNA ── #}
+  {% with cu=snapshot.customer %}
+  <div class="app-surface overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div class="w-8 h-8 rounded-lg bg-growth-100 dark:bg-growth-950 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-growth-700 dark:text-growth-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 dark:text-white">Customer DNA</h3>
+      <span class="ml-auto text-xs text-gray-400">Who you serve</span>
+    </div>
+    <div class="p-5 space-y-4">
+      {% if cu.target_audience %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Ideal customer</p>
+        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{{ cu.target_audience|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+      {% if cu.customer_problems %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Problems they face</p>
+        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{{ cu.customer_problems|truncatewords:40 }}</p>
+      </div>
+      {% endif %}
+      {% if cu.buy_triggers %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Why they choose you</p>
+        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{{ cu.buy_triggers|truncatewords:40 }}</p>
+      </div>
+      {% endif %}
+      {% if cu.common_questions %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Common questions Kova answers for them</p>
+        <ul class="space-y-1">
+          {% for q in cu.common_questions|slice:":6" %}
+          <li class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <span class="text-kova-500 mt-0.5">·</span> {{ q }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if not cu.target_audience and not cu.customer_problems %}
+      <p class="text-sm text-gray-400 italic">Help Kova understand your customers better — <a href="{% url 'accounts:settings' %}" class="text-kova-600 dark:text-kova-400 hover:underline">add customer details</a>.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}
+
+  {# ── Growth DNA ── #}
+  {% with gr=snapshot.growth %}
+  <div class="app-surface overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div class="w-8 h-8 rounded-lg bg-kova-50 dark:bg-kova-950 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 dark:text-white">Growth DNA</h3>
+      <span class="ml-auto text-xs text-gray-400">Where you're headed</span>
+    </div>
+    <div class="p-5 space-y-4">
+      {% if gr.success_vision %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">One-year vision</p>
+        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">"{{ gr.success_vision }}"</p>
+      </div>
+      {% endif %}
+      {% if profile.goals %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Current goals</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for goal in profile.goals %}
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200">
+            <svg class="w-3 h-3 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            {{ goal|replace:"_":" "|title }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% if gr.posting_frequency %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Target posting frequency</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ gr.posting_frequency }} post{{ gr.posting_frequency|pluralize }} per week</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}
+
+  {# ── Learning DNA ── #}
+  {% with le=snapshot.learning %}
+  <div class="app-surface overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/30 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 dark:text-white">What Kova Has Learned</h3>
+      <span class="ml-auto text-xs text-gray-400">{{ things_learned|default:0 }} insights</span>
+    </div>
+    <div class="p-5 space-y-4">
+      {% if le.dna_preferences %}
+        {% with promoted=le.dna_preferences.promoted retired=le.dna_preferences.retired %}
+        {% if promoted %}
+        <div>
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Content that works for you ⭐</p>
+          <ul class="space-y-1.5">
+            {% for p in promoted|slice:":5" %}
+            <li class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+              <svg class="w-4 h-4 text-growth-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              {{ p.combo.pillar|default:"" }}{% if p.combo.format %} · {{ p.combo.format }}{% endif %}{% if p.combo.tone %} · {{ p.combo.tone }}{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        {% if retired %}
+        <div>
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Content Kova is stepping back from</p>
+          <ul class="space-y-1.5">
+            {% for r in retired|slice:":3" %}
+            <li class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              {{ r.combo.pillar|default:"" }}{% if r.combo.format %} · {{ r.combo.format }}{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        {% endwith %}
+      {% endif %}
+      {% if le.optimal_schedule %}
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Best times to post</p>
+        {% for platform, sched in le.optimal_schedule.items %}
+        <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 mb-1">
+          <span class="font-medium capitalize w-20">{{ platform }}</span>
+          <span class="text-gray-500">{{ sched.best_days|join:", "|default:"Any day" }}</span>
+          {% if sched.best_hours %}
+          <span class="text-gray-400">·</span>
+          <span class="text-gray-500">
+            {% for h in sched.best_hours %}{% if h >= 12 %}{{ h|add:"-12" }}pm{% else %}{{ h }}am{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+          </span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if not le.dna_preferences and not le.optimal_schedule %}
+      <p class="text-sm text-gray-400 italic">Kova's learning loop starts after you've published a few posts. Once live, it reads your performance and automatically adapts your content strategy.</p>
+      {% endif %}
+      <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
+        <a href="{% url 'accounts:ai_learning' %}" class="text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">View full learning history →</a>
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+
+  {# ── CTA to fill gaps ── #}
+  {% if completeness < 80 %}
+  <div class="app-surface p-5 bg-kova-50 dark:bg-kova-950/30 border-kova-200 dark:border-kova-900">
+    <div class="flex items-start gap-4">
+      <div class="w-10 h-10 rounded-xl bg-kova-700 flex items-center justify-center shrink-0">
+        <span class="text-white font-bold text-lg">+</span>
+      </div>
+      <div class="flex-1">
+        <p class="font-semibold text-gray-900 dark:text-white">Teach Kova more about your business</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">The more Kova understands, the better every campaign, reply, and recommendation becomes.</p>
+        <a href="{% url 'accounts:settings' %}" class="inline-flex items-center mt-3 px-4 py-2 rounded-lg bg-kova-700 text-white text-sm font-medium hover:bg-kova-800 transition-colors">
+          Update Business Profile
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

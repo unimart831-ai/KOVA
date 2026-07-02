@@ -14,6 +14,7 @@ urlpatterns = [
     path("settings/ai-learning/<uuid:action_id>/revert/", views.ai_learning_revert, name="ai_learning_revert"),
     path("settings/ai-learning/toggle-pause/", views.ai_learning_toggle_pause, name="ai_learning_toggle_pause"),
     path("settings/ai-learning/reset/", views.ai_learning_reset, name="ai_learning_reset"),
+    path("business-brain/", views.business_brain_view, name="business_brain"),
     path("onboarding/", views.onboarding_view, name="onboarding"),
     path("onboarding/start/", views.onboarding_choose_path, name="onboarding_choose_path"),
     path("onboarding/phone/", views.collect_phone, name="collect_phone"),

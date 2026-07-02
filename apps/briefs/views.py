@@ -453,6 +453,8 @@ def brief_home(request):
             connected_platforms=connected_platforms,
         ),
         "kova_today_subtitle": "",
+        # Best Next Action — single most important thing the owner should do now
+        "best_next_action": extract_your_move(brief) if brief else None,
     })
 
 
