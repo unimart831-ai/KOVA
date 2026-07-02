@@ -51,76 +51,77 @@ textarea {
 
 @layer base {
   :root {
-    /* ── Kova brand palette — 3 solid colors (no purple, no gradients) ──
-     * Navy    #1E3A8A  navigation, links, trust, headers
-     * Emerald #10B981  primary CTAs, revenue, success
-     * Gold    #F59E0B  attention, approvals, pending
+    /* ── Kova brand palette — Deep Emerald primary, Warm Gold secondary, Electric Blue accent ──
+     * Emerald  #047857  brand identity, growth, business success
+     * Gold     #F59E0B  opportunity, achievement, premium
+     * Blue     #3B82F6  interactive elements, focus rings, links (accent only)
      */
-    --brand-navy: #1E3A8A;
-    --brand-navy-hover: #172554;
-    --brand-navy-subtle: #EFF6FF;
-    --brand-emerald: #10B981;
+    --brand-primary: #047857;          /* Deep Emerald — BRAND PRIMARY */
+    --brand-primary-hover: #065F46;    /* deeper on hover */
+    --brand-primary-subtle: #ECFDF5;   /* light background tint */
+    --brand-primary-mid: #059669;      /* active/interactive states */
+    --brand-emerald: #10B981;          /* success / revenue indicator */
     --brand-emerald-hover: #059669;
     --brand-emerald-subtle: #ECFDF5;
-    --brand-gold: #F59E0B;
+    --brand-gold: #F59E0B;             /* opportunity, approvals */
+    --brand-gold-warm: #D4A017;        /* warm gold for premium badges */
     --brand-gold-subtle: #FFFBEB;
+    --brand-accent: #3B82F6;           /* Electric Blue — links, focus, interactive */
+    --brand-accent-hover: #2563EB;
+    --brand-accent-subtle: #EFF6FF;
 
-    /* Legacy aliases (same values) */
+    /* Legacy semantic aliases — maps to new palette */
     --growth-emerald: var(--brand-emerald);
     --growth-emerald-hover: var(--brand-emerald-hover);
     --growth-emerald-subtle: var(--brand-emerald-subtle);
-    --trust-blue: var(--brand-navy);
-    --trust-blue-hover: var(--brand-navy-hover);
-    --trust-blue-subtle: var(--brand-navy-subtle);
     --action-gold: var(--brand-gold);
     --action-gold-subtle: var(--brand-gold-subtle);
-    --kova-charcoal: #0F172A;
-    --kova-error: #DC2626;
+    --kova-charcoal: #111827;          /* Primary text (vision) */
+    --kova-error: #DC2626;             /* Red — only for genuine problems */
 
+    /* ── Surfaces: Soft White, clean and spacious (vision) ── */
     --kova-light-bg: #FFFFFF;
-    --kova-light-bg-muted: #E6ECF4;
-    --kova-light-bg-subtle: #F4F7FB;
-    --kova-light-text: #0F172A;
-    --kova-light-text-muted: #475569;
-    --kova-light-text-subtle: #64748B;
-    --kova-light-border: #CCD6E3;
-    --kova-light-border-subtle: #E2E9F2;
+    --kova-light-bg-muted: #FAFAFA;    /* background (vision #FAFAFA) */
+    --kova-light-bg-subtle: #F4F5F7;
+    --kova-light-text: #111827;        /* primary text (vision #111827) */
+    --kova-light-text-muted: #4B5563;
+    --kova-light-text-subtle: #6B7280; /* secondary text (vision #6B7280) */
+    --kova-light-border: #E5E7EB;      /* borders (vision #E5E7EB) */
+    --kova-light-border-subtle: #F4F5F7;
 
-    /* App shell — light mode surfaces (slate canvas, not flat white) */
-    --app-canvas: #E6ECF4;
-    --app-sidebar: #F4F7FB;
-    --app-header: #F4F7FB;
-    --app-surface: #FFFFFF;
-    --app-border: #CCD6E3;
-    --kova-accent: var(--brand-emerald);
-    --kova-accent-hover: var(--brand-emerald-hover);
-    --kova-accent-subtle: var(--brand-emerald-subtle);
-    --kova-trust: var(--brand-navy);
-    --kova-navy: #0F172A;
+    /* App shell — clean neutral surfaces, plenty of white space */
+    --app-canvas: #FAFAFA;             /* vision background */
+    --app-sidebar: #FFFFFF;            /* clean white sidebar */
+    --app-header: #FFFFFF;
+    --app-surface: #FFFFFF;            /* cards: white (vision) */
+    --app-border: #E5E7EB;             /* borders: #E5E7EB (vision) */
+    --kova-accent: var(--brand-primary);
+    --kova-accent-hover: var(--brand-primary-hover);
+    --kova-accent-subtle: var(--brand-primary-subtle);
+    --kova-trust: var(--brand-primary);
 
-    --chart-revenue: var(--brand-emerald);
+    --chart-revenue: var(--brand-primary);
     --chart-leads: #34D399;
-    --chart-content: var(--brand-navy);
+    --chart-content: var(--brand-accent);
     --chart-pending: var(--brand-gold);
     --chart-error: #DC2626;
   }
 
   .dark {
-    --kova-light-bg: #0F172A;
-    --kova-light-bg-muted: #1E293B;
-    --kova-light-bg-subtle: #334155;
-    --kova-light-text: #F8FAFC;
-    --kova-light-text-muted: #94A3B8;
-    --kova-light-text-subtle: #64748B;
-    --kova-light-border: #334155;
-    --kova-light-border-subtle: #1E293B;
-    --kova-accent-subtle: #06253C;
-    --kova-navy: #0F172A;
-    --app-canvas: #0F172A;
-    --app-sidebar: #0F172A;
-    --app-header: #0F172A;
-    --app-surface: #1E293B;
-    --app-border: #334155;
+    --kova-light-bg: #111827;
+    --kova-light-bg-muted: #1F2937;
+    --kova-light-bg-subtle: #374151;
+    --kova-light-text: #F9FAFB;
+    --kova-light-text-muted: #9CA3AF;
+    --kova-light-text-subtle: #6B7280;
+    --kova-light-border: #374151;
+    --kova-light-border-subtle: #1F2937;
+    --kova-accent-subtle: #064E3B;
+    --app-canvas: #111827;
+    --app-sidebar: #111827;
+    --app-header: #111827;
+    --app-surface: #1F2937;
+    --app-border: #374151;
   }
 
   html {
@@ -175,15 +176,15 @@ textarea {
     @apply shadow-sm dark:shadow-none dark:bg-gray-900/50 dark:border-gray-800;
   }
   .stream-item:hover {
-    border-color: color-mix(in srgb, var(--brand-navy) 25%, var(--app-border));
+    border-color: color-mix(in srgb, var(--brand-primary) 25%, var(--app-border));
   }
   .score-bar {
     @apply flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 rounded-xl border shadow-kova;
-    background-color: var(--brand-navy);
-    border-color: color-mix(in srgb, var(--brand-navy) 85%, black);
+    background-color: var(--brand-primary);
+    border-color: color-mix(in srgb, var(--brand-primary) 85%, black);
   }
   .dark .score-bar {
-    @apply bg-gray-800 border-gray-700 shadow-none;
+    @apply bg-kova-900 border-kova-800 shadow-none;
   }
 
   .btn {
@@ -195,19 +196,19 @@ textarea {
     }
   }
   .btn-primary {
-    @apply btn bg-growth-500 text-white hover:bg-growth-600 focus:ring-growth-500 shadow-sm dark:hover:bg-growth-500;
+    @apply btn bg-kova-700 text-white hover:bg-kova-800 focus:ring-kova-600 shadow-sm;
   }
   .btn-secondary {
-    @apply btn bg-white text-kova-800 border border-kova-800 hover:bg-kova-50 focus:ring-kova-500 dark:bg-gray-800 dark:text-kova-300 dark:border-kova-600 dark:hover:bg-kova-950/30;
+    @apply btn bg-white text-kova-700 border border-kova-700 hover:bg-kova-50 focus:ring-kova-600 dark:bg-gray-800 dark:text-kova-300 dark:border-kova-600 dark:hover:bg-kova-950/30;
   }
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
   }
   .btn-ghost {
-    @apply btn bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-kova-500 dark:text-gray-300 dark:hover:bg-gray-800;
+    @apply btn bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-accent-500 dark:text-gray-300 dark:hover:bg-gray-800;
   }
   .btn-outline {
-    @apply btn bg-transparent text-kova-800 border border-kova-800 hover:bg-kova-50 focus:ring-kova-500 dark:text-kova-300 dark:border-kova-600 dark:hover:bg-kova-950/30;
+    @apply btn bg-transparent text-kova-700 border border-kova-700 hover:bg-kova-50 focus:ring-kova-600 dark:text-kova-300 dark:border-kova-600 dark:hover:bg-kova-950/30;
   }
   .btn-lg {
     @apply px-6 py-3 text-base;
@@ -225,7 +226,7 @@ textarea {
   }
   .input,
   .input-field {
-    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-kova-500 focus:ring-1 focus:ring-kova-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-accent-500 focus:ring-1 focus:ring-accent-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500;
   }
   .label {
     @apply block text-sm font-semibold text-gray-800 mb-1 dark:text-gray-200;
@@ -308,9 +309,9 @@ textarea {
   .nav-link-active {
     @apply flex items-center pl-[9px] pr-3 py-2 text-sm font-semibold rounded-lg shadow-sm;
     background-color: var(--app-surface);
-    color: var(--brand-navy);
+    color: var(--brand-primary);
     border: 1px solid var(--app-border);
-    border-left: 3px solid var(--brand-navy);
+    border-left: 3px solid var(--brand-primary);
   }
   .dark .nav-link-active {
     @apply bg-kova-950/40 text-kova-300 border-kova-800 border-l-kova-500 shadow-none;
@@ -334,7 +335,7 @@ textarea {
   }
 
   .text-trust {
-    @apply text-kova-800 dark:text-kova-300;
+    @apply text-kova-700 dark:text-kova-400;
   }
 
   /* Glass card — solid surfaces (no frosted glass on marketing) */
@@ -406,17 +407,17 @@ textarea {
     @apply bg-growth-500;
   }
 
-  /* Solid brand surfaces — use instead of gradient utility classes */
-  .bg-brand-navy { background-color: var(--brand-navy); }
+  /* Solid brand surface utilities */
+  .bg-brand-primary { background-color: var(--brand-primary); }
   .bg-brand-emerald { background-color: var(--brand-emerald); }
   .bg-brand-gold { background-color: var(--brand-gold); }
-  .bg-brand-navy-subtle { background-color: var(--brand-navy-subtle); }
+  .bg-brand-primary-subtle { background-color: var(--brand-primary-subtle); }
   .bg-brand-emerald-subtle { background-color: var(--brand-emerald-subtle); }
   .bg-brand-gold-subtle { background-color: var(--brand-gold-subtle); }
-  .text-brand-navy { color: var(--brand-navy); }
+  .text-brand-primary { color: var(--brand-primary); }
   .text-brand-emerald { color: var(--brand-emerald); }
   .text-brand-gold { color: var(--brand-gold); }
-  .border-brand-navy { border-color: var(--brand-navy); }
+  .border-brand-primary { border-color: var(--brand-primary); }
   .border-brand-emerald { border-color: var(--brand-emerald); }
   .border-brand-gold { border-color: var(--brand-gold); }
 
