@@ -834,3 +834,49 @@ class ChannelPost(models.Model):
 
     def __str__(self):
         return f"Channel post: {self.text[:50]}… ({self.get_status_display()})"
+
+
+# ─── CUSTOMER MEMORY ─────────────────────────────────────────────────────────
+
+class CustomerMemory(models.Model):
+    """What Kova remembers about a customer across WhatsApp conversations.
+
+    Great salespeople remember: "Last time you were looking for a Dell laptop —
+    we just got two new models." This model persists that memory per business +
+    phone number so the AI Salesperson can greet returning customers with
+    context instead of starting cold every time.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="customer_memories",
+    )
+    contact_phone = models.CharField(max_length=32, db_index=True)
+    contact_name = models.CharField(max_length=120, blank=True)
+    # Product names / topics the customer has shown interest in (most recent first).
+    interests = models.JSONField(default=list, blank=True)
+    # Freeform facts worth remembering (delivery address hints, preferences, etc.).
+    notes = models.TextField(blank=True)
+    # A one-line recap surfaced to the assistant on the next visit.
+    summary = models.CharField(max_length=280, blank=True)
+    interaction_count = models.PositiveIntegerField(default=0)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Customer memories"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "contact_phone"], name="unique_customer_memory_per_contact"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "-last_seen_at"]),
+        ]
+
+    def __str__(self):
+        return f"Memory: {self.contact_name or self.contact_phone}"
+

@@ -1331,6 +1331,23 @@ def publish_post(self, post_id: str):
         logger.warning("Post %s has status %s, skipping publish", post_id, post.status)
         return {"error": f"Post status is {post.status}, not publishable"}
 
+    # Idempotency: never publish a post twice. Celery delivers tasks
+    # at-least-once, so the same publish_post message can be redelivered after
+    # the platform API already accepted the post. A present platform_post_id
+    # means the post is already live — reconcile status and abort instead of
+    # posting a duplicate to the timeline.
+    if (post.platform_post_id or "").strip():
+        logger.warning(
+            "Post %s already published (platform_post_id=%s) — skipping duplicate publish",
+            post_id, post.platform_post_id,
+        )
+        if post.status != Post.Status.PUBLISHED:
+            post.status = Post.Status.PUBLISHED
+            if not post.published_at:
+                post.published_at = timezone.now()
+            post.save(update_fields=["status", "published_at", "updated_at"])
+        return {"error": "already_published", "duplicate": True}
+
     # ── Emergency pause — halt all autonomous publishing ──────────────
     profile = getattr(post.user, "profile", None)
     if profile and profile.emergency_pause:
@@ -1452,9 +1469,22 @@ def publish_post(self, post_id: str):
             except self.MaxRetriesExceededError:
                 return {"error": "outage_hold_max_retries", "platform": platform_name}
 
-    # Mark as publishing
+    # ── Atomically claim this post for publishing (compare-and-swap) ───────
+    # Only one worker may transition APPROVED/SCHEDULED → PUBLISHING. A single
+    # conditional UPDATE is the race-safe claim: if two redelivered tasks run
+    # concurrently, exactly one gets rows_updated == 1 and proceeds to call the
+    # platform API; the loser aborts before publishing a duplicate.
+    claimed = Post.objects.filter(
+        pk=post.pk,
+        status__in=(Post.Status.APPROVED, Post.Status.SCHEDULED),
+    ).update(status=Post.Status.PUBLISHING, updated_at=timezone.now())
+    if not claimed:
+        logger.warning(
+            "Post %s could not be claimed for publishing (already claimed by "
+            "another worker) — skipping duplicate publish", post_id,
+        )
+        return {"error": "already_claimed", "duplicate": True}
     post.status = Post.Status.PUBLISHING
-    post.save(update_fields=["status", "updated_at"])
 
     # ── Marketplace seller rules ──
     from apps.partners.marketplace_rules import is_platform_allowed, is_sandbox_publish

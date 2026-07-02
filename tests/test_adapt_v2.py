@@ -90,15 +90,19 @@ class TestAdaptV2Schema:
 
 
 class TestAdaptV2Flag:
-    """The ADAPT_AGENT_V2_ENABLED flag must default False so prod doesn't
-    silently start mutating profiles on the first 12h cycle after deploy."""
+    """ADAPT_AGENT_V2_ENABLED is enabled by default — the learning loop is
+    live. Safety no longer relies on a global off-switch: mutations are gated
+    per-plan (adapt_v2_enabled), by eligibility (>=5 posts, >=7 days, real
+    engagement signal) and a circuit breaker (<=10 mutations / 7 days), with a
+    full AgentAction audit trail (applied flag) for reversibility."""
 
-    def test_flag_defaults_false(self, settings):
-        # In test env we control it; this asserts the design intent —
-        # never let this default flip to True without the rollout work.
-        assert getattr(settings, "ADAPT_AGENT_V2_ENABLED", "unset") in (False, "unset"), (
-            "ADAPT_AGENT_V2_ENABLED must default False — the spec requires a "
-            "dry-run week before mutations apply."
+    def test_flag_enabled_by_default(self, settings):
+        # base.py sets ADAPT_AGENT_V2_ENABLED default True. This asserts the
+        # deliberate decision: the learning loop is on, and safety is enforced
+        # at runtime by the per-plan gate + eligibility + circuit breaker.
+        assert getattr(settings, "ADAPT_AGENT_V2_ENABLED", False) is True, (
+            "ADAPT_AGENT_V2_ENABLED should default True — the learning loop is "
+            "live and gated per-plan, not by a global off-switch."
         )
 
 
@@ -444,6 +448,9 @@ class TestEndToEndCycle:
         from apps.agents.adapt_agent import run_for_user
         u, _ = adapt_user_with_posts
         settings.ADAPT_AGENT_V2_ENABLED = True
+        # Adapt mutations are gated per-plan — the Kova plan enables adapt_v2.
+        u.profile.plan = "kova"
+        u.profile.save(update_fields=["plan"])
 
         result = run_for_user(u)
 

@@ -1,0 +1,17 @@
+{# Q3: What's best for me? — the grounded AI Salesperson #}
+<div class="bg-white rounded-2xl shadow-sm p-5">
+  <div class="flex items-center gap-2 mb-1">
+    <div class="w-8 h-8 rounded-full bg-kova-600 text-white flex items-center justify-center text-sm font-bold">K</div>
+    <div>
+      <h2 class="text-base font-semibold text-gray-800">Ask our assistant</h2>
+      <p class="text-xs text-gray-500">{{ five_questions.whats_best }}</p>
+    </div>
+  </div>
+  <div id="ask-log" class="space-y-2 max-h-64 overflow-y-auto my-3"></div>
+  <form id="ask-form" class="flex gap-2">
+    <input id="ask-input" type="text" autocomplete="off" maxlength="500"
+      placeholder="e.g. What do you recommend for…?"
+      class="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
+    <button type="submit" class="bg-kova-600 hover:bg-kova-700 text-white font-semibold px-4 rounded-xl text-sm">Ask</button>
+  </form>
+</div>

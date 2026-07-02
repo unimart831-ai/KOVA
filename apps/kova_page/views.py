@@ -3,11 +3,10 @@ Kova Link Page — public conversion page per business.
 
 Public:
   page_view      GET  /p/<slug>/         — anyone with the link
+  page_ask       POST /p/<slug>/ask/     — AI Salesperson (grounded)
   page_contact   POST /p/<slug>/contact/ — contact form → Lead
 """
 from __future__ import annotations
-
-from urllib.parse import quote
 
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -16,7 +15,6 @@ from django.views.decorators.http import require_GET, require_POST
 from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.models import UserProfile
-from apps.products.commerce_social import resolve_shop_whatsapp
 
 
 @require_GET
@@ -25,31 +23,30 @@ def page_view(request, slug):
     if not profile.page_active:
         raise Http404
 
-    user = profile.user
+    from apps.kova_page.hub import build_hub_context
 
-    # Resolve WhatsApp: profile CTA, booking link, connected account, signup phone
-    whatsapp = resolve_shop_whatsapp(profile, user)
+    context = build_hub_context(profile, profile.user)
+    return render(request, "kova_page/page.html", context)
 
-    # Pre-filled WhatsApp message
-    business_name = profile.company_name or user.full_name or "your business"
-    wa_text = f"Hi, I found your page on Kova and I'm interested in {business_name}. Can you help me?"
-    wa_url = f"https://wa.me/{whatsapp}?text={quote(wa_text)}" if whatsapp else ""
 
-    # Services: from key_offerings first, then active booking link
-    services = list(profile.key_offerings or [])
-    booking_link = user.booking_links.filter(is_active=True).first()
-    if not services and booking_link:
-        services = booking_link.services or []
+@csrf_exempt
+@ratelimit(key="ip", rate="20/m", method="POST", block=True)
+@require_POST
+def page_ask(request, slug):
+    """AI Salesperson — answer a visitor's question grounded in the business."""
+    profile = get_object_or_404(UserProfile, page_slug=slug)
+    if not profile.page_active:
+        raise Http404
 
-    return render(request, "kova_page/page.html", {
-        "profile": profile,
-        "user": user,
-        "whatsapp": whatsapp,
-        "wa_url": wa_url,
-        "services": services,
-        "booking_link": booking_link,
-        "page_title": profile.company_name or user.full_name or "Kova Page",
-    })
+    question = (request.POST.get("q") or request.POST.get("question") or "").strip()
+    if not question:
+        return JsonResponse({"error": "Ask a question first."}, status=400)
+
+    from apps.kova_page.salesperson import answer_customer_question
+
+    result = answer_customer_question(profile, profile.user, question)
+    return JsonResponse(result)
+
 
 
 @csrf_exempt

@@ -379,15 +379,22 @@ def auto_schedule_post(post):
     return fallback
 
 
-# ── Adapt v2 — Learning Loop (W3-4 May 2026) ───────────────────────────────
+# ── Adapt v2 — Learning Loop (live) ────────────────────────────────────────
 #
 # Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md
 #
-# This Commit-1 stub only updates `adapt_last_run_at` so the Celery Beat
-# entry can run without erroring. The actual decision logic (eligibility
-# gates, 5 mutation classes, dry-run audit, AgentAction logging) lands in
-# W3 Commit 2. The flag ADAPT_AGENT_V2_ENABLED stays False until Commit 2
-# is observed safe on internal test accounts.
+# The full learning loop is implemented below: eligibility gates, the 5
+# decision classes, and apply_mutations() which writes real changes to
+# UserProfile (pillar_weights, dna_preferences, posting_frequency,
+# optimal_schedule) plus a reversible AgentAction audit entry per decision.
+#
+# Safety is enforced at runtime, not by a global off-switch:
+#   - per-plan gate (adapt_v2_enabled) — only Growth+ / trial mutate
+#   - eligibility — >= 5 posts, >= 7 days, real engagement signal
+#   - circuit breaker — hard pause after 10 mutations in 7 days
+#   - per-cycle caps — <= 3 promotions, <= 2 retirements, <= 2 reweights
+# When ADAPT_AGENT_V2_ENABLED is False (or the plan lacks the flag), the loop
+# still runs and logs decisions as dry-run AgentActions for observation.
 
 
 # ── Decision thresholds (mirror the spec table) ────────────────────────────
@@ -892,6 +899,7 @@ def apply_mutations(user, decisions: list[dict], *, dry_run: bool = False) -> No
             input_data = {
                 **d.get("evidence", {}),
                 "decision_type": d["type"],
+                "dry_run": dry_run,
             }
             output_data: dict = {}
 
@@ -953,17 +961,18 @@ def apply_mutations(user, decisions: list[dict], *, dry_run: bool = False) -> No
                     schedule[d["platform"]] = d["after"]
                     profile.optimal_schedule = schedule
 
+            # Record whether this decision was actually applied. Dry-run
+            # entries share the COMPLETED status (the audit row itself did
+            # complete) but carry applied=False so a reviewer — and the Daily
+            # Brief — can tell observation cycles from real mutations.
+            output_data["applied"] = not dry_run
             AgentAction.objects.create(
                 user=user,
                 agent_type="adapt",
                 action_type=d["type"],
                 input_data=input_data,
                 output_data=output_data,
-                status=(
-                    AgentAction.ActionStatus.COMPLETED
-                    if not dry_run
-                    else AgentAction.ActionStatus.COMPLETED
-                ),
+                status=AgentAction.ActionStatus.COMPLETED,
                 completed_at=timezone.now(),
             )
 

@@ -12,15 +12,16 @@
 
   <div class="text-center mb-8">
     <p class="text-sm font-semibold text-kova-700 dark:text-kova-300 mb-2">You're hiring Kova</p>
-    <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Tell us about your brand</h2>
+    <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Tell Kova about your business</h2>
     <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm sm:text-base max-w-md mx-auto">
-      No industry templates — Kova learns from what you write here and uses it for every post.
+      Like a great new hire, Kova wants to understand your business before it starts —
+      not just collect your logo. This becomes your Business Brain.
     </p>
   </div>
 
   <form method="post" class="app-surface p-5 sm:p-6 space-y-5"
         data-kova-busy="instant"
-        data-kova-busy-message="Teaching Kova your brand…">
+        data-kova-busy-message="Building your Business Brain…">
     {% csrf_token %}
 
     {% if form.non_field_errors %}
@@ -49,6 +50,31 @@
     </div>
 
     <div>
+      <label class="label">{{ form.business_model.label }}</label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+        {% for radio in form.business_model %}
+        <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-kova-400 dark:hover:border-kova-500 has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/30 text-sm">
+          {{ radio.tag }}
+          <span class="text-gray-800 dark:text-gray-200">{{ radio.choice_label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <label for="id_why_started" class="label">{{ form.why_started.label }}</label>
+      {{ form.why_started }}
+      {% if form.why_started.help_text %}
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{{ form.why_started.help_text }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label for="id_success_vision" class="label">{{ form.success_vision.label }}</label>
+      {{ form.success_vision }}
+    </div>
+
+    <div>
       <label for="id_example_1" class="label">{{ form.example_1.label }} <span class="text-gray-400 font-normal">(optional)</span></label>
       {{ form.example_1 }}
       {% for error in form.example_1.errors %}
@@ -57,7 +83,7 @@
     </div>
 
     <button type="submit" class="btn-primary w-full py-3.5 text-base shadow-growth">
-      Start my AI marketer
+      Build my Business Brain
       <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
       </svg>

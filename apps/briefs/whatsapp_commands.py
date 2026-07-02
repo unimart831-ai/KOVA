@@ -42,6 +42,7 @@ HELP_TEXT = (
     "• BRIEF — today's summary\n"
     "• CAMPAIGNS — campaigns ready to approve\n"
     "• APPROVE CAMPAIGN — approve full campaign package\n"
+    "• OPPORTUNITIES — growth moves Kova spotted\n"
     "• SHARE — campaign + shop links for Status\n"
     "• POSTS — pending approvals (by post)\n"
     "• APPROVE — approve next post\n"
@@ -257,6 +258,9 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
     if text in {"campaigns", "campaign", "my campaigns"}:
         return _handle_campaigns(user)
 
+    if text in {"opportunities", "opps", "opportunity"}:
+        return _handle_opportunities(user)
+
     if text.startswith("share"):
         return _handle_share(user, text)
 
@@ -340,6 +344,12 @@ def _handle_campaigns(user) -> tuple[str, str, bool, dict]:
     from apps.content.campaign_whatsapp import format_campaigns_list_message
 
     return format_campaigns_list_message(user), "campaigns", True, {}
+
+
+def _handle_opportunities(user) -> tuple[str, str, bool, dict]:
+    from apps.briefs.opportunities import format_opportunity_cards_message
+
+    return format_opportunity_cards_message(user), "opportunities", True, {}
 
 
 def _handle_share(user, text: str) -> tuple[str, str, bool, dict]:

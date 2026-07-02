@@ -70,3 +70,12 @@ def on_commerce_payment_completed(sender, instance, **kwargs):
         logger.exception(
             "Failed to create lead from commerce payment %s", instance.pk,
         )
+
+    # Close the revenue loop: attribute to funnel + cross-sell.
+    try:
+        from apps.products.post_purchase import run_post_purchase
+        run_post_purchase(instance)
+    except Exception:
+        logger.exception(
+            "Post-purchase loop failed for commerce payment %s", instance.pk,
+        )

@@ -1,0 +1,16 @@
+{% if services %}
+<div class="bg-white rounded-2xl shadow-sm p-5">
+  <h2 class="text-base font-semibold text-gray-800 mb-3">{% if business_model == "professional" %}Services{% else %}What we offer{% endif %}</h2>
+  <ul class="space-y-2">
+    {% for svc in services %}
+    <li class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+      <span class="text-gray-800 font-medium">{% if svc.name %}{{ svc.name }}{% else %}{{ svc }}{% endif %}</span>
+      <span class="text-sm text-gray-500 ml-2">
+        {% if svc.price_kes %}KSh {{ svc.price_kes }}{% endif %}
+        {% if svc.duration_minutes %} · {{ svc.duration_minutes }}min{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

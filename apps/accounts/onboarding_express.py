@@ -9,11 +9,15 @@ VALID_INTENTS = frozenset({INTENT_SELL, INTENT_GROW, INTENT_BOTH})
 
 BUSINESS_MODEL_PRODUCT = "product"
 BUSINESS_MODEL_SERVICE = "service"
+BUSINESS_MODEL_DIGITAL = "digital"
 BUSINESS_MODEL_PROFESSIONAL = "professional"
+BUSINESS_MODEL_MULTIPLE = "multiple"
 VALID_BUSINESS_MODELS = frozenset({
     BUSINESS_MODEL_PRODUCT,
     BUSINESS_MODEL_SERVICE,
+    BUSINESS_MODEL_DIGITAL,
     BUSINESS_MODEL_PROFESSIONAL,
+    BUSINESS_MODEL_MULTIPLE,
 })
 
 
@@ -33,8 +37,12 @@ def record_business_model(profile, business_model: str) -> None:
         record_intent(profile, INTENT_SELL)
     elif business_model == BUSINESS_MODEL_SERVICE:
         record_intent(profile, INTENT_SELL)
+    elif business_model == BUSINESS_MODEL_DIGITAL:
+        record_intent(profile, INTENT_SELL)
     elif business_model == BUSINESS_MODEL_PROFESSIONAL:
         record_intent(profile, INTENT_GROW)
+    elif business_model == BUSINESS_MODEL_MULTIPLE:
+        record_intent(profile, INTENT_BOTH)
 
 
 def apply_business_model_defaults(profile, user) -> None:
@@ -57,6 +65,15 @@ def apply_business_model_defaults(profile, user) -> None:
         except Exception:
             pass
     elif profile.business_model == BUSINESS_MODEL_PRODUCT:
+        profile.default_cta_type = profile.default_cta_type or "whatsapp"
+        if not profile.goals:
+            profile.goals = ["generate_leads", "drive_sales"]
+    elif profile.business_model == BUSINESS_MODEL_DIGITAL:
+        # Digital products optimise for instant, low-friction purchase.
+        profile.default_cta_type = profile.default_cta_type or "link"
+        if not profile.goals:
+            profile.goals = ["drive_sales", "generate_leads"]
+    elif profile.business_model == BUSINESS_MODEL_MULTIPLE:
         profile.default_cta_type = profile.default_cta_type or "whatsapp"
         if not profile.goals:
             profile.goals = ["generate_leads", "drive_sales"]

@@ -545,14 +545,47 @@ class UserProfile(models.Model):
     class BusinessModel(models.TextChoices):
         PRODUCT = "product", "Product business"
         SERVICE = "service", "Service business"
-        PROFESSIONAL = "professional", "Professional / agency"
+        DIGITAL = "digital", "Digital products"
+        PROFESSIONAL = "professional", "Professional / portfolio"
+        MULTIPLE = "multiple", "Multiple of these"
 
     business_model = models.CharField(
         max_length=20,
         choices=BusinessModel.choices,
         blank=True,
         default="",
-        help_text="Primary business type — drives onboarding and default workflows.",
+        help_text="How the business makes money — drives onboarding, the Business "
+                  "Hub layout, and default workflows.",
+    )
+    # ── Business Brain — Customer + Brand + Growth DNA ──
+    # These power authentic campaigns, the First Business Report, and the
+    # AI Salesperson (customer_problems / buy_triggers / common_questions are
+    # the grounding context for answering buyer questions from real business
+    # knowledge rather than generic AI).
+    founder_story = models.TextField(
+        blank=True,
+        help_text="Why the founder started this business. The origin story that "
+                  "makes campaigns authentic. Brand DNA.",
+    )
+    success_vision = models.TextField(
+        blank=True,
+        help_text="What success looks like one year from now, in the owner's own "
+                  "words. E.g., 'Double revenue', 'Sell nationwide'. Growth DNA.",
+    )
+    customer_problems = models.TextField(
+        blank=True,
+        help_text="The problems the ideal customer is trying to solve. Customer DNA.",
+    )
+    buy_triggers = models.TextField(
+        blank=True,
+        help_text="What makes customers decide to buy / why they choose this "
+                  "business over others. Customer DNA.",
+    )
+    common_questions = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Frequently asked customer questions. Grounds the AI Salesperson. "
+                  "E.g., ['Do you deliver?', 'What are your prices?']",
     )
     # ── Onboarding funnel telemetry ──
     onboarding_step_timestamps = models.JSONField(

@@ -32,6 +32,9 @@
     </p>
   </div>
 
+  {# ── First Business Report ── #}
+  {% include "accounts/_first_business_report.html" %}
+
   <div id="onboarding-progress"
        hx-get="{% url 'accounts:onboarding_progress' %}"
        hx-trigger="load, every 8s"

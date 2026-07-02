@@ -312,11 +312,10 @@ def run_adapt_cycle():
     from datetime import timedelta
     from django.utils import timezone
 
-    # The user iteration + per-user dispatch is implemented in W3 Commit 2.
-    # This commit only wires the Celery Beat entry + the task name so the
-    # scheduler doesn't error on missing task. The cycle is a no-op until
-    # adapt_agent.run_for_user lands.
-    from apps.agents.adapt_agent import run_for_user
+    # Dispatch one per-user sub-task (run_adapt_for_user) with a staggered
+    # countdown so we spread LLM/DB load across the rate-limit window rather
+    # than hammering everything in a single burst.
+    from apps.agents.adapt_agent import run_for_user  # noqa: F401  (import validates availability)
 
     eligible = User.objects.filter(
         onboarding_completed=True,

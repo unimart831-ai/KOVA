@@ -1,0 +1,8 @@
+{% if products %}
+<div>
+  <h2 class="text-base font-semibold text-gray-800 mb-3">{% if business_model == "digital" %}All products{% else %}Shop all{% endif %}</h2>
+  <div class="grid grid-cols-2 gap-3">
+    {% for product in products %}{% include "kova_page/sections/_product_card.html" %}{% endfor %}
+  </div>
+</div>
+{% endif %}

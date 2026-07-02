@@ -277,6 +277,16 @@ def finish_onboarding(user, *, skipped_platform_connect=False):
     profile.save(update_fields=["onboarding_intelligence_started_at"])
     profile.record_onboarding_step("intelligence_started")
     ensure_instant_onboarding_wow(user)
+
+    # First Business Report — the "Kova already understands my business" moment.
+    # Built deterministically (no LLM) so it's ready the instant the completion
+    # screen loads; the async intelligence chain enriches signals afterwards.
+    try:
+        from apps.accounts.first_business_report import cache_first_business_report
+        cache_first_business_report(user)
+    except Exception:
+        logger.exception("First Business Report generation failed for %s", user.email)
+
     fire_task(run_onboarding_intelligence, str(user.pk))
 
     logger.info(

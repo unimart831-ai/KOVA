@@ -128,7 +128,7 @@ flowchart LR
             "Research: every 12h — trends, optional auto-seed (max 1/12h).",
             "Strategist: every 8h — proactive ContentSeeds + brief narrative.",
             "Engage: every 30min — fetch, analyze, draft replies (auto-send gated by env flag).",
-            "Adapt v2 learning: every 12h — profile mutations gated by ADAPT_AGENT_V2_ENABLED.",
+            "Adapt v2 learning: every 12h — profile mutations live, gated per-plan by adapt_v2_enabled + circuit breaker.",
             "Emergency pause on UserProfile halts all autonomous agent actions.",
         ],
         diagram="""

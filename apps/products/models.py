@@ -698,3 +698,57 @@ class CommercePayment(models.Model):
         import math
         bucket = math.floor(tz.now().timestamp() / CommercePayment.IDEMPOTENCY_WINDOW_SECONDS)
         return f"{user_id}:{product_id}:{phone}:{bucket}"
+
+
+class RevenueFunnel(models.Model):
+    """The end-to-end revenue journey for a product, as one first-class object.
+
+    Kova doesn't just publish posts — it runs funnels:
+        Reel → Landing → Offer → Checkout → Upsell → Follow-up → Review
+    This model ties those stages together and accumulates attributed
+    conversions + revenue so the whole chain is measurable, not scattered
+    across Post, CommercePayment, Lead, and ReviewRequest.
+    """
+
+    # Ordered funnel stages. Stored in `stages` as {stage: {"done": bool, "at": iso}}.
+    STAGES = ("reel", "landing", "offer", "checkout", "upsell", "followup", "review")
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        CONVERTED = "converted", "Converted"
+        ARCHIVED = "archived", "Archived"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="revenue_funnels"
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="funnels"
+    )
+    source_post = models.ForeignKey(
+        "content.Post", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="revenue_funnels",
+        help_text="The content that kicked off this funnel, when known.",
+    )
+    name = models.CharField(max_length=200, blank=True)
+    landing_url = models.CharField(max_length=500, blank=True)
+    stages = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)
+    conversions = models.PositiveIntegerField(default=0)
+    attributed_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    currency = models.CharField(max_length=5, default="KES")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "product"], name="unique_funnel_per_product"),
+        ]
+        indexes = [
+            models.Index(fields=["user", "status", "-updated_at"]),
+        ]
+
+    def __str__(self):
+        return f"Funnel: {self.name or (self.product.name if self.product_id else 'product')}"
+

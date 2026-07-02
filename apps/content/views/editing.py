@@ -628,9 +628,23 @@ def post_detail(request, post_id):
     except Exception:
         pass
 
+    # Quality Review Board — show the scorecard + "why this will succeed"
+    # before the owner approves. Never let a review error block the page.
+    scorecard = None
+    if post.status in (
+        Post.Status.PENDING_APPROVAL, Post.Status.DRAFT,
+        Post.Status.APPROVED, Post.Status.SCHEDULED,
+    ):
+        try:
+            from apps.content.quality_review import build_scorecard
+            scorecard = build_scorecard(post, user=post.user)
+        except Exception:
+            scorecard = None
+
     return render(request, "content/detail.html", {
         "post": post,
         "metrics": metrics,
         "notifications": notifications,
+        "quality_review": scorecard,
         "page_title": "Post Detail",
     })

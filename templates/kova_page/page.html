@@ -5,16 +5,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ page_title }}</title>
-  <meta name="description" content="{{ profile.page_headline|default:page_title }}">
+  <meta name="description" content="{{ profile.page_headline|default:five_questions.what }}">
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
-  <style>
+  <style nonce="{{ request.csp_nonce }}">
     .wa-btn { background: #25D366; }
     .wa-btn:hover { background: #128C7E; }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
+<body class="bg-gray-50 min-h-screen font-sans" data-slug="{{ profile.page_slug }}">
 
-  <!-- Header -->
+  <!-- Header — Q1: What does this business do? -->
   <div class="bg-white shadow-sm">
     <div class="max-w-lg mx-auto px-4 py-6 flex items-center gap-4">
       {% if profile.brand_logo_url %}
@@ -24,116 +24,108 @@
           {{ page_title|slice:":1"|upper }}
         </div>
       {% endif %}
-      <div>
-        <h1 class="text-xl font-bold text-gray-900">{{ page_title }}</h1>
-        {% if profile.page_headline %}
-          <p class="text-sm text-gray-500 mt-0.5">{{ profile.page_headline }}</p>
-        {% elif profile.industry %}
-          <p class="text-sm text-gray-500 mt-0.5">{{ profile.get_industry_display }}</p>
-        {% endif %}
+      <div class="min-w-0">
+        <h1 class="text-xl font-bold text-gray-900 truncate">{{ page_title }}</h1>
+        <p class="text-sm text-gray-500 mt-0.5">{{ five_questions.what }}</p>
       </div>
     </div>
   </div>
 
   <div class="max-w-lg mx-auto px-4 py-6 space-y-6">
+    {% for section in sections %}
+      {% if section == "hero" %}{% include "kova_page/sections/_hero.html" %}
+      {% elif section == "bestsellers" %}{% include "kova_page/sections/_bestsellers.html" %}
+      {% elif section == "featured" %}{% include "kova_page/sections/_featured.html" %}
+      {% elif section == "catalog" %}{% include "kova_page/sections/_catalog.html" %}
+      {% elif section == "book" %}{% include "kova_page/sections/_book.html" %}
+      {% elif section == "services" %}{% include "kova_page/sections/_services.html" %}
+      {% elif section == "portfolio" %}{% include "kova_page/sections/_portfolio.html" %}
+      {% elif section == "reviews" %}{% include "kova_page/sections/_reviews.html" %}
+      {% elif section == "salesperson" %}{% include "kova_page/sections/_salesperson.html" %}
+      {% elif section == "contact" %}{% include "kova_page/sections/_contact.html" %}
+      {% endif %}
+    {% endfor %}
 
-    <!-- WhatsApp CTA — primary conversion action -->
-    {% if wa_url %}
-    <a href="{{ wa_url }}" target="_blank" rel="noopener"
-       class="wa-btn flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-white font-semibold text-lg shadow-lg active:scale-95 transition-transform">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
-      Chat on WhatsApp
-    </a>
-    {% endif %}
-
-    <!-- Services -->
-    {% if services %}
-    <div class="bg-white rounded-2xl shadow-sm p-5">
-      <h2 class="text-base font-semibold text-gray-800 mb-3">What we offer</h2>
-      <ul class="space-y-2">
-        {% for svc in services %}
-        <li class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-          <span class="text-gray-800 font-medium">
-            {% if svc.name %}{{ svc.name }}{% else %}{{ svc }}{% endif %}
-          </span>
-          <span class="text-sm text-gray-500 ml-2">
-            {% if svc.price_kes %}KSh {{ svc.price_kes }}{% endif %}
-            {% if svc.duration_minutes %} · {{ svc.duration_minutes }}min{% endif %}
-          </span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-
-    <!-- Book appointment -->
-    {% if booking_link %}
-    <a href="{% url 'bookings:public_book' slug=booking_link.slug %}"
-       class="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-kova-600 text-kova-600 font-semibold text-base hover:bg-kova-50 transition-colors">
-      📅 Book an appointment
-    </a>
-    {% endif %}
-
-    <!-- Contact form -->
-    <div class="bg-white rounded-2xl shadow-sm p-5">
-      <h2 class="text-base font-semibold text-gray-800 mb-4">Send an enquiry</h2>
-      <form id="contact-form" method="post" action="{% url 'kova_page:contact' slug=profile.page_slug %}">
-        {% csrf_token %}
-        <div class="space-y-3">
-          <input type="text" name="name" placeholder="Your name *" required
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
-          <input type="tel" name="phone" placeholder="WhatsApp / phone number"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
-          <input type="email" name="email" placeholder="Email (optional)"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
-          <textarea name="message" placeholder="What are you looking for?" rows="3"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400 resize-none"></textarea>
-          <button type="submit"
-            class="w-full bg-kova-600 hover:bg-kova-700 text-white font-semibold py-3 rounded-xl transition-colors">
-            Send enquiry
-          </button>
-        </div>
-      </form>
-      <div id="contact-success" class="hidden mt-3 text-center text-growth-600 font-medium text-sm">
-        ✅ Message sent! We'll be in touch soon.
-      </div>
-    </div>
-
-    <!-- Footer -->
     <p class="text-center text-xs text-gray-400 pb-4">
       Powered by <a href="/" class="text-kova-500 hover:underline">Kova</a>
     </p>
   </div>
 
-  <script>
+  <script nonce="{{ request.csp_nonce }}">
+    // Contact form — async submit.
     const form = document.getElementById('contact-form');
-    form.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const btn = form.querySelector('button[type=submit]');
-      btn.disabled = true;
-      btn.textContent = 'Sending…';
-      try {
-        const resp = await fetch(form.action, {
-          method: 'POST',
-          body: new FormData(form),
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    if (form) {
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const btn = form.querySelector('button[type=submit]');
+        btn.disabled = true; btn.textContent = 'Sending…';
+        try {
+          const resp = await fetch(form.action, {
+            method: 'POST', body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          });
+          const data = await resp.json();
+          if (data.ok) {
+            form.classList.add('hidden');
+            document.getElementById('contact-success').classList.remove('hidden');
+          } else {
+            btn.disabled = false; btn.textContent = 'Send enquiry';
+            alert(data.error || 'Something went wrong. Please try again.');
+          }
+        } catch { btn.disabled = false; btn.textContent = 'Send enquiry'; }
+      });
+    }
+
+    // AI Salesperson — grounded Q&A.
+    const askForm = document.getElementById('ask-form');
+    if (askForm) {
+      const slug = document.body.dataset.slug;
+      const log = document.getElementById('ask-log');
+      const input = document.getElementById('ask-input');
+      const esc = (t) => t.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      const bubble = (text, who) => {
+        const el = document.createElement('div');
+        el.className = who === 'you' ? 'text-right' : 'text-left';
+        el.innerHTML = '<span class="inline-block px-3 py-2 rounded-2xl text-sm ' +
+          (who === 'you' ? 'bg-kova-600 text-white' : 'bg-gray-100 text-gray-800') +
+          '">' + esc(text) + '</span>';
+        log.appendChild(el); log.scrollTop = log.scrollHeight;
+      };
+      const cards = (products) => {
+        (products || []).forEach(p => {
+          const a = document.createElement('a');
+          a.href = p.url || '#';
+          a.className = 'flex items-center gap-3 p-2 rounded-xl border border-gray-200 hover:border-kova-400 bg-white';
+          a.innerHTML =
+            (p.image ? '<img src="' + esc(p.image) + '" class="w-10 h-10 rounded-lg object-cover">' : '') +
+            '<span class="text-sm font-medium text-gray-800">' + esc(p.name) + '</span>' +
+            (p.price ? '<span class="ml-auto text-sm text-gray-500">' + esc(p.price) + '</span>' : '');
+          log.appendChild(a);
         });
-        const data = await resp.json();
-        if (data.ok) {
-          form.classList.add('hidden');
-          document.getElementById('contact-success').classList.remove('hidden');
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Send enquiry';
-          alert(data.error || 'Something went wrong. Please try again.');
+        log.scrollTop = log.scrollHeight;
+      };
+      askForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const q = input.value.trim();
+        if (!q) return;
+        bubble(q, 'you'); input.value = '';
+        const typing = document.createElement('div');
+        typing.className = 'text-left text-xs text-gray-400'; typing.textContent = 'Typing…';
+        log.appendChild(typing);
+        try {
+          const resp = await fetch('/p/' + slug + '/ask/', {
+            method: 'POST', body: new URLSearchParams({ q }),
+          });
+          const data = await resp.json();
+          typing.remove();
+          bubble(data.answer || 'Sorry, please try again.', 'kova');
+          cards(data.products);
+        } catch {
+          typing.remove();
+          bubble('Something went wrong — please message us on WhatsApp.', 'kova');
         }
-      } catch {
-        btn.disabled = false;
-        btn.textContent = 'Send enquiry';
-      }
-    });
+      });
+    }
   </script>
 </body>
 </html>

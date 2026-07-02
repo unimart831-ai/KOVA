@@ -237,6 +237,24 @@ def onboarding_choose_path(request):
             ])
             profile.record_onboarding_step("brand_captured")
 
+            # Build the first version of the Business Brain from the
+            # conversational answers. Deterministic (use_llm=False) so it never
+            # blocks activation — the async intelligence chain enriches it after.
+            from apps.accounts.business_brain import extract_and_apply_brain
+
+            extract_and_apply_brain(
+                profile,
+                what=form.cleaned_data["brand_voice"],
+                why=form.cleaned_data.get("why_started", ""),
+                success=form.cleaned_data.get("success_vision", ""),
+                business_model=form.cleaned_data.get("business_model", ""),
+                use_llm=False,
+            )
+            if form.cleaned_data.get("business_model"):
+                from apps.accounts.onboarding_express import apply_business_model_defaults
+
+                apply_business_model_defaults(profile, request.user)
+
             has_platform = SocialAccount.objects.filter(
                 user=request.user, is_active=True
             ).exists()
@@ -701,6 +719,11 @@ def onboarding_complete(request):
         user=request.user, is_active=True
     ).exists()
     setup_mission = build_setup_mission(request.user)
+
+    from apps.accounts.first_business_report import get_first_business_report
+
+    first_report = get_first_business_report(request.user)
+
     progress_context = {
         "progress": progress,
         "brief": brief,
@@ -710,6 +733,7 @@ def onboarding_complete(request):
         "is_commerce": is_commerce_industry(profile.industry),
         "onboarding_intent": get_onboarding_intent(profile),
         "setup_mission": setup_mission,
+        "first_report": first_report,
     }
 
     # If everything is done, redirect to the best first-value screen

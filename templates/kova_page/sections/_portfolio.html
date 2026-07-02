@@ -1,0 +1,20 @@
+{% if portfolio or case_studies %}
+<div>
+  <h2 class="text-base font-semibold text-gray-800 mb-3">{% if business_model == "professional" %}Selected work{% else %}Our work{% endif %}</h2>
+  <div class="space-y-3">
+    {% for item in portfolio %}
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+      <p class="font-semibold text-gray-900">{{ item.title }}</p>
+      {% if item.description %}<p class="text-sm text-gray-600 mt-1">{{ item.description|truncatewords:30 }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    {% for item in case_studies %}
+    <div class="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-kova-400">
+      <p class="text-xs font-semibold text-kova-600 uppercase tracking-wide">Case study</p>
+      <p class="font-semibold text-gray-900 mt-0.5">{{ item.title }}</p>
+      {% if item.description %}<p class="text-sm text-gray-600 mt-1">{{ item.description|truncatewords:30 }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

@@ -640,7 +640,21 @@ class CTASettingsForm(forms.ModelForm):
 
 
 class OnboardingStartForm(forms.Form):
-    """Single onboarding screen — business name + brand description (no industry packs)."""
+    """Conversational onboarding — Kova learns the business, not just its name.
+
+    Three questions (what / why / one-year success) plus how the business makes
+    money build the first version of the Business Brain. Only company name and
+    the "what you do" description are required so activation stays fast; the
+    rest enrich the Brain when provided.
+    """
+
+    BUSINESS_MODEL_CHOICES = [
+        ("product", "Sell products"),
+        ("service", "Offer services / bookings"),
+        ("digital", "Sell digital products"),
+        ("professional", "Win projects / clients"),
+        ("multiple", "Multiple of these"),
+    ]
 
     company_name = forms.CharField(
         max_length=255,
@@ -653,16 +667,45 @@ class OnboardingStartForm(forms.Form):
     )
     brand_voice = forms.CharField(
         max_length=2000,
-        label="Describe your brand",
+        label="What do you do?",
         widget=forms.Textarea(attrs={
             "class": "input text-base",
-            "rows": 5,
+            "rows": 4,
             "placeholder": (
-                "What you sell or do, who you serve, and how you talk to customers. "
-                "Mix languages if that's how you post — Kova will match it."
+                "e.g. I run a small salon specializing in braids for university students."
             ),
         }),
-        help_text="Kova learns from this. Every post follows your words, not a generic industry template.",
+        help_text=(
+            "Describe your brand in your own words — what you sell, who you serve, "
+            "and how you talk to customers. Kova learns from this, not a generic template."
+        ),
+    )
+    why_started = forms.CharField(
+        required=False,
+        max_length=1000,
+        label="Why did you start this business?",
+        widget=forms.Textarea(attrs={
+            "class": "input",
+            "rows": 3,
+            "placeholder": "e.g. I wanted affordable, quality hair care for students.",
+        }),
+        help_text="This becomes your brand story — it makes every campaign authentic.",
+    )
+    success_vision = forms.CharField(
+        required=False,
+        max_length=1000,
+        label="One year from now, what would make you say Kova changed your business?",
+        widget=forms.Textarea(attrs={
+            "class": "input",
+            "rows": 2,
+            "placeholder": "e.g. Double my bookings, build my brand, sell nationwide.",
+        }),
+    )
+    business_model = forms.ChoiceField(
+        required=False,
+        choices=[("", "—")] + BUSINESS_MODEL_CHOICES,
+        label="How does your business make money?",
+        widget=forms.RadioSelect(),
     )
     example_1 = forms.CharField(
         required=False,

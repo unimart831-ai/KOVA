@@ -77,6 +77,19 @@ def handle_incoming_message(self, message_id: str):
         logger.warning("No profile for user %s — skipping AI reply", user.email)
         return
 
+    # Business Memory — remember this contact + detect product interest.
+    try:
+        from apps.whatsapp.memory import remember_customer_interaction
+
+        remember_customer_interaction(
+            user,
+            conversation.contact_wa_id,
+            name=conversation.contact_name,
+            message_text=message.content,
+        )
+    except Exception as exc:
+        logger.debug("Customer memory skip: %s", exc)
+
     # Get conversation history (last 20 messages for context)
     recent_messages = WhatsAppMessage.objects.filter(
         conversation=conversation,
@@ -296,6 +309,28 @@ def _build_system_prompt(profile, conversation):
         parts.append(f"Products/Services: {offerings}")
     if profile.brand_restrictions:
         parts.append(f"\n## RESTRICTIONS\n{profile.brand_restrictions}")
+
+    # Ground the assistant in the real catalog + FAQ so it can answer product
+    # and price questions from truth instead of guessing.
+    try:
+        from apps.kova_page.salesperson import business_knowledge_block
+
+        knowledge = business_knowledge_block(profile, profile.user)
+        if knowledge:
+            parts.append("\n" + knowledge)
+    except Exception:
+        pass
+
+    # Returning-customer memory — greet them with context.
+    try:
+        from apps.whatsapp.memory import memory_context_block, recall_customer_memory
+
+        mem = recall_customer_memory(profile.user, conversation.contact_wa_id)
+        block = memory_context_block(mem)
+        if block:
+            parts.append("\n" + block)
+    except Exception:
+        pass
 
     parts.extend([
         "",

@@ -1,0 +1,13 @@
+{% if testimonials %}
+<div>
+  <h2 class="text-base font-semibold text-gray-800 mb-3">What customers say</h2>
+  <div class="space-y-3">
+    {% for r in testimonials %}
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+      <p class="text-sm text-gray-700 italic">&ldquo;{{ r.response_text|truncatewords:40 }}&rdquo;</p>
+      {% if r.customer_name %}<p class="text-xs text-gray-500 mt-2">— {{ r.customer_name }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
