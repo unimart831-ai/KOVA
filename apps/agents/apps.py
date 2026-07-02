@@ -13,34 +13,26 @@ class AgentsConfig(AppConfig):
     def ready(self):
         import sys
 
-        # Avoid DB queries during schema management (Django 5+ startup warning).
-        if len(sys.argv) > 1 and sys.argv[1] in {
-            "migrate",
-            "makemigrations",
-            "flush",
-            "test",
-            "collectstatic",
-            "createsuperuser",
-            "shell",
-            "check",
-            "showmigrations",
-            "loaddata",
-        }:
+        # Defer DB queries until the first real request/task — never during
+        # Django startup, schema management, or ASGI/WSGI server boot.
+        # Django raises RuntimeWarning if any ORM call happens here (D5+ check).
+        _SKIP_COMMANDS = {
+            "migrate", "makemigrations", "flush", "test",
+            "collectstatic", "createsuperuser", "shell", "check",
+            "showmigrations", "loaddata",
+        }
+        # argv[0] is manage.py OR a WSGI/ASGI server binary (daphne, uvicorn,
+        # gunicorn). When the server boots, argv[1] may not exist at all.
+        _cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+        if _cmd in _SKIP_COMMANDS or not _cmd:
             return
-
+        # Only run the OpenRouter key validation for explicit management commands
+        # that need it (e.g. pilot_smoke). Never during server startup.
+        # The LLMConfig is loaded lazily on first generate() call instead.
         from django.conf import settings
 
         openrouter_key = (getattr(settings, "OPENROUTER_API_KEY", "") or "").strip()
         default_provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "openai")
-
-        try:
-            from apps.agents.llm import _get_llm_config
-
-            config = _get_llm_config()
-            if config and config.pk:
-                default_provider = config.default_provider or default_provider
-        except Exception:
-            pass
 
         uses_openrouter = default_provider == "openrouter" or bool(openrouter_key)
         if not uses_openrouter:
