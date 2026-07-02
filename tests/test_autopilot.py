@@ -104,7 +104,7 @@ class TestAutoPublishRespectsPause:
             user=user,
             social_account=account,
             content_text="Due post",
-            status=Post.Status.APPROVED,
+            status=Post.Status.SCHEDULED,
             scheduled_at=past,
         )
 
@@ -113,6 +113,32 @@ class TestAutoPublishRespectsPause:
 
         assert result["dispatched"] == 0
         mock_delay.assert_not_called()
+
+    def test_dispatches_user_approved_without_autopilot(self, user):
+        from apps.platforms.models import SocialAccount
+
+        account = SocialAccount.objects.create(
+            user=user,
+            platform="instagram",
+            platform_user_id="ig1b",
+            username="shop",
+            access_token="tok",
+            is_active=True,
+        )
+        past = timezone.now() - timedelta(minutes=5)
+        Post.objects.create(
+            user=user,
+            social_account=account,
+            content_text="User approved post",
+            status=Post.Status.APPROVED,
+            scheduled_at=past,
+        )
+
+        with patch("apps.content.tasks.publish_post.delay") as mock_delay:
+            result = check_and_publish_due_posts()
+
+        assert result["dispatched"] == 1
+        mock_delay.assert_called_once()
 
     def test_dispatches_when_enabled_not_paused(self, user):
         from apps.platforms.models import SocialAccount

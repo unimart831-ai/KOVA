@@ -2332,38 +2332,38 @@ def check_and_publish_due_posts():
         logger.info("Auto-scheduled %d approved posts that were missing scheduled_at", auto_scheduled)
 
     # ── Step 2: Dispatch posts whose scheduled_at has arrived ─────────
-    from apps.accounts.autopilot_helpers import should_auto_publish_approved
+    from apps.accounts.autopilot_helpers import platform_allowed_for_autopilot, should_dispatch_due_post
 
     due_posts = (
         Post.objects.filter(
             status__in=[Post.Status.APPROVED, Post.Status.SCHEDULED],
             scheduled_at__lte=now,
         )
-        .select_related("user", "user__profile")
+        .select_related("user", "user__profile", "social_account")
         .order_by("scheduled_at")
     )
 
     from apps.platforms.outage import is_outage
 
     count = 0
-    skipped_autopilot = 0
+    skip_reasons: dict[str, int] = {}
     held_outage = 0
     for post in due_posts:
-        if not should_auto_publish_approved(post.user):
-            skipped_autopilot += 1
+        allowed, reason = should_dispatch_due_post(post)
+        if not allowed:
+            skip_reasons[reason] = skip_reasons.get(reason, 0) + 1
             continue
         from apps.products.photoroom_review import post_blocked_by_alteration_review
 
         review_blocked, _review_reason = post_blocked_by_alteration_review(post)
         if review_blocked:
-            skipped_autopilot += 1
+            skip_reasons["alteration_review"] = skip_reasons.get("alteration_review", 0) + 1
             continue
         platform_key = (post.platform or "").lower()
         if not platform_key and post.social_account_id:
             platform_key = (post.social_account.platform or "").lower()
-        from apps.accounts.autopilot_helpers import platform_allowed_for_autopilot
         if platform_key and not platform_allowed_for_autopilot(post.user, platform_key):
-            skipped_autopilot += 1
+            skip_reasons["platform_filtered"] = skip_reasons.get("platform_filtered", 0) + 1
             continue
         if platform_key and is_outage(platform_key):
             held_outage += 1
@@ -2378,10 +2378,13 @@ def check_and_publish_due_posts():
         )
     if count:
         logger.info("Dispatched %d posts for publishing", count)
-    elif skipped_autopilot:
+    elif skip_reasons:
+        parts = [f"{k}={v}" for k, v in sorted(skip_reasons.items())]
         logger.info(
-            "Publish check: %d due post(s) skipped — autopilot auto-publish off or paused",
-            skipped_autopilot,
+            "Publish check: %d due post(s) skipped (%s). "
+            "Enable auto-publish in Settings → Autopilot for system-scheduled posts.",
+            sum(skip_reasons.values()),
+            ", ".join(parts),
         )
     else:
         # Diagnostic: log pipeline state so we can see why nothing publishes

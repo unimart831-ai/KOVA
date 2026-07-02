@@ -1069,16 +1069,19 @@ def generate_all_daily_briefs():
 
     eligible_count = len(users)
     if not users:
-        # Diagnostic: log why no users matched — INFO so it shows in production
-        total_users = User.objects.count()
-        onboarded = User.objects.filter(onboarding_completed=True).count()
-        with_posts = User.objects.filter(posts__status="published").distinct().count()
-        already_briefed = User.objects.filter(briefs__date=now_utc.date()).count()
-        logger.info(
-            "Brief eligibility: %d total users, %d onboarded, %d with published posts, "
-            "%d candidates pre-time-filter, %d already briefed today (UTC). "
-            "No eligible users found.",
-            total_users, onboarded, with_posts, len(candidates), already_briefed,
+        already_local = 0
+        for user in candidates:
+            try:
+                utz = zoneinfo.ZoneInfo(user.timezone or "UTC")
+            except (KeyError, Exception):
+                utz = zoneinfo.ZoneInfo("UTC")
+            if user.briefs.filter(date=now_utc.astimezone(utz).date()).exists():
+                already_local += 1
+        logger.debug(
+            "Brief eligibility: %d candidates, none due this run "
+            "(%d already briefed for local date, others before brief time).",
+            len(candidates),
+            already_local,
         )
 
     generated = 0

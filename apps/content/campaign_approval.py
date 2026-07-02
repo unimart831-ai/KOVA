@@ -224,7 +224,11 @@ def approve_campaign_posts(
 
         post.scheduled_at = scheduled_at
         post.status = Post.Status.APPROVED
-        post.save(update_fields=["status", "scheduled_at", "updated_at"])
+        from apps.accounts.autopilot_helpers import mark_user_scheduled_publish
+
+        if intent != "post_now":
+            mark_user_scheduled_publish(post)
+        post.save(update_fields=["status", "scheduled_at", "visual_metadata", "updated_at"])
         result.approved_count += 1
         result.approved_post_ids.append(str(post.pk))
 

@@ -74,6 +74,53 @@ def should_auto_publish_approved(user) -> bool:
     return bool(profile.autopilot_auto_publish_approved)
 
 
+USER_SCHEDULED_META_KEY = "user_scheduled_publish"
+
+
+def mark_user_scheduled_publish(post, *, save: bool = False) -> None:
+    """Owner explicitly queued this post — publish at due time without autopilot toggle."""
+    meta = dict(getattr(post, "visual_metadata", None) or {})
+    if meta.get(USER_SCHEDULED_META_KEY):
+        return
+    meta[USER_SCHEDULED_META_KEY] = True
+    post.visual_metadata = meta
+    if save:
+        post.save(update_fields=["visual_metadata", "updated_at"])
+
+
+def should_dispatch_due_post(post) -> tuple[bool, str]:
+    """
+    Whether a due post should be sent to publish_post.
+
+    User-approved queue posts (APPROVED + scheduled_at, or user_scheduled flag)
+    publish at due time. Fully automated SCHEDULED posts still require autopilot.
+    """
+    from apps.content.models import Post
+
+    user = post.user
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False, "no_profile"
+    if profile.emergency_pause:
+        return False, "emergency_pause"
+    if profile.auto_publish_paused:
+        return False, "publish_paused"
+    from apps.content.safety import is_publishing_paused
+
+    paused, _ = is_publishing_paused(user)
+    if paused:
+        return False, "safety_paused"
+
+    meta = post.visual_metadata or {}
+    if post.status == Post.Status.APPROVED and post.scheduled_at:
+        return True, ""
+    if meta.get(USER_SCHEDULED_META_KEY):
+        return True, ""
+    if should_auto_publish_approved(user):
+        return True, ""
+    return False, "autopilot_off"
+
+
 def normalize_faq_answers(raw: Any) -> list[dict]:
     """Validate FAQ list: up to 5 entries with keywords + reply."""
     if not raw:

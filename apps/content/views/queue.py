@@ -381,7 +381,10 @@ def reschedule_post(request, post_id):
     post.scheduled_at = when
     if post.status == Post.Status.APPROVED:
         post.status = Post.Status.SCHEDULED
-    post.save(update_fields=["scheduled_at", "status", "updated_at"])
+    from apps.accounts.autopilot_helpers import mark_user_scheduled_publish
+
+    mark_user_scheduled_publish(post)
+    post.save(update_fields=["scheduled_at", "status", "visual_metadata", "updated_at"])
 
     return JsonResponse({
         "ok": True,
@@ -449,7 +452,13 @@ def approve_post(request, post_id):
         post.scheduled_at = get_next_best_slot(request.user, platform)
 
     post.status = Post.Status.APPROVED
-    post.save(update_fields=["status", "scheduled_at", "updated_at"])
+    from apps.accounts.autopilot_helpers import mark_user_scheduled_publish
+
+    if intent != "post_now":
+        mark_user_scheduled_publish(post)
+        post.save(update_fields=["status", "scheduled_at", "visual_metadata", "updated_at"])
+    else:
+        post.save(update_fields=["status", "scheduled_at", "updated_at"])
 
     if post.seed_id:
         from apps.content.campaign_approval import sync_campaign_after_approval
