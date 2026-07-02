@@ -240,11 +240,11 @@ def _new_leads(user) -> list[StreamItem]:
     try:
         from apps.leads.models import Lead
         cutoff = timezone.now() - timedelta(hours=24)
-        count = Lead.objects.filter(user=user, status=Lead.Status.NEW, created_at__gte=cutoff).count()
+        count = Lead.objects.filter(user=user, status=Lead.Status.NEW, first_seen_at__gte=cutoff).count()
         if not count:
             return []
         hot = Lead.objects.filter(
-            user=user, status=Lead.Status.NEW, temperature="hot", created_at__gte=cutoff,
+            user=user, status=Lead.Status.NEW, temperature="hot", first_seen_at__gte=cutoff,
         ).count()
         subtitle = f"{hot} hot" if hot else "New in the last 24h"
         return [StreamItem(

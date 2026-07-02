@@ -99,7 +99,11 @@ def _dormant_lead_cards(user) -> list[dict]:
 
         cutoff_old = timezone.now() - timedelta(days=7)
         cutoff_recent = timezone.now() - timedelta(days=90)
-        quiet = Lead.objects.filter(user=user, created_at__lt=cutoff_old, created_at__gte=cutoff_recent).count()
+        quiet = Lead.objects.filter(
+            user=user,
+            last_activity_at__lt=cutoff_old,
+            last_activity_at__gte=cutoff_recent,
+        ).count()
     except Exception:
         return []
 

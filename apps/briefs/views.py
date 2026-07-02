@@ -454,7 +454,7 @@ def brief_home(request):
         ),
         "kova_today_subtitle": "",
         # Best Next Action — single most important thing the owner should do now
-        "best_next_action": extract_your_move(brief) if brief else None,
+        "best_next_action": extract_your_move(brief.summary) if brief else None,
     })
 
 
