@@ -29,12 +29,12 @@
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
   <tr>
     <td width="23%" style="text-align:center;padding:12px 4px;background-color:#f9fafb;border-radius:8px;">
-      <div style="font-size:22px;font-weight:700;color:#1E3A8A;">{{ report.posts_published|default:"0" }}</div>
+      <div style="font-size:22px;font-weight:700;color:#0066FF;">{{ report.posts_published|default:"0" }}</div>
       <div style="font-size:10px;color:#6b7280;margin-top:2px;">Posts</div>
     </td>
     <td width="4%"></td>
-    <td width="23%" style="text-align:center;padding:12px 4px;background-color:#f0fdf4;border-radius:8px;">
-      <div style="font-size:22px;font-weight:700;color:#059669;">{{ report.reach|default:"0" }}</div>
+    <td width="23%" style="text-align:center;padding:12px 4px;background-color:#E6F0FF;border-radius:8px;">
+      <div style="font-size:22px;font-weight:700;color:#0052CC;">{{ report.reach|default:"0" }}</div>
       <div style="font-size:10px;color:#6b7280;margin-top:2px;">Reach</div>
     </td>
     <td width="4%"></td>
@@ -85,8 +85,8 @@
 {% endif %}
 
 <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;">
-  Compared to previous period: Revenue {% if report.revenue_delta > 0 %}<span style="color:#059669;">+KES {{ report.revenue_delta }}</span>{% elif report.revenue_delta < 0 %}<span style="color:#dc2626;">KES {{ report.revenue_delta }}</span>{% else %}no change{% endif %}
-  &middot; Sales {% if report.sales_delta > 0 %}<span style="color:#059669;">+{{ report.sales_delta }}</span>{% elif report.sales_delta < 0 %}<span style="color:#dc2626;">{{ report.sales_delta }}</span>{% else %}no change{% endif %}
+  Compared to previous period: Revenue {% if report.revenue_delta > 0 %}<span style="color:#0052CC;">+KES {{ report.revenue_delta }}</span>{% elif report.revenue_delta < 0 %}<span style="color:#dc2626;">KES {{ report.revenue_delta }}</span>{% else %}no change{% endif %}
+  &middot; Sales {% if report.sales_delta > 0 %}<span style="color:#0052CC;">+{{ report.sales_delta }}</span>{% elif report.sales_delta < 0 %}<span style="color:#dc2626;">{{ report.sales_delta }}</span>{% else %}no change{% endif %}
 </p>
 {% endblock %}
 

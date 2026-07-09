@@ -193,9 +193,9 @@
         return dt.toLocaleDateString('en', {weekday: 'short', month: 'short', day: 'numeric'});
       }),
       datasets: [
-        { label: 'Seeds', data: data.map(d => d.seeds), backgroundColor: isDark ? '#1E3A8A' : '#60A5FA', borderRadius: 4 },
+        { label: 'Seeds', data: data.map(d => d.seeds), backgroundColor: isDark ? '#0066FF' : '#60A5FA', borderRadius: 4 },
         { label: 'Generated', data: data.map(d => d.generated), backgroundColor: isDark ? '#3b82f6' : '#60a5fa', borderRadius: 4 },
-        { label: 'Published', data: data.map(d => d.published), backgroundColor: isDark ? '#10B981' : '#34D399', borderRadius: 4 },
+        { label: 'Published', data: data.map(d => d.published), backgroundColor: isDark ? '#0066FF' : '#34D399', borderRadius: 4 },
         { label: 'Failed', data: data.map(d => d.failed), backgroundColor: isDark ? '#ef4444' : '#f87171', borderRadius: 4 },
       ]
     },

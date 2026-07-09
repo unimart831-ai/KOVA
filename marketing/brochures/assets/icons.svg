@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="icon-kova" viewBox="0 0 48 48">
-    <rect width="48" height="48" rx="10" fill="#00d4aa"/>
+    <rect width="48" height="48" rx="10" fill="#0066FF"/>
     <path d="M12 32V16h6l6 10 6-10h6v16h-5V22l-7 10h-4l-7-10v10H12z" fill="#0c1222"/>
   </symbol>
   <symbol id="icon-agents" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="currentColor" opacity=".6"/></symbol>

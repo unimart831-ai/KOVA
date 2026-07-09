@@ -216,7 +216,7 @@
       datasets: [{
         label: 'Success %',
         data: successData.map(d => d.rate),
-        borderColor: '#10B981',
+        borderColor: '#0066FF',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         fill: true,
         borderWidth: 2,
@@ -240,8 +240,8 @@
   // ── Token Consumption Trend ────────────────────────────────────────
   const tokenData = {{ token_trend_json|safe }};
   const agentColors = {
-    research: '#1E3A8A', create: '#3b82f6', adapt: '#2B6F9E',
-    engage: '#f59e0b', analyst: '#10B981', strategist: '#ef4444'
+    research: '#0066FF', create: '#3b82f6', adapt: '#2B6F9E',
+    engage: '#f59e0b', analyst: '#0066FF', strategist: '#ef4444'
   };
   const agentTypes = {{ agent_types|safe }};
   new Chart(document.getElementById('tokenTrendChart'), {

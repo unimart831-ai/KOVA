@@ -71,7 +71,7 @@ def get_report_branding(user):
     if not brand:
         return {
             "logo_url": "",
-            "primary_color": "#4c1d95",
+            "primary_color": "#0066FF",
             "brand_name": "",
             "powered_by_kova": True,
         }
@@ -85,7 +85,7 @@ def get_report_branding(user):
 
     return {
         "logo_url": logo_url,
-        "primary_color": brand.theme_primary_color or "#4c1d95",
+        "primary_color": brand.theme_primary_color or "#0066FF",
         "brand_name": brand.name,
         "powered_by_kova": False,
     }
@@ -106,7 +106,7 @@ def _profile_accent_color(profile) -> str:
 def get_commerce_branding(user, profile=None):
     """Theme tokens for public commerce pages (agency brand + profile fallbacks)."""
     brand = get_active_brand_for_user(user)
-    primary = "#0f766e"
+    primary = "#0066FF"
     logo_url = ""
     custom_domain = ""
     custom_domain_verified = False

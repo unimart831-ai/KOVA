@@ -5,9 +5,10 @@
   --kova-navy: #0c1222;
   --kova-charcoal: #151d2e;
   --kova-slate: #1e293b;
-  --kova-teal: #00d4aa;
-  --kova-teal-dim: #00a888;
-  --kova-teal-glow: rgba(0, 212, 170, 0.25);
+  --kova-blue: #0066ff;
+  --kova-teal: var(--kova-blue);
+  --kova-teal-dim: #0052cc;
+  --kova-teal-glow: rgba(0, 102, 255, 0.25);
   --kova-white: #f8fafc;
   --kova-muted: #94a3b8;
   --kova-body: #334155;

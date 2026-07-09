@@ -21,7 +21,7 @@ from apps.content.reel_frame_studio import (
 def test_render_hook_beat_frame_size():
     frame = render_hook_beat_frame(
         headline="Fresh kitenge drop",
-        brand=BeatFrameBrand(primary="#1E3A8A", secondary="#10B981", accent="#F59E0B"),
+        brand=BeatFrameBrand(primary="#0066FF", secondary="#0066FF", accent="#F59E0B"),
     )
     assert frame.size == (1080, 1920)
 

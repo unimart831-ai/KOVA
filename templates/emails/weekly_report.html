@@ -14,12 +14,12 @@
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
   <tr>
     <td width="48%" style="text-align:center;padding:16px;background-color:#f9fafb;border-radius:8px;">
-      <div style="font-size:28px;font-weight:700;color:#1E3A8A;">{{ report.posts_created|default:"0" }}</div>
+      <div style="font-size:28px;font-weight:700;color:#0066FF;">{{ report.posts_created|default:"0" }}</div>
       <div style="font-size:12px;color:#6b7280;margin-top:2px;">Posts created</div>
     </td>
     <td width="4%"></td>
-    <td width="48%" style="text-align:center;padding:16px;background-color:#f0fdf4;border-radius:8px;">
-      <div style="font-size:28px;font-weight:700;color:#059669;">{{ report.posts_published|default:"0" }}</div>
+    <td width="48%" style="text-align:center;padding:16px;background-color:#E6F0FF;border-radius:8px;">
+      <div style="font-size:28px;font-weight:700;color:#0052CC;">{{ report.posts_published|default:"0" }}</div>
       <div style="font-size:12px;color:#6b7280;margin-top:2px;">Posts published</div>
     </td>
   </tr>
@@ -40,7 +40,7 @@
 {% block cta %}
 <tr>
   <td align="center" style="padding:0 32px 28px;">
-    <a href="{{ site_url }}/analytics/" style="display:inline-block;background-color:#10B981;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View full analytics →</a>
+    <a href="{{ site_url }}/analytics/" style="display:inline-block;background-color:#0066FF;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View full analytics →</a>
   </td>
 </tr>
 {% endblock %}

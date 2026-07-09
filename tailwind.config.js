@@ -9,83 +9,83 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        /* ── PRIMARY: Deep Emerald — brand identity, growth, business success ── */
+        /* ── PRIMARY: Pure Blue — brand identity, CTAs, links ── */
         kova: {
-          50:  '#ECFDF5',
-          100: '#D1FAE5',
-          200: '#A7F3D0',
-          300: '#6EE7B7',
-          400: '#34D399',
-          500: '#10B981',   // subtle / hover base
-          600: '#059669',   // interactive / active states
-          700: '#047857',   // ← BRAND PRIMARY (deep emerald)
-          800: '#065F46',   // dark brand / pressed
-          900: '#064E3B',
-          950: '#022C22',
+          50:  '#E6F0FF',
+          100: '#CCE0FF',
+          200: '#99C2FF',
+          300: '#66A3FF',
+          400: '#3385FF',
+          500: '#0066FF',
+          600: '#0052CC',
+          700: '#0047B3',
+          800: '#003D99',
+          900: '#002966',
+          950: '#001433',
         },
-        /* ── SUCCESS / REVENUE: lighter emerald — positive indicators ── */
+        /* ── Interactive / revenue indicators — same blue scale ── */
         growth: {
-          50:  '#ECFDF5',
-          100: '#D1FAE5',
-          200: '#A7F3D0',
-          300: '#6EE7B7',
-          400: '#34D399',
-          500: '#10B981',   // revenue badges, success states
-          600: '#059669',
-          700: '#047857',
-          800: '#065F46',
-          900: '#064E3B',
-          950: '#022C22',
+          50:  '#E6F0FF',
+          100: '#CCE0FF',
+          200: '#99C2FF',
+          300: '#66A3FF',
+          400: '#3385FF',
+          500: '#0066FF',
+          600: '#0052CC',
+          700: '#0047B3',
+          800: '#003D99',
+          900: '#002966',
+          950: '#001433',
         },
-        /* ── ACHIEVEMENT / OPPORTUNITY: Warm Gold ── */
+        /* ── WARNING: Amber — pending / caution only (not brand) ── */
         gold: {
-          50:  '#FFFBEB',
-          100: '#FEF3C7',
-          200: '#FDE68A',
-          300: '#FCD34D',
-          400: '#FBBF24',
-          500: '#F59E0B',   // approvals, pending, opportunity
-          600: '#D97706',
-          700: '#B45309',
-          800: '#92400E',
-          900: '#78350F',
-          950: '#451A03',
+          50:  '#FEFCE8',
+          100: '#FEF9C3',
+          200: '#FEF08A',
+          300: '#FDE047',
+          400: '#FACC15',
+          500: '#CA8A04',
+          600: '#A16207',
+          700: '#854D0E',
+          800: '#713F12',
+          900: '#422006',
+          950: '#1A1203',
         },
-        /* ── ACCENT: Electric Blue — interactive elements, focus rings, links ONLY ── */
+        /* ── ACCENT: Lighter blue — secondary interactive states ── */
         accent: {
-          50:  '#EFF6FF',
-          100: '#DBEAFE',
-          200: '#BFDBFE',
-          300: '#93C5FD',
-          400: '#60A5FA',
-          500: '#3B82F6',   // links, focus rings
-          600: '#2563EB',   // interactive hover
-          700: '#1D4ED8',
-          800: '#1E40AF',
-          900: '#1E3A8A',
-          950: '#172554',
+          50:  '#E6F0FF',
+          100: '#CCE0FF',
+          200: '#99C2FF',
+          300: '#66A3FF',
+          400: '#3385FF',
+          500: '#0066FF',
+          600: '#0052CC',
+          700: '#0047B3',
+          800: '#003D99',
+          900: '#002966',
+          950: '#001433',
         },
-        /* ── NEUTRAL: Clean grays — text, surfaces, borders (true gray, not slate) ── */
+        /* ── NEUTRAL: Slate — text, surfaces, borders ── */
         gray: {
-          50:  '#FAFAFA',   // app background
-          100: '#F4F5F7',   // subtle surface
-          200: '#E5E7EB',   // borders
-          300: '#D1D5DB',
-          400: '#9CA3AF',
-          500: '#6B7280',   // secondary text
-          600: '#4B5563',
-          700: '#374151',
-          800: '#1F2937',
-          900: '#111827',   // primary text
-          950: '#030712',   // deep dark
+          50:  '#F8FAFC',
+          100: '#F1F5F9',
+          200: '#E2E8F0',
+          300: '#CBD5E1',
+          400: '#94A3B8',
+          500: '#64748B',
+          600: '#475569',
+          700: '#334155',
+          800: '#1E293B',
+          900: '#0F172A',
+          950: '#020617',
         },
       },
       boxShadow: {
-        kova: "0 1px 2px rgba(4, 120, 87, 0.06), 0 4px 24px rgba(4, 120, 87, 0.08)",
-        "kova-lg": "0 4px 6px rgba(4, 120, 87, 0.07), 0 10px 40px rgba(4, 120, 87, 0.1)",
-        growth: "0 1px 2px rgba(16, 185, 129, 0.08), 0 4px 24px rgba(16, 185, 129, 0.12)",
-        "growth-lg": "0 4px 6px rgba(16, 185, 129, 0.1), 0 10px 40px rgba(16, 185, 129, 0.15)",
-        glow: "0 0 20px rgba(4, 120, 87, 0.25)",
+        kova: "0 1px 2px rgba(0, 102, 255, 0.06), 0 4px 24px rgba(0, 102, 255, 0.08)",
+        "kova-lg": "0 4px 6px rgba(0, 102, 255, 0.07), 0 10px 40px rgba(0, 102, 255, 0.1)",
+        growth: "0 1px 2px rgba(0, 102, 255, 0.08), 0 4px 24px rgba(0, 102, 255, 0.12)",
+        "growth-lg": "0 4px 6px rgba(0, 102, 255, 0.1), 0 10px 40px rgba(0, 102, 255, 0.15)",
+        glow: "0 0 20px rgba(0, 102, 255, 0.25)",
       },
       fontFamily: {
         sans: ["Plus Jakarta Sans", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
@@ -122,7 +122,7 @@ module.exports = {
         },
         "agent-glow": {
           "0%, 18%, 100%": { boxShadow: "0 1px 3px rgba(0,0,0,0.08)" },
-          "6%, 12%": { boxShadow: "0 0 0 2px rgba(16,185,129,0.2), 0 0 20px rgba(16,185,129,0.1)" },
+          "6%, 12%": { boxShadow: "0 0 0 2px rgba(0,102,255,0.2), 0 0 20px rgba(0,102,255,0.1)" },
         },
         "dash-flow": {
           to: { strokeDashoffset: "-20" },

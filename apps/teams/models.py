@@ -68,7 +68,7 @@ class Brand(models.Model):
     )
     theme_primary_color = models.CharField(
         max_length=7, blank=True,
-        help_text="Hex accent color for client-facing pages, e.g. #059669.",
+        help_text="Hex accent color for client-facing pages, e.g. #0066FF.",
     )
     logo_url = models.URLField(
         blank=True,

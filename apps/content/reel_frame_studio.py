@@ -24,9 +24,9 @@ STORY_HEIGHT = 1920
 
 @dataclass
 class BeatFrameBrand:
-    primary: str = "#1E3A8A"
-    secondary: str = "#10B981"
-    accent: str = "#F59E0B"
+    primary: str = "#0066FF"
+    secondary: str = "#0F172A"
+    accent: str = "#3385FF"
     brand_name: str = ""
 
 
@@ -35,7 +35,7 @@ def beat_frames_enabled() -> bool:
 
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
-    h = (hex_color or "#1E3A8A").lstrip("#")
+    h = (hex_color or "#0066FF").lstrip("#")
     if len(h) == 3:
         h = "".join(c * 2 for c in h)
     return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
@@ -68,9 +68,9 @@ def _brand_from_context(ctx: BeatFrameBrand | dict[str, Any] | None) -> BeatFram
     if isinstance(ctx, BeatFrameBrand):
         return ctx
     return BeatFrameBrand(
-        primary=ctx.get("primary", "#1E3A8A"),
-        secondary=ctx.get("secondary", "#10B981"),
-        accent=ctx.get("accent", "#F59E0B"),
+        primary=ctx.get("primary", "#0066FF"),
+        secondary=ctx.get("secondary", "#0F172A"),
+        accent=ctx.get("accent", "#3385FF"),
         brand_name=(ctx.get("brand_name") or "")[:48],
     )
 
@@ -311,8 +311,8 @@ def brand_context_for_post(post) -> BeatFrameBrand:
     if meta.get("reel_brand_name"):
         brand_name = meta["reel_brand_name"]
     return BeatFrameBrand(
-        primary=colors.get("primary", "#1E3A8A"),
-        secondary=colors.get("secondary", "#10B981"),
-        accent=colors.get("accent", "#F59E0B"),
+        primary=colors.get("primary", "#0066FF"),
+        secondary=colors.get("secondary", "#0F172A"),
+        accent=colors.get("accent", "#3385FF"),
         brand_name=brand_name,
     )

@@ -280,10 +280,10 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: trend.map(d => d.date.slice(5)),
         datasets: [
-          { label: 'Impressions', data: trend.map(d => d.impressions), borderColor: '#1E3A8A', backgroundColor: 'rgba(30,58,138,0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
+          { label: 'Impressions', data: trend.map(d => d.impressions), borderColor: '#0066FF', backgroundColor: 'rgba(30,58,138,0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
           { label: 'Likes', data: trend.map(d => d.likes), borderColor: '#ef4444', tension: 0.3, borderWidth: 2, pointRadius: 0 },
           { label: 'Comments', data: trend.map(d => d.comments), borderColor: '#f59e0b', tension: 0.3, borderWidth: 2, pointRadius: 0 },
-          { label: 'Shares', data: trend.map(d => d.shares), borderColor: '#10B981', tension: 0.3, borderWidth: 2, pointRadius: 0 },
+          { label: 'Shares', data: trend.map(d => d.shares), borderColor: '#0066FF', tension: 0.3, borderWidth: 2, pointRadius: 0 },
         ]
       },
       options: {
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
           label: 'Posts',
           data: scatter,
           backgroundColor: 'rgba(15, 76, 129, 0.5)',
-          borderColor: '#1E3A8A',
+          borderColor: '#0066FF',
           borderWidth: 1,
           pointRadius: 4,
         }]
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
         datasets: [{
           label: 'Posts',
           data: hist.map(h => h.count),
-          backgroundColor: '#1E3A8A',
+          backgroundColor: '#0066FF',
           borderWidth: 0,
           borderRadius: 4,
         }]

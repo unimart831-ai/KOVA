@@ -17,9 +17,9 @@ export type ProductReelProps = {
 };
 
 const BRAND = {
-  primary: '#1E3A8A',
-  secondary: '#10B981',
-  accent: '#F59E0B',
+  primary: '#0066FF',
+  secondary: '#0F172A',
+  accent: '#3385FF',
 };
 
 const HookCard: React.FC<{text: string}> = ({text}) => (

@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
     type: 'bar',
     data: {
       labels: ['Completed', 'Failed', 'Expired', 'Pending'],
-      datasets: [{ data: [{{ mpesa_completed }}, {{ mpesa_failed }}, {{ mpesa_expired }}, {{ mpesa_pending }}], backgroundColor: ['#10B981','#ef4444','#f59e0b','#9ca3af'], borderRadius: 6 }]
+      datasets: [{ data: [{{ mpesa_completed }}, {{ mpesa_failed }}, {{ mpesa_expired }}, {{ mpesa_pending }}], backgroundColor: ['#0066FF','#ef4444','#f59e0b','#9ca3af'], borderRadius: 6 }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af' } }, y: { beginAtZero: true, grid: { color: 'rgba(156,163,175,0.1)' }, ticks: { font: { size: 10 }, color: '#9ca3af' } } } }
   });
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     type: 'line',
     data: {
       labels: revData.map(d => d.month),
-      datasets: [{ label: 'Revenue (KES)', data: revData.map(d => d.revenue), borderColor: '#1E3A8A', backgroundColor: 'rgba(30,58,138,0.1)', fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#1E3A8A' }]
+      datasets: [{ label: 'Revenue (KES)', data: revData.map(d => d.revenue), borderColor: '#0066FF', backgroundColor: 'rgba(30,58,138,0.1)', fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#0066FF' }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af' } }, y: { beginAtZero: true, grid: { color: 'rgba(156,163,175,0.1)' }, ticks: { font: { size: 10 }, color: '#9ca3af' } } } }
   });

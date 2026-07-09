@@ -1,7 +1,7 @@
 {% extends "emails/base_email.html" %}
 
 {% block title %}New Referral! — Kova Agent Partners{% endblock %}
-{% block header_bg %}#059669{% endblock %}
+{% block header_bg %}#0052CC{% endblock %}
 {% block header_title %}New Referral!{% endblock %}
 {% block header_subtitle %}<p style="margin:4px 0 0;color:#d1fae5;font-size:14px;">Someone signed up with your link</p>{% endblock %}
 {% block header_badge %}REFERRAL{% endblock %}
@@ -15,7 +15,7 @@
 <!-- Referral Details -->
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
   <tr>
-    <td style="padding:16px;background-color:#f0fdf4;border-radius:8px;">
+    <td style="padding:16px;background-color:#E6F0FF;border-radius:8px;">
       <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;">
         <tr>
           <td style="padding:6px 0;">
@@ -26,7 +26,7 @@
         <tr>
           <td style="padding:6px 0;">
             <span style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Total Referrals</span><br>
-            <span style="font-size:14px;font-weight:600;color:#059669;">{{ total_referrals }} client{{ total_referrals|pluralize }}</span>
+            <span style="font-size:14px;font-weight:600;color:#0052CC;">{{ total_referrals }} client{{ total_referrals|pluralize }}</span>
           </td>
         </tr>
         <tr>
@@ -41,14 +41,14 @@
 </table>
 
 <p style="margin:0;font-size:13px;color:#6b7280;">
-  Keep sharing your link to grow your earnings. Check your <a href="{{ dashboard_url }}" style="color:#059669;text-decoration:none;font-weight:600;">Partner Dashboard</a> for live stats.
+  Keep sharing your link to grow your earnings. Check your <a href="{{ dashboard_url }}" style="color:#0052CC;text-decoration:none;font-weight:600;">Partner Dashboard</a> for live stats.
 </p>
 {% endblock %}
 
 {% block cta %}
 <tr>
   <td align="center" style="padding:0 32px 28px;">
-    <a href="{{ dashboard_url }}" style="display:inline-block;background-color:#059669;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View Dashboard →</a>
+    <a href="{{ dashboard_url }}" style="display:inline-block;background-color:#0052CC;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 32px;border-radius:8px;">View Dashboard →</a>
   </td>
 </tr>
 {% endblock %}

@@ -213,8 +213,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const agentLabels = [{% for a in agent_totals %}'{{ a.agent_type|capfirst }}'{% if not forloop.last %},{% endif %}{% endfor %}];
   const agentTokens = [{% for a in agent_totals %}{{ a.tokens }}{% if not forloop.last %},{% endif %}{% endfor %}];
   const agentColors = {
-    'Research': '#1E3A8A', 'Create': '#3b82f6', 'Adapt': '#2B6F9E',
-    'Engage': '#f59e0b', 'Analyst': '#10B981', 'Strategist': '#ef4444'
+    'Research': '#0066FF', 'Create': '#3b82f6', 'Adapt': '#2B6F9E',
+    'Engage': '#f59e0b', 'Analyst': '#0066FF', 'Strategist': '#ef4444'
   };
   const colors = agentLabels.map(l => agentColors[l] || '#9ca3af');
 

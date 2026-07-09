@@ -51,77 +51,76 @@ textarea {
 
 @layer base {
   :root {
-    /* ── Kova brand palette — Deep Emerald primary, Warm Gold secondary, Electric Blue accent ──
-     * Emerald  #047857  brand identity, growth, business success
-     * Gold     #F59E0B  opportunity, achievement, premium
-     * Blue     #3B82F6  interactive elements, focus rings, links (accent only)
+    /* ── Kova brand palette — Pure Blue primary, Slate neutrals ──
+     * Blue   #0066FF  brand identity, CTAs, links, focus
+     * Slate  #0F172A–#F8FAFC  text, surfaces, borders
+     * Semantic greens/ambers/reds kept only for status (not brand)
      */
-    --brand-primary: #047857;          /* Deep Emerald — BRAND PRIMARY */
-    --brand-primary-hover: #065F46;    /* deeper on hover */
-    --brand-primary-subtle: #ECFDF5;   /* light background tint */
-    --brand-primary-mid: #059669;      /* active/interactive states */
-    --brand-emerald: #10B981;          /* success / revenue indicator */
-    --brand-emerald-hover: #059669;
-    --brand-emerald-subtle: #ECFDF5;
-    --brand-gold: #F59E0B;             /* opportunity, approvals */
-    --brand-gold-warm: #D4A017;        /* warm gold for premium badges */
-    --brand-gold-subtle: #FFFBEB;
-    --brand-accent: #3B82F6;           /* Electric Blue — links, focus, interactive */
-    --brand-accent-hover: #2563EB;
-    --brand-accent-subtle: #EFF6FF;
+    --brand-primary: #0066FF;
+    --brand-primary-hover: #0052CC;
+    --brand-primary-subtle: #E6F0FF;
+    --brand-primary-mid: #3385FF;
+    --brand-accent: #3385FF;
+    --brand-accent-hover: #0066FF;
+    --brand-accent-subtle: #E6F0FF;
 
-    /* Legacy semantic aliases — maps to new palette */
-    --growth-emerald: var(--brand-emerald);
-    --growth-emerald-hover: var(--brand-emerald-hover);
-    --growth-emerald-subtle: var(--brand-emerald-subtle);
+    /* Legacy aliases → blue + slate */
+    --brand-emerald: #0066FF;
+    --brand-emerald-hover: #0052CC;
+    --brand-emerald-subtle: #E6F0FF;
+    --brand-gold: #CA8A04;
+    --brand-gold-warm: #A16207;
+    --brand-gold-subtle: #FEF9C3;
+    --growth-emerald: var(--brand-primary);
+    --growth-emerald-hover: var(--brand-primary-hover);
+    --growth-emerald-subtle: var(--brand-primary-subtle);
     --action-gold: var(--brand-gold);
     --action-gold-subtle: var(--brand-gold-subtle);
-    --kova-charcoal: #111827;          /* Primary text (vision) */
-    --kova-error: #DC2626;             /* Red — only for genuine problems */
+    --kova-charcoal: #0F172A;
+    --kova-error: #DC2626;
 
-    /* ── Surfaces: Soft White, clean and spacious (vision) ── */
+    /* ── Surfaces: Slate neutrals ── */
     --kova-light-bg: #FFFFFF;
-    --kova-light-bg-muted: #FAFAFA;    /* background (vision #FAFAFA) */
-    --kova-light-bg-subtle: #F4F5F7;
-    --kova-light-text: #111827;        /* primary text (vision #111827) */
-    --kova-light-text-muted: #4B5563;
-    --kova-light-text-subtle: #6B7280; /* secondary text (vision #6B7280) */
-    --kova-light-border: #E5E7EB;      /* borders (vision #E5E7EB) */
-    --kova-light-border-subtle: #F4F5F7;
+    --kova-light-bg-muted: #F8FAFC;
+    --kova-light-bg-subtle: #F1F5F9;
+    --kova-light-text: #0F172A;
+    --kova-light-text-muted: #64748B;
+    --kova-light-text-subtle: #94A3B8;
+    --kova-light-border: #E2E8F0;
+    --kova-light-border-subtle: #F1F5F9;
 
-    /* App shell — clean neutral surfaces, plenty of white space */
-    --app-canvas: #FAFAFA;             /* vision background */
-    --app-sidebar: #FFFFFF;            /* clean white sidebar */
+    --app-canvas: #F8FAFC;
+    --app-sidebar: #FFFFFF;
     --app-header: #FFFFFF;
-    --app-surface: #FFFFFF;            /* cards: white (vision) */
-    --app-border: #E5E7EB;             /* borders: #E5E7EB (vision) */
+    --app-surface: #FFFFFF;
+    --app-border: #E2E8F0;
     --kova-accent: var(--brand-primary);
     --kova-accent-hover: var(--brand-primary-hover);
     --kova-accent-subtle: var(--brand-primary-subtle);
     --kova-trust: var(--brand-primary);
 
     --chart-revenue: var(--brand-primary);
-    --chart-leads: #34D399;
-    --chart-content: var(--brand-accent);
+    --chart-leads: #3385FF;
+    --chart-content: #64748B;
     --chart-pending: var(--brand-gold);
     --chart-error: #DC2626;
   }
 
   .dark {
-    --kova-light-bg: #111827;
-    --kova-light-bg-muted: #1F2937;
-    --kova-light-bg-subtle: #374151;
-    --kova-light-text: #F9FAFB;
-    --kova-light-text-muted: #9CA3AF;
-    --kova-light-text-subtle: #6B7280;
-    --kova-light-border: #374151;
-    --kova-light-border-subtle: #1F2937;
-    --kova-accent-subtle: #064E3B;
-    --app-canvas: #111827;
-    --app-sidebar: #111827;
-    --app-header: #111827;
-    --app-surface: #1F2937;
-    --app-border: #374151;
+    --kova-light-bg: #0F172A;
+    --kova-light-bg-muted: #1E293B;
+    --kova-light-bg-subtle: #334155;
+    --kova-light-text: #F8FAFC;
+    --kova-light-text-muted: #94A3B8;
+    --kova-light-text-subtle: #64748B;
+    --kova-light-border: #334155;
+    --kova-light-border-subtle: #1E293B;
+    --kova-accent-subtle: #172554;
+    --app-canvas: #0F172A;
+    --app-sidebar: #0F172A;
+    --app-header: #0F172A;
+    --app-surface: #1E293B;
+    --app-border: #334155;
   }
 
   html {

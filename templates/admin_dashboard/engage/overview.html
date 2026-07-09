@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     type: 'doughnut',
     data: {
       labels: ['Positive', 'Neutral', 'Negative'],
-      datasets: [{ data: sentimentData, backgroundColor: ['#10B981','#9ca3af','#ef4444'], borderWidth: 0, hoverOffset: 4 }]
+      datasets: [{ data: sentimentData, backgroundColor: ['#0066FF','#9ca3af','#ef4444'], borderWidth: 0, hoverOffset: 4 }]
     },
     options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 }, color: '#9ca3af' } } } }
   });
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
     data: {
       labels: trendData.map(d => new Date(d.date).toLocaleDateString('en', { month: 'short', day: 'numeric' })),
       datasets: [
-        { label: 'Positive %', data: trendData.map(d => d.positive), borderColor: '#10B981', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+        { label: 'Positive %', data: trendData.map(d => d.positive), borderColor: '#0066FF', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 2 },
         { label: 'Neutral %', data: trendData.map(d => d.neutral), borderColor: '#9ca3af', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 2 },
         { label: 'Negative %', data: trendData.map(d => d.negative), borderColor: '#ef4444', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 2 }
       ]

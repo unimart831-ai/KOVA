@@ -1,13 +1,13 @@
 /* Kova Storefront — signature public shop & hub (v6) */
 
 :root {
-  --kc-accent: #0f766e;
+  --kc-accent: #0066ff;
   --kc-accent-soft: color-mix(in srgb, var(--kc-accent) 14%, white);
-  --kc-bg: #faf8f5;
+  --kc-bg: #f8fafc;
   --kc-surface: #ffffff;
-  --kc-text: #1c1917;
-  --kc-muted: #57534e;
-  --kc-border: color-mix(in srgb, var(--kc-accent) 12%, #e7e5e4);
+  --kc-text: #0f172a;
+  --kc-muted: #64748b;
+  --kc-border: #e2e8f0;
   --kc-radius: 18px;
   --kc-radius-sm: 12px;
   --kc-shadow: 0 1px 2px rgba(28, 25, 23, 0.05), 0 10px 28px rgba(28, 25, 23, 0.06);

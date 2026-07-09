@@ -410,7 +410,7 @@ class EmailService:
             context={
                 "marketplace_name": marketplace_name,
                 "password_reset_url": build_password_reset_url(user),
-                "accent_color": branding.get("accent_color", "#10B981"),
+                "accent_color": branding.get("accent_color", "#0066FF"),
                 "powered_by_text": branding.get("powered_by_text", ""),
             },
             metadata={"marketplace": marketplace_name},

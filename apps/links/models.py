@@ -43,7 +43,7 @@ class KovaPage(models.Model):
     custom_css = models.TextField(blank=True, help_text="Pro plan: custom CSS overrides")
     background_color = models.CharField(max_length=7, default="#ffffff", help_text="Hex color")
     text_color = models.CharField(max_length=7, default="#111827", help_text="Hex color")
-    accent_color = models.CharField(max_length=7, default="#10B981", help_text="Hex color for buttons")
+    accent_color = models.CharField(max_length=7, default="#0066FF", help_text="Hex color for buttons")
 
     # SEO / social sharing
     seo_title = models.CharField(max_length=60, blank=True)
