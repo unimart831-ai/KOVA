@@ -1,10 +1,16 @@
-{# Reusable seed batch container for the queue #}
+{# Reusable seed batch container — horizontal carousel per campaign round #}
 <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
   <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3 min-w-0">
     <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg shrink-0
-      {% if batch_tone == 'live' %}bg-growth-100 dark:bg-growth-950/50{% elif batch_tone == 'scheduled' %}bg-blue-100 dark:bg-blue-950/50{% else %}bg-kova-100 dark:bg-kova-950/50{% endif %}">
-      {% if batch_tone == 'live' %}
+      {% if batch_tone == 'live' or batch_tone == 'published' %}bg-growth-100 dark:bg-growth-950/50
+      {% elif batch_tone == 'failed' %}bg-red-100 dark:bg-red-950/50
+      {% elif batch_tone == 'scheduled' %}bg-blue-100 dark:bg-blue-950/50
+      {% elif batch_tone == 'review' %}bg-gold-100 dark:bg-gold-950/50
+      {% else %}bg-kova-100 dark:bg-kova-950/50{% endif %}">
+      {% if batch_tone == 'live' or batch_tone == 'published' %}
         <svg class="w-3.5 h-3.5 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      {% elif batch_tone == 'failed' %}
+        <svg class="w-3.5 h-3.5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
       {% else %}
         <svg class="w-3.5 h-3.5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
       {% endif %}
@@ -17,9 +23,7 @@
       </p>
     </div>
   </div>
-  <div class="p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-    {% for post in batch.posts %}
-      {% include "components/post_card.html" with post=post compact_card=compact_card %}
-    {% endfor %}
+  <div class="p-3 sm:p-4">
+    {% include "content/_post_carousel.html" with posts=batch.posts compact_card=compact_card show_angle=show_angle %}
   </div>
 </div>

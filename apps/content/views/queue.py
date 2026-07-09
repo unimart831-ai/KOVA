@@ -59,7 +59,7 @@ def _group_queue_by_seed(posts_list):
 
 
 def _get_queue_context(user, section_filter=None, platform_filter=None, format_filter=None, search_query=None):
-    """Build queue sections, stats, and filter state."""
+    """Build queue sections — review + going live only (archive holds the rest)."""
     from django.db.models import Q
 
     visible_user_ids = get_teammate_ids(user)
@@ -69,8 +69,8 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
     from apps.content.share_bundle import exclude_share_bundle_posts
     base = exclude_share_bundle_posts(base, visible_user_ids)
 
-    failed_qs = _apply_queue_filters(
-        base.filter(status__in=("failed", "blocked")).order_by("-created_at"),
+    review_qs = _apply_queue_filters(
+        base.filter(status__in=("draft", "pending_approval")).order_by("-created_at"),
         platform_filter, format_filter, search_query,
     )
     publishing_qs = _apply_queue_filters(
@@ -84,57 +84,51 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
     scheduled_qs = _apply_queue_filters(
         base.filter(
             Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False)
-        ).order_by("-created_at"),
-        platform_filter, format_filter, search_query,
-    )
-    published_qs = _apply_queue_filters(
-        base.filter(status="published").order_by("-published_at"),
+        ).order_by("-scheduled_at", "-created_at"),
         platform_filter, format_filter, search_query,
     )
 
-    section = section_filter if section_filter in ("ready", "scheduled", "live", "attention") else "all"
+    section = section_filter if section_filter in ("review", "live", "all") else "all"
     load_all = section == "all"
 
-    failed_count = failed_qs.count()
+    review_count = review_qs.count()
     publishing_count = publishing_qs.count()
     ready_count = ready_qs.count()
     scheduled_count = scheduled_qs.count()
-    published_count = min(published_qs.count(), QUEUE_SECTION_CAP)
+    live_count = publishing_count + ready_count + scheduled_count
 
-    failed = list(failed_qs[:QUEUE_SECTION_CAP]) if load_all or section == "attention" else []
-    publishing = list(publishing_qs[:QUEUE_SECTION_CAP]) if load_all or section == "attention" else []
-    ready = list(ready_qs[:QUEUE_SECTION_CAP]) if load_all or section == "ready" else []
-    scheduled = list(scheduled_qs[:QUEUE_SECTION_CAP]) if load_all or section == "scheduled" else []
-    published = list(published_qs[:QUEUE_SECTION_CAP]) if load_all or section == "live" else []
+    review = list(review_qs[:QUEUE_SECTION_CAP]) if load_all or section == "review" else []
+    publishing = list(publishing_qs[:QUEUE_SECTION_CAP]) if load_all or section == "live" else []
+    ready = list(ready_qs[:QUEUE_SECTION_CAP]) if load_all or section == "live" else []
+    scheduled = list(scheduled_qs[:QUEUE_SECTION_CAP]) if load_all or section == "live" else []
 
+    review_batches, review_ungrouped = _group_queue_by_seed(review)
     ready_batches, ready_ungrouped = _group_queue_by_seed(ready)
     scheduled_batches, scheduled_ungrouped = _group_queue_by_seed(scheduled)
-    published_batches, published_ungrouped = _group_queue_by_seed(published)
 
-    attention_count = failed_count + publishing_count
-    filtered_total = failed_count + publishing_count + ready_count + scheduled_count + published_count
+    filtered_total = review_count + live_count
 
     return {
         "section": section,
-        "failed": failed,
+        "current_section": section,
+        "review": review,
+        "review_batches": review_batches,
+        "review_ungrouped": review_ungrouped,
+        "review_count": review_count,
         "publishing": publishing,
+        "publishing_count": publishing_count,
         "ready_batches": ready_batches,
         "ready_ungrouped": ready_ungrouped,
         "ready_count": ready_count,
         "scheduled_batches": scheduled_batches,
         "scheduled_ungrouped": scheduled_ungrouped,
         "scheduled_count": scheduled_count,
-        "published_batches": published_batches,
-        "published_ungrouped": published_ungrouped,
-        "published_count": published_count,
-        "failed_count": failed_count,
-        "publishing_count": publishing_count,
-        "attention_count": attention_count,
+        "live_count": live_count,
         "filtered_total": filtered_total,
-        "current_section": section,
         "current_platform": platform_filter or "",
         "current_format": format_filter or "",
         "current_search": search_query or "",
+        "active_tab": "queue",
     }
 
 
@@ -169,12 +163,11 @@ def queue_sections(request):
 @require_POST
 def clear_failed_posts(request):
     """
-    Bulk-remove failed posts from the queue (soft delete).
-
-    Scoped to the requesting user's team. Honors the active platform filter so
-    'Clear all' only clears what the user is currently looking at. Returns the
-    refreshed queue sections partial for HTMX, or redirects on a normal POST.
+    Bulk-remove failed posts (soft delete). Redirects to Archive — failed posts
+    no longer appear in the Queue pipeline.
     """
+    from django.shortcuts import redirect
+
     visible_user_ids = get_teammate_ids(request.user)
     qs = Post.objects.filter(user_id__in=visible_user_ids, status=Post.Status.FAILED)
 
@@ -188,20 +181,21 @@ def clear_failed_posts(request):
         cleared += 1
 
     if request.headers.get("HX-Request") == "true":
-        ctx = _get_queue_context(
+        from apps.content.views.archive import _get_archive_context
+        ctx = _get_archive_context(
             request.user,
-            section_filter=request.GET.get("section"),
+            section_filter="failed",
             platform_filter=platform_filter,
             format_filter=request.GET.get("post_format"),
             search_query=request.GET.get("q"),
         )
-        return render(request, "content/_queue_content.html", ctx)
+        return render(request, "content/_archive_content.html", ctx)
 
     if cleared:
-        messages.success(request, f"Removed {cleared} failed post{'s' if cleared != 1 else ''}.")
+        messages.success(request, f"Cleared {cleared} failed post{'s' if cleared != 1 else ''}.")
     else:
-        messages.info(request, "No failed posts to remove.")
-    return redirect("content:queue")
+        messages.info(request, "No failed posts to clear.")
+    return redirect("content:archive")
 
 
 @login_required
@@ -274,6 +268,7 @@ def calendar_view(request):
         "unscheduled_ungrouped": unscheduled_ungrouped,
         "unscheduled_count": unscheduled_posts.count(),
         "page_title": "Content Calendar",
+        "active_tab": "queue",
     })
 
 

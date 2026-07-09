@@ -1,0 +1,16 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}Archive{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Published, failed, and rejected posts — scroll sideways within each campaign</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  {% include "content/_create_tabs.html" %}
+
+  <div id="archive-content">
+    {% include "content/_archive_content.html" %}
+  </div>
+</div>
+{% endblock %}

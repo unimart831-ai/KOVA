@@ -31,6 +31,9 @@ urlpatterns = [
     path("queue/", views.content_queue, name="queue"),
     path("queue/sections/", views.queue_sections, name="queue_sections"),
     path("queue/clear-failed/", views.clear_failed_posts, name="clear_failed_posts"),
+    path("archive/", views.content_archive, name="archive"),
+    path("archive/sections/", views.archive_sections, name="archive_sections"),
+    path("archive/clear-failed/", views.archive_clear_failed, name="archive_clear_failed"),
     path("calendar/", views.calendar_view, name="calendar"),
     path("calendar/grid/", views.content_calendar_grid, name="calendar_grid"),
     # Post actions

@@ -188,14 +188,23 @@
                x-transition:leave="transition ease-in duration-150"
                x-transition:leave-start="opacity-100"
                x-transition:leave-end="opacity-0">
-            <div class="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {% for post in group.posts %}
-                {% include "components/post_card.html" with post=post show_angle=True %}
-              {% endfor %}
+            <div class="p-4">
+              {% include "content/_post_carousel.html" with posts=group.posts show_angle=True %}
             </div>
           </div>
         </div>
       {% endfor %}
+
+      {% if studio_overflow_groups %}
+      <div class="rounded-xl border border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/30 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <p class="text-sm text-kova-800 dark:text-kova-200">
+          {{ studio_overflow_groups }} more campaign{{ studio_overflow_groups|pluralize }} waiting in Queue
+        </p>
+        <a href="{% url 'content:queue' %}?section=review" class="inline-flex items-center justify-center h-9 px-4 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">
+          Open Queue →
+        </a>
+      </div>
+      {% endif %}
     </div>
 
   {% elif not ungrouped_posts %}
@@ -220,11 +229,7 @@
   {% if ungrouped_posts %}
     <div class="mt-6">
       <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Individual posts</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {% for post in ungrouped_posts %}
-          {% include "components/post_card.html" with post=post %}
-        {% endfor %}
-      </div>
+      {% include "content/_post_carousel.html" with posts=ungrouped_posts %}
     </div>
   {% endif %}
 </section>

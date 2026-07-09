@@ -42,7 +42,7 @@ def content_studio(request):
     ):
         status_filter = "pending_approval"
 
-    seed_groups, ungrouped, total_pending = _get_studio_posts(
+    seed_groups, ungrouped, total_pending, overflow_groups = _get_studio_posts(
         request.user,
         status_filter=status_filter,
         platform_filter=request.GET.get("platform"),
@@ -126,6 +126,7 @@ def content_studio(request):
         "studio_value": _build_studio_value_stats(request.user),
         "approve_first": approve_first,
         "is_starter_plan": is_starter_plan,
+        "studio_overflow_groups": overflow_groups,
         "pending_approve_count": pending_approve_count,
         "current_status": status_filter or "",
         "current_platform": request.GET.get("platform", ""),
@@ -133,6 +134,7 @@ def content_studio(request):
         "current_search": request.GET.get("q", ""),
         "current_source": request.GET.get("source", ""),
         "page_title": "Studio",
+        "active_tab": "studio",
         "generating_seed_id": request.GET.get("generating", ""),
         "business_model": getattr(profile, "business_model", ""),
         "studio_assets": studio_assets,
@@ -143,7 +145,7 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     """Return (seed_groups, ungrouped, total_pending) for the studio."""
     visible_user_ids = get_teammate_ids(user)
 
-    default_statuses = ["draft", "pending_approval", "rejected"]
+    default_statuses = ["draft", "pending_approval"]
     filter_statuses = [status_filter] if status_filter and status_filter in dict(Post.Status.choices) else default_statuses
 
     posts = Post.objects.filter(
@@ -168,7 +170,8 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     if source_filter == "holiday":
         posts = posts.filter(generated_by_agent="holiday_watcher")
 
-    STUDIO_POST_CAP = 120
+    STUDIO_POST_CAP = 40
+    STUDIO_GROUP_CAP = 5
     total_pending = posts.count()
     posts_page = list(posts[:STUDIO_POST_CAP])
 
@@ -204,7 +207,8 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
             ))
 
     seed_groups.sort(key=lambda g: g["seed"].created_at, reverse=True)
-    return seed_groups, ungrouped, total_pending
+    overflow_groups = max(0, len(seed_groups) - STUDIO_GROUP_CAP)
+    return seed_groups[:STUDIO_GROUP_CAP], ungrouped, total_pending, overflow_groups
 
 
 def _enrich_seed_group(seed_obj, seed_posts, *, connected_platforms=None):
@@ -304,7 +308,7 @@ def _build_studio_value_stats(user):
 @login_required
 def studio_posts(request):
     """HTMX partial: return just the posts-to-review section."""
-    seed_groups, ungrouped, total_pending = _get_studio_posts(
+    seed_groups, ungrouped, total_pending, overflow_groups = _get_studio_posts(
         request.user,
         status_filter=request.GET.get("status"),
         platform_filter=request.GET.get("platform"),
@@ -318,6 +322,7 @@ def studio_posts(request):
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
         "total_pending": total_pending,
+        "studio_overflow_groups": overflow_groups,
         "pending_images": pending_images,
         "current_source": request.GET.get("source", ""),
     })

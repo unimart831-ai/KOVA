@@ -775,6 +775,24 @@ textarea {
     @apply bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300;
   }
 
+  /* Horizontal post carousel — campaign rounds scroll sideways */
+  .post-carousel-row {
+    @apply -mx-1 px-1 overflow-x-auto overscroll-x-contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .post-carousel-track {
+    @apply flex gap-3 pb-2 min-w-min;
+  }
+  .post-carousel-item {
+    @apply flex-shrink-0 w-[min(100%,280px)] sm:w-[280px] snap-start;
+  }
+  .post-carousel-item .post-card-compact,
+  .post-carousel-item .card {
+    @apply h-full;
+  }
+
   /* HTMX in-flight indicators on post cards */
   .htmx-indicator {
     @apply opacity-0 pointer-events-none transition-opacity duration-150;

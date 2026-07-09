@@ -1,0 +1,100 @@
+{# Archive sections — published, failed, others #}
+
+{% if current_section == "all" or current_section == "published" %}
+<section>
+  {% if current_section == "all" %}
+  <h2 class="text-sm font-semibold text-growth-700 dark:text-growth-400 mb-3">Published</h2>
+  {% endif %}
+
+  {% if published_batches or published_ungrouped %}
+    <div class="space-y-4">
+      {% for batch in published_batches %}
+        {% include "content/_queue_batch.html" with batch=batch batch_tone="published" compact_card=True %}
+      {% endfor %}
+      {% if published_ungrouped %}
+        {% include "content/_post_carousel.html" with posts=published_ungrouped compact_card=True %}
+      {% endif %}
+    </div>
+  {% elif current_section == "published" %}
+    <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div class="px-4 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <p>No published posts yet.</p>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if current_section == "all" or current_section == "failed" %}
+<section>
+  {% if current_section == "all" %}
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+    <h2 class="text-sm font-semibold text-red-700 dark:text-red-400">Failed</h2>
+    {% if failed_count %}
+    <button type="button"
+            hx-post="{% url 'content:archive_clear_failed' %}?section={{ current_section }}{% if current_platform %}&platform={{ current_platform }}{% endif %}{% if current_format %}&post_format={{ current_format }}{% endif %}{% if current_search %}&q={{ current_search|urlencode }}{% endif %}"
+            hx-target="#archive-content"
+            hx-swap="innerHTML"
+            hx-confirm="Remove all {{ failed_count }} failed post{{ failed_count|pluralize }} from the archive?"
+            class="inline-flex items-center justify-center gap-1.5 h-9 px-3 text-xs font-medium text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors w-full sm:w-auto">
+      Clear all ({{ failed_count }})
+    </button>
+    {% endif %}
+  </div>
+  {% elif current_section == "failed" and failed_count %}
+  <div class="flex justify-end mb-3">
+    <button type="button"
+            hx-post="{% url 'content:archive_clear_failed' %}?section={{ current_section }}{% if current_platform %}&platform={{ current_platform }}{% endif %}{% if current_format %}&post_format={{ current_format }}{% endif %}{% if current_search %}&q={{ current_search|urlencode }}{% endif %}"
+            hx-target="#archive-content"
+            hx-swap="innerHTML"
+            hx-confirm="Remove all {{ failed_count }} failed post{{ failed_count|pluralize }}?"
+            class="inline-flex items-center justify-center gap-1.5 h-9 px-3 text-xs font-medium text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors w-full sm:w-auto">
+      Clear failed ({{ failed_count }})
+    </button>
+  </div>
+  {% endif %}
+
+  {% if failed_batches or failed_ungrouped %}
+    <div class="space-y-4">
+      {% for batch in failed_batches %}
+        {% include "content/_queue_batch.html" with batch=batch batch_tone="failed" compact_card=True %}
+      {% endfor %}
+      {% if failed_ungrouped %}
+        {% include "content/_post_carousel.html" with posts=failed_ungrouped compact_card=True %}
+      {% endif %}
+    </div>
+  {% elif current_section == "failed" %}
+    <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div class="px-4 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <p>No failed posts.</p>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if current_section == "all" or current_section == "others" %}
+<section>
+  {% if current_section == "all" %}
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Others</h2>
+  <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Rejected and other inactive posts</p>
+  {% endif %}
+
+  {% if others_batches or others_ungrouped %}
+    <div class="space-y-4">
+      {% for batch in others_batches %}
+        {% include "content/_queue_batch.html" with batch=batch batch_tone="others" compact_card=True %}
+      {% endfor %}
+      {% if others_ungrouped %}
+        {% include "content/_post_carousel.html" with posts=others_ungrouped compact_card=True %}
+      {% endif %}
+    </div>
+  {% elif current_section == "others" %}
+    <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div class="px-4 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <p>No rejected or inactive posts.</p>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
