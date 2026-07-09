@@ -429,20 +429,17 @@ def refresh_campaign_qa(campaign, *, posts: list | None = None, user=None) -> Ca
 
 
 def _publish_blocking_reason(post, ps: PostQAScore) -> str | None:
-    """Hard block reasons for this post only — not sibling posts in a campaign."""
+    """Hard block reasons for this post only — not sibling posts in a campaign.
+
+    "Reel video not ready" is intentionally NOT a hard QA block — publish_post
+    retries while composition is in progress. Only permanent compose failure blocks here.
+    """
     for issue in ps.issues:
         if issue.endswith(" post needs media") or issue in (
             "Images still generating",
             "Carousel needs more slides",
             "Reel video composition failed",
         ):
-            return issue
-        if issue == "Reel video not ready":
-            if getattr(post, "reel_compose_pending", False):
-                continue
-            meta = post.visual_metadata or {}
-            if meta.get("video_compose_status") == "pending":
-                continue
             return issue
     return None
 
@@ -451,15 +448,26 @@ def check_post_publish_gate(post, user) -> tuple[bool, str, int]:
     """
     Returns (allowed, reason, score).
     Scores only the post being published — sibling posts in a campaign do not block this one.
+
+    When CAMPAIGN_PUBLISH_QA_ENABLED is False (default), score thresholds are skipped.
+    Hard blockers (reel compose failed / media missing) still apply so we never
+    send incomplete posts to platforms.
     """
+    from django.conf import settings
+
     seed = getattr(post, "seed", None)
     ps = score_post_qa(post, seed=seed)
-    min_required = get_publish_min_score(user)
-    post_floor = max(50, min_required - POST_FLOOR_BELOW_CAMPAIGN)
 
     blocking = _publish_blocking_reason(post, ps)
     if blocking:
         return False, blocking, ps.overall
+
+    qa_enabled = bool(getattr(settings, "CAMPAIGN_PUBLISH_QA_ENABLED", False))
+    if not qa_enabled:
+        return True, "", ps.overall
+
+    min_required = get_publish_min_score(user)
+    post_floor = max(50, min_required - POST_FLOOR_BELOW_CAMPAIGN)
 
     if ps.overall < post_floor:
         reason = ps.issues[0] if ps.issues else f"Post quality {ps.overall}/100 is too low"

@@ -33,7 +33,8 @@ REEL_PLATFORM_PRIORITY = ("instagram", "tiktok", "facebook")
 BUNDLE_LABELS = {
     "ig_feed": "IG feed",
     "fb_feed": "FB post",
-    "ig_carousel": "Carousel",
+    "ig_carousel": "IG Carousel",
+    "fb_carousel": "FB Carousel",
     "ig_story_1": "Story 1",
     "ig_story_2": "Story 2",
     "ig_story_3": "Story 3",
@@ -84,9 +85,68 @@ def get_bundle_profile(seed) -> dict[str, Any]:
     return dict(BUNDLE_PROFILES[_resolve_business_model(seed)])
 
 
-def required_bundle_roles(connected_platforms: set[str] | list[str]) -> list[str]:
+# Content-type filters selected by the merchant after product upload.
+# Default = all. Keys match the proposal UI checkboxes.
+CONTENT_TYPE_ALL = frozenset({"reels", "carousels", "text", "stories", "images"})
+
+_ROLE_CONTENT_TYPES: dict[str, str] = {
+    "ig_feed": "images",
+    "fb_feed": "text",
+    "ig_carousel": "carousels",
+    "fb_carousel": "carousels",
+    "ig_story_1": "stories",
+    "ig_story_2": "stories",
+    "ig_story_3": "stories",
+    "ig_reel": "reels",
+    "fb_reel": "reels",
+    "primary_reel": "reels",
+    "linkedin_copy": "text",
+    "tiktok_copy": "reels",
+}
+
+# Map Post.post_format → content-type checkbox key
+_FORMAT_CONTENT_TYPES: dict[str, str] = {
+    "reel": "reels",
+    "carousel": "carousels",
+    "story": "stories",
+    "image": "images",
+    "text": "text",
+}
+
+
+def post_format_allowed(post_format: str, content_types: set[str] | list[str] | None) -> bool:
+    """True if this post_format is in the merchant's selected content types."""
+    allowed = normalize_content_types(content_types)
+    if allowed >= set(CONTENT_TYPE_ALL):
+        return True
+    key = _FORMAT_CONTENT_TYPES.get((post_format or "text").lower().strip(), "text")
+    return key in allowed
+
+
+def normalize_content_types(selected: list[str] | set[str] | None) -> set[str]:
+    """Return a set of content-type keys; empty/None means all."""
+    if not selected:
+        return set(CONTENT_TYPE_ALL)
+    cleaned = {str(x).strip().lower() for x in selected if str(x).strip()}
+    if not cleaned or "all" in cleaned:
+        return set(CONTENT_TYPE_ALL)
+    return cleaned & set(CONTENT_TYPE_ALL) or set(CONTENT_TYPE_ALL)
+
+
+def content_types_from_seed(seed) -> set[str]:
+    """Read merchant content-type selection from seed.blueprint."""
+    blueprint = getattr(seed, "blueprint", None) or {}
+    return normalize_content_types(blueprint.get("selected_content_types"))
+
+
+def required_bundle_roles(
+    connected_platforms: set[str] | list[str],
+    *,
+    content_types: set[str] | list[str] | None = None,
+) -> list[str]:
     """Ordered list of bundle slots required for the user's connected platforms."""
     platforms = {p.lower() for p in connected_platforms}
+    allowed = normalize_content_types(content_types)
     roles: list[str] = []
 
     if "instagram" in platforms:
@@ -98,7 +158,7 @@ def required_bundle_roles(connected_platforms: set[str] | list[str]) -> list[str
             "ig_story_3",
         ])
     if "facebook" in platforms:
-        roles.append("fb_feed")
+        roles.extend(["fb_feed", "fb_carousel"])
     if "instagram" in platforms:
         roles.append("ig_reel")
     if "facebook" in platforms:
@@ -108,7 +168,9 @@ def required_bundle_roles(connected_platforms: set[str] | list[str]) -> list[str
     if "tiktok" in platforms:
         roles.append("tiktok_copy")
 
-    return roles
+    if allowed >= set(CONTENT_TYPE_ALL):
+        return roles
+    return [r for r in roles if _ROLE_CONTENT_TYPES.get(r, "text") in allowed]
 
 
 def _bundle_role(post) -> str:
@@ -331,6 +393,14 @@ def _matches_fb_feed(post) -> bool:
     return post.platform == "facebook" and post.post_format in ("text", "image")
 
 
+def _matches_fb_carousel(post) -> bool:
+    return (
+        post.platform == "facebook"
+        and post.post_format == "carousel"
+        and len(post.carousel_slides or []) >= 2
+    )
+
+
 def _matches_ig_reel(post) -> bool:
     return post.platform == "instagram" and post.post_format == "reel"
 
@@ -390,6 +460,11 @@ def assign_bundle_roles(posts: list) -> dict[str, Any]:
     if carousels:
         claim("ig_carousel", max(carousels, key=lambda p: len(p.carousel_slides or [])))
 
+    # FB carousel (multi-photo album)
+    fb_carousels = [p for p in posts if p.pk not in used and _matches_fb_carousel(p)]
+    if fb_carousels:
+        claim("fb_carousel", max(fb_carousels, key=lambda p: len(p.carousel_slides or [])))
+
     # Platform reels
     ig_reels = [p for p in posts if p.pk not in used and _matches_ig_reel(p)]
     if ig_reels:
@@ -447,13 +522,19 @@ def assign_bundle_roles(posts: list) -> dict[str, Any]:
 def audit_campaign_bundle(
     posts: list,
     connected_platforms: set[str] | list[str] | None = None,
+    *,
+    content_types: set[str] | list[str] | None = None,
+    seed=None,
 ) -> dict[str, Any]:
     """Return completeness audit for a campaign's posts."""
     platforms = {p.lower() for p in (connected_platforms or [])}
     if not platforms and posts:
         platforms = {p.platform for p in posts if p.platform}
 
-    required = required_bundle_roles(platforms)
+    types = content_types
+    if types is None and seed is not None:
+        types = content_types_from_seed(seed)
+    required = required_bundle_roles(platforms, content_types=types)
     role_map = assign_bundle_roles(posts)
 
     slots: dict[str, dict] = {}
@@ -661,14 +742,15 @@ def _synthesize_slot_payload(
             "ai_angle": "Campaign bundle — Facebook feed",
         }
 
-    if role == "ig_carousel":
+    if role in ("ig_carousel", "fb_carousel"):
+        platform = "facebook" if role == "fb_carousel" else "instagram"
         slides = build_funnel_carousel_slides(seed)
         caption = _adapt_caption(
             f"{ctx['title']}\n\nSwipe through 👉 Save for later 💾",
-            "instagram",
+            platform,
         )
         return {
-            "platform": "instagram",
+            "platform": platform,
             "post_format": Post.PostFormat.CAROUSEL,
             "content_text": caption,
             "content_intent": "solution",
@@ -676,7 +758,7 @@ def _synthesize_slot_payload(
             "aspect_ratio": Post.AspectRatio.SQUARE,
             "visual_strategy": "carousel",
             "image_prompt": "",
-            "ai_angle": "Campaign bundle — funnel carousel",
+            "ai_angle": f"Campaign bundle — {platform} funnel carousel",
         }
 
     if role.startswith("ig_story_"):
@@ -943,7 +1025,10 @@ def ensure_campaign_bundle(
     from apps.content.models import Post
 
     connected_platforms = set(account_map.keys())
-    audit = audit_campaign_bundle(existing_posts, connected_platforms)
+    selected_types = content_types_from_seed(seed)
+    audit = audit_campaign_bundle(
+        existing_posts, connected_platforms, content_types=selected_types, seed=seed,
+    )
     missing = [
         role for role in audit["required"]
         if audit["slots"].get(role, {}).get("status") == "missing"
@@ -951,7 +1036,12 @@ def ensure_campaign_bundle(
 
     if not missing:
         campaign = getattr(seed, "marketing_campaign", None)
-        persist_bundle_audit(campaign, audit_campaign_bundle(existing_posts, connected_platforms))
+        persist_bundle_audit(
+            campaign,
+            audit_campaign_bundle(
+                existing_posts, connected_platforms, content_types=selected_types, seed=seed,
+            ),
+        )
         return []
 
     source = _best_source_post(existing_posts)
@@ -984,7 +1074,9 @@ def ensure_campaign_bundle(
         logger.info("Bundle: synthesized %s post %s for seed %s", role, post.pk, seed.pk)
 
     all_posts = list(existing_posts) + created
-    final_audit = audit_campaign_bundle(all_posts, connected_platforms)
+    final_audit = audit_campaign_bundle(
+        all_posts, connected_platforms, content_types=selected_types, seed=seed,
+    )
     campaign = getattr(seed, "marketing_campaign", None)
     persist_bundle_audit(campaign, final_audit)
 

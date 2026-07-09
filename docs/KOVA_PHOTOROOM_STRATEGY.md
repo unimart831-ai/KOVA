@@ -132,34 +132,37 @@ Platform pool: `PHOTOROOM_MONTHLY_POOL=5000`, reserve 500; Growth throttled when
 
 ## Part 3 — Capability matrix (Photoroom × KOVA)
 
-| Photoroom feature | KOVA status | Notes |
-|-------------------|-------------|-------|
-| Background removal | **Used** | All studio variants |
-| HD removal | **Not used** | Standard cutout only |
-| Static background | **Used** | `studio_white`, `studio_brand`, `studio_dark` |
-| AI Backgrounds | **Used** | Lifestyle + commerce scenes |
-| Background blur | **Used** | `background_blur` variant |
-| AI Shadows | **Used** | Default `ai.soft`; brand template overrides |
-| AI Relight | **Used** | Preflight + `relight` variant |
-| AI Expand / Uncrop | **Partial** | Channel exports + preflight; not user-selectable |
-| Smart crop / positioning | **Used** | Preflight + layout styles |
-| Flat Lay | **Partial** | Catalog + category boost; gated by uncertainty |
-| Ghost Mannequin | **Partial** | Auto-selected for apparel; gated by uncertainty |
-| Virtual Model | **Partial** | Code complete; **flag disabled** |
-| Product staging | **Partial** | Via Edit With AI prompts |
-| AI Beautifier / PhotoFix | **Used** | Preflight + `beautify` variant |
-| Edit With AI | **Used** | `edit_ai_staging`, `edit_ai_angle` (Growth+) |
-| Create Any Image | **Not used** | Planned Phase E |
-| AI Text Removal | **Partial** | Preflight + Pro tier |
-| AI Ironing | **Not used** | — |
-| AI Upscale | **Used** | Preflight repair |
-| Video animate | **Partial** | Sandbox only |
-| Sandbox mode | **Used** | Dev + quota tracking |
-| export.dpi / metadata | **Not used** | JPEG only, no DPI |
-| Google Shopping preset | **Used** | `channel_marketplace` + `channel_marketplace_jpeg` (Phase 1) |
-| Basic API routing | **Used** | White-bg cutouts via v1/segment when key set |
-| Batch API | **Not used** | ThreadPoolExecutor locally |
-| Human-in-the-loop QA | **Partial** | Uncertainty skip only; no review UI |
+| Photoroom product / feature | Official surface | KOVA status | Notes |
+|-----------------------------|------------------|-------------|-------|
+| [Remove Background](https://www.photoroom.com/api/remove-background) | Basic `v1/segment` + Plus `removeBackground` | **Used** | Plus on most variants; Basic routed for white studio |
+| [Product Beautifier](https://www.photoroom.com/api/beautifier) | Plus `beautify.mode` | **Used** | `beautify`, `beautify_nocutout`; PhotoFix in preflight |
+| [Flat Lay](https://www.photoroom.com/api/flat-lay) | Plus `flatLay.mode` | **Used** | Category polish for apparel; skipped on high uncertainty |
+| [Composition](https://www.photoroom.com/api/composition) | Multi-image Plus edit | **Used** | Batch Snap / multi-SKU heroes only — not single-product expand |
+| [Batch AI backgrounds](https://www.photoroom.com/batch/ai-backgrounds) | Plus `background.prompt` + Batch `v2/batch` | **Partial** | AI scenes live via parallel `v2/edit`; Batch API stub (`PHOTOROOM_BATCH_API_ENABLED=False`) |
+| Background blur | Plus | **Used** | `background_blur` variant |
+| AI Shadows | Plus | **Used** | Default soft / brand template overrides |
+| AI Relight | Plus | **Used** | Preflight + pack polish fallback |
+| Ghost Mannequin | Plus | **Partial** | Apparel fallback polish; gated by uncertainty |
+| Virtual Model | Plus | **Partial** | Code complete; **flag disabled** |
+| Edit With AI | Plus | **Used** | `edit_ai_staging`, `edit_ai_angle` (Growth+) |
+| Create Any Image | Plus | **Not used** | Stub / flag off |
+| Analyze QA (enterprise) | Enterprise | **Not used** | Local heuristics only |
+| Video animate | Video API | **Partial** | Single-hero reels when enabled |
+| Basic API routing | Basic | **Used** | White-bg cutouts via v1/segment when key set |
+| Google Shopping preset | Plus | **Used** | `channel_marketplace` (+ JPEG) |
+
+### Expand pack balance (per product)
+
+Enforced in `photoroom_plus.enforce_pack_capability_balance` after slide-role selection:
+
+| Slot (Growth 5-pack) | Capability | Example variants |
+|----------------------|------------|------------------|
+| 1 | Studio hero | `studio_white` / `studio_brand` |
+| 2–3 | Distinct AI backgrounds | `ai_scene_*`, lifestyle, food surfaces |
+| 4 | Category polish | apparel → `flat_lay`; food/beauty → `beautify*`; else `relight` |
+| 5 | Standout / fill | `studio_dark`, `outline`, extra AI scene, or Edit With AI |
+
+Rules: ≤1 beautify-family and ≤1 flat_lay per pack; ≥2 AI background families when `max_count ≥ 5`; high uncertainty drops flat_lay / ghost / virtual_model.
 
 ---
 

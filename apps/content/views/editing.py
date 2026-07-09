@@ -145,9 +145,62 @@ def edit_post(request, post_id):
     })
 
 
+def _attach_user_reel_video(post, uploaded, *, alt_text: str = "") -> "MediaAttachment":
+    """
+    Attach a user-uploaded MP4/WebM as the reel video and mark compose done.
+
+    Skips AI composition — publish uses this file directly.
+    """
+    from apps.content.models import MediaAttachment
+    from apps.content.tasks import _public_url_for_file
+
+    # Replace any prior video so publish always uses the latest upload
+    post.attachments.filter(file_type="video").delete()
+
+    name = (getattr(uploaded, "name", "") or "reel.mp4").lower()
+    if not name.endswith((".mp4", ".mov", ".webm", ".m4v")):
+        # Force an extension Meta/TikTok can recognize in the public URL
+        ct = (getattr(uploaded, "content_type", "") or "").lower()
+        ext = ".webm" if "webm" in ct else ".mp4"
+        uploaded.name = f"user_reel{ext}"
+
+    attachment = MediaAttachment.objects.create(
+        post=post,
+        file=uploaded,
+        file_type="video",
+        alt_text=alt_text or "User-uploaded reel",
+        order=0,
+    )
+
+    public_url = ""
+    if attachment.file and attachment.file.name:
+        public_url = _public_url_for_file(attachment.file.name, for_platform_api=True) or ""
+        if not public_url:
+            try:
+                public_url = attachment.file.url or ""
+            except Exception:
+                public_url = ""
+
+    meta = dict(post.visual_metadata or {})
+    meta["video_compose_status"] = "done"
+    meta["reel_source"] = "user_upload"
+    meta["user_uploaded_reel"] = True
+    meta.pop("video_compose_error", None)
+    if public_url:
+        meta["reel_video_url"] = public_url
+        post.media_urls = [public_url]
+    post.visual_metadata = meta
+    post.media_status = Post.MediaStatus.UPLOADED
+    post.aspect_ratio = Post.AspectRatio.STORY
+    post.save(update_fields=[
+        "visual_metadata", "media_urls", "media_status", "aspect_ratio", "updated_at",
+    ])
+    return attachment
+
+
 @login_required
 def upload_media(request, post_id):
-    """Upload an image to a post."""
+    """Upload an image (or reel video) to a post."""
     from io import BytesIO
 
     from PIL import Image
@@ -159,6 +212,27 @@ def upload_media(request, post_id):
         raise Http404
     if request.method == "POST" and request.FILES.get("file"):
         uploaded = request.FILES["file"]
+        content_type = (uploaded.content_type or "").lower()
+        is_video = content_type.startswith("video/") or (
+            (uploaded.name or "").lower().endswith((".mp4", ".mov", ".webm", ".m4v"))
+        )
+
+        if is_video:
+            if post.post_format != Post.PostFormat.REEL:
+                return HttpResponse("Video uploads are only supported on Reel posts", status=400)
+            if uploaded.size > 100 * 1024 * 1024:
+                return HttpResponse("Video too large (max 100MB)", status=400)
+            allowed_video = {
+                "video/mp4", "video/quicktime", "video/webm", "video/x-m4v",
+                "application/octet-stream",  # some browsers omit a proper video MIME
+            }
+            if content_type and content_type not in allowed_video and not content_type.startswith("video/"):
+                return HttpResponse("Unsupported video type — use MP4 or WebM", status=400)
+            attachment = _attach_user_reel_video(
+                post, uploaded, alt_text=request.POST.get("alt_text", ""),
+            )
+            return render(request, "content/_media_item.html", {"attachment": attachment})
+
         if uploaded.size > 10 * 1024 * 1024:
             return HttpResponse("File too large (max 10MB)", status=400)
 

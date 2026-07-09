@@ -1017,6 +1017,16 @@ def compose_reel_video(post_id: str):
         logger.info("compose_reel_video: post %s is not reel format — skipping", post_id)
         return
 
+    meta_early = post.visual_metadata or {}
+    if meta_early.get("user_uploaded_reel") or meta_early.get("reel_source") == "user_upload":
+        logger.info("compose_reel_video: post %s is user-uploaded — skipping compose", post_id)
+        if _post_has_reel_video(post) and meta_early.get("video_compose_status") != "done":
+            meta = dict(meta_early)
+            meta["video_compose_status"] = "done"
+            post.visual_metadata = meta
+            post.save(update_fields=["visual_metadata", "updated_at"])
+        return
+
     if _post_has_reel_video(post):
         logger.info("compose_reel_video: post %s already has video — skipping", post_id)
         return
@@ -1853,6 +1863,9 @@ def publish_post(self, post_id: str):
                 publish_kwargs["media_type"] = "REELS"
             elif is_story_post:
                 publish_kwargs["media_type"] = "STORIES"
+            elif absolute_media_urls and (is_carousel_post or len(absolute_media_urls) > 1):
+                # Multi-photo album on Page feed (Graph attached_media)
+                publish_kwargs["media_type"] = "CAROUSEL"
         elif account.platform == "tiktok" and is_reel_post:
             publish_kwargs["privacy_level"] = _resolve_tiktok_privacy(account)
             publish_kwargs["is_aigc"] = True

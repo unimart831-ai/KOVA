@@ -798,8 +798,9 @@ POST FORMAT GUIDE — choose the best format for each platform:
 - **Instagram feed post**: use post_format="image" (single striking image) or post_format="carousel" (3-7 slides for educational/list content — carousels get 3× more reach on Instagram)
 - **Instagram Story**: use post_format="story" (vertical 9:16, short punchy text, high-energy, casual tone)
 - **Instagram Reel**: use post_format="reel" (vertical 9:16, hook in first 2 seconds, trend-aware)
-- **Facebook post**: use post_format="text" (text-only performs well) or post_format="image" if visual adds value
+- **Facebook post**: use post_format="text", post_format="image", or post_format="carousel" (multi-photo album — same funnel slides as Instagram when product has gallery)
 - **Facebook Reel**: use post_format="reel" (vertical 9:16 motion video — primary organic reach on Facebook)
+- **Facebook carousel**: use post_format="carousel" with 3–6 slides when showcasing a product or offer (not Instagram-only)
 - **LinkedIn post**: use post_format="text" for thought leadership; post_format="carousel" for step-by-step guides or frameworks (LinkedIn carousels = document posts, great for authority building)
 - **LinkedIn native video**: use post_format="reel" (short vertical or square MP4 — strong for B2B proof and tips)
 - **TikTok**: use post_format="reel" (always video-first, vertical 9:16)
@@ -927,8 +928,29 @@ def build_fallback_posts(seed: ContentSeed, platforms: list[dict]) -> tuple[str,
         except Exception:
             shop_url = product.product_url or ""
 
+    from apps.content.campaign_bundle import post_format_allowed, content_types_from_seed
+
+    allowed_types = content_types_from_seed(seed)
     batch_strategy = "Template drafts — AI was unavailable; review and edit before publishing."
     posts = []
+
+    def _append(plat, handle, text, post_format, *, image_prompt="", visual_strategy=None, angle="Direct highlight"):
+        if not post_format_allowed(post_format, allowed_types):
+            return
+        posts.append({
+            "platform": plat,
+            "username": handle,
+            "content_text": text.strip(),
+            "content_type": "original",
+            "post_format": post_format,
+            "carousel_slides": [],
+            "framework_used": "Template fallback",
+            "angle": angle,
+            "reasoning": "Generated without AI — edit before publishing",
+            "predicted_score": 50,
+            "image_prompt": image_prompt,
+            "visual_strategy": visual_strategy or {"strategy": "none"},
+        })
 
     for p in platforms:
         plat = p["platform"]
@@ -938,72 +960,34 @@ def build_fallback_posts(seed: ContentSeed, platforms: list[dict]) -> tuple[str,
         if plat == "instagram":
             body = description[:280] if description else f"Discover {name}{price_suffix}."
             text = f"✨ {hook}\n\n{body}\n\n💾 Save this · 🔗 Link in bio"
-            post_format = "image"
+            _append(plat, handle, text, "image")
         elif plat == "linkedin":
             body = description[:600] if description else f"We're excited to share {name}{price_suffix}."
             text = f"{hook}\n\n{body}"
             if shop_url:
                 text += f"\n\nLearn more: {shop_url}"
-            post_format = "text"
+            _append(plat, handle, text, "text")
         elif plat == "facebook":
             text = hook
             if description:
                 text += f"\n\n{description[:400]}"
             if shop_url:
                 text += f"\n\n{shop_url}"
-            post_format = "text"
-            posts.append({
-                "platform": plat,
-                "username": handle,
-                "content_text": text.strip(),
-                "content_type": "original",
-                "post_format": post_format,
-                "carousel_slides": [],
-                "framework_used": "Template fallback",
-                "angle": "Direct highlight",
-                "reasoning": "Generated without AI — edit before publishing",
-                "predicted_score": 50,
-                "image_prompt": "",
-                "visual_strategy": {"strategy": "none"},
-            })
-            posts.append({
-                "platform": plat,
-                "username": handle,
-                "content_text": f"{hook} 🎬".strip(),
-                "content_type": "original",
-                "post_format": "reel",
-                "carousel_slides": [],
-                "framework_used": "Template fallback",
-                "angle": "Motion highlight",
-                "reasoning": "Generated without AI — edit before publishing",
-                "predicted_score": 50,
-                "image_prompt": f"Vertical 9:16 product shot of {name}, dynamic lighting, no text",
-                "visual_strategy": {"strategy": "ai_photo"},
-            })
-            continue
+            _append(plat, handle, text, "text")
+            _append(
+                plat, handle, f"{hook} 🎬".strip(), "reel",
+                image_prompt=f"Vertical 9:16 product shot of {name}, dynamic lighting, no text",
+                visual_strategy={"strategy": "ai_photo"},
+                angle="Motion highlight",
+            )
         elif plat == "tiktok":
             text = f"{hook} {'Link in bio!' if shop_url else 'Check it out!'}"
-            post_format = "reel"
+            _append(plat, handle, text, "reel")
         else:
             text = hook
             if shop_url:
                 text += f"\n\n{shop_url}"
-            post_format = "text"
-
-        posts.append({
-            "platform": plat,
-            "username": handle,
-            "content_text": text.strip(),
-            "content_type": "original",
-            "post_format": post_format,
-            "carousel_slides": [],
-            "framework_used": "Template fallback",
-            "angle": "Direct highlight",
-            "reasoning": "Generated without AI — edit before publishing",
-            "predicted_score": 50,
-            "image_prompt": "",
-            "visual_strategy": {"strategy": "none"},
-        })
+            _append(plat, handle, text, "text")
 
     return batch_strategy, posts
 
@@ -1188,6 +1172,26 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
         # Build prompts
         system = build_system_prompt(user)
         prompt = build_generation_prompt(seed, platforms)
+        from apps.content.campaign_bundle import CONTENT_TYPE_ALL, content_types_from_seed
+
+        selected_types = content_types_from_seed(seed)
+        if selected_types < set(CONTENT_TYPE_ALL):
+            allowed_formats = []
+            if "reels" in selected_types:
+                allowed_formats.append("reel")
+            if "carousels" in selected_types:
+                allowed_formats.append("carousel")
+            if "stories" in selected_types:
+                allowed_formats.append("story")
+            if "images" in selected_types:
+                allowed_formats.append("image")
+            if "text" in selected_types:
+                allowed_formats.append("text")
+            prompt += (
+                "\n\n⚠️ MERCHANT CONTENT-TYPE FILTER — NON-NEGOTIABLE:\n"
+                f"Only generate posts with post_format in: {', '.join(allowed_formats)}.\n"
+                "Do NOT create any other formats. Skip platforms that cannot use these formats.\n"
+            )
 
         log_gen_step(
             seed, "writing",
@@ -1397,6 +1401,10 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
         else:
             initial_status = Post.Status.PENDING_APPROVAL
 
+        from apps.content.campaign_bundle import content_types_from_seed, post_format_allowed
+
+        selected_content_types = content_types_from_seed(seed) if seed else None
+
         for pd in post_dicts:
             raw_platform = pd.get("platform", "")
             platform = platform_aliases.get(raw_platform.lower().strip(), raw_platform.lower().strip())
@@ -1426,6 +1434,20 @@ def run_create_agent(seed: ContentSeed, force_pending: bool = False) -> list[Pos
             blueprint_slots = pd.pop("_blueprint_slots", None)
             blueprint_quality = pd.pop("_blueprint_quality", None)
             draft = PostDraft.from_llm_dict(pd)
+
+            draft_format = (
+                getattr(draft, "post_format", None) or pd.get("post_format") or "text"
+            )
+            if selected_content_types is not None and not post_format_allowed(
+                draft_format, selected_content_types
+            ):
+                logger.info(
+                    "Create Agent: skipping %s/%s — not in selected content types %s",
+                    platform,
+                    draft_format,
+                    sorted(selected_content_types),
+                )
+                continue
             # Strip invisible Unicode characters + markdown syntax at creation time.
             # Both are safety nets: the prompt says no markdown, but LLMs still slip.
             from apps.content.post_copy import polish_post_caption

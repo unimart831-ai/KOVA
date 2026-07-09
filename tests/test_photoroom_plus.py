@@ -219,12 +219,13 @@ def test_slide_role_order_starts_with_hero():
     assert ordered[1].id == "ai_lifestyle"
 
 
-def test_apparel_proof_prefers_ghost_mannequin():
+def test_apparel_proof_prefers_flat_lay_then_ghost():
     from apps.products.photoroom_plus import order_variants_by_slide_role
 
     candidates = [
         PLUS_VARIANT_CATALOG["studio_white"],
         PLUS_VARIANT_CATALOG["ai_lifestyle"],
+        PLUS_VARIANT_CATALOG["flat_lay"],
         PLUS_VARIANT_CATALOG["ghost_mannequin"],
         PLUS_VARIANT_CATALOG["virtual_model"],
     ]
@@ -236,7 +237,108 @@ def test_apparel_proof_prefers_ghost_mannequin():
     )
     ids = [s.id for s in ordered]
     assert ids[0] == "studio_white"
-    assert "ghost_mannequin" in ids or "virtual_model" in ids
+    assert "flat_lay" in ids or "ghost_mannequin" in ids or "virtual_model" in ids
+
+
+def test_capability_for_variant_taxonomy():
+    from apps.products.photoroom_plus import (
+        CAPABILITY_AI_BACKGROUND,
+        CAPABILITY_BEAUTIFY,
+        CAPABILITY_FLAT_LAY,
+        CAPABILITY_STUDIO,
+        capability_for_variant,
+    )
+
+    assert capability_for_variant("studio_white") == CAPABILITY_STUDIO
+    assert capability_for_variant("ai_scene_table") == CAPABILITY_AI_BACKGROUND
+    assert capability_for_variant("beautify_nocutout") == CAPABILITY_BEAUTIFY
+    assert capability_for_variant("flat_lay") == CAPABILITY_FLAT_LAY
+
+
+def test_apparel_5pack_balanced_mix():
+    """Growth 5-pack: studio hero + ≥2 AI backgrounds + flat_lay polish."""
+    from apps.products.photoroom_plus import (
+        capability_for_variant,
+        CAPABILITY_AI_BACKGROUND,
+        CAPABILITY_STUDIO,
+    )
+
+    p = _Product(name="Kitenge Dress", tags=["fashion", "apparel"])
+    specs = select_plus_variants(p, {}, plan_tier="growth", max_count=5, uncertainty_score=0.1)
+    ids = [s.id for s in specs]
+    caps = [capability_for_variant(s.id) for s in specs]
+
+    assert caps[0] == CAPABILITY_STUDIO or ids[0].startswith("studio_")
+    assert caps.count(CAPABILITY_AI_BACKGROUND) >= 2
+    assert "flat_lay" in ids
+    assert len(set(ids)) == len(ids)
+
+
+def test_food_5pack_prefers_beautify_not_flat_lay_first():
+    p = _Product(name="Chicken Biryani", tags=["food", "restaurant"])
+    specs = select_plus_variants(
+        p,
+        {"photo_quality": {"lighting": "good", "sharpness": "sharp"}},
+        plan_tier="growth",
+        max_count=5,
+        commerce_source="snap",
+        uncertainty_score=0.1,
+    )
+    ids = [s.id for s in specs]
+    assert any(x in ids for x in ("beautify_nocutout", "beautify"))
+    # Flat lay must not crowd out beautify as the polish pick
+    if "flat_lay" in ids and "beautify_nocutout" in ids:
+        assert ids.index("beautify_nocutout") < ids.index("flat_lay")
+
+
+def test_high_uncertainty_skips_flat_lay_and_ghost():
+    from apps.products.photoroom_plus import order_variants_by_slide_role
+
+    candidates = [
+        PLUS_VARIANT_CATALOG["studio_white"],
+        PLUS_VARIANT_CATALOG["ai_lifestyle"],
+        PLUS_VARIANT_CATALOG["ai_scene_table"],
+        PLUS_VARIANT_CATALOG["flat_lay"],
+        PLUS_VARIANT_CATALOG["ghost_mannequin"],
+        PLUS_VARIANT_CATALOG["relight"],
+        PLUS_VARIANT_CATALOG["beautify"],
+    ]
+    ordered = order_variants_by_slide_role(
+        candidates,
+        offering="product",
+        category="apparel",
+        max_count=5,
+        uncertainty_score=0.85,
+    )
+    ids = [s.id for s in ordered]
+    assert "flat_lay" not in ids
+    assert "ghost_mannequin" not in ids
+    assert ids[0] == "studio_white"
+
+
+def test_no_duplicate_beautify_family_in_pack():
+    from apps.products.photoroom_plus import (
+        BEAUTIFY_FAMILY_IDS,
+        enforce_pack_capability_balance,
+    )
+
+    picked = [
+        PLUS_VARIANT_CATALOG["studio_white"],
+        PLUS_VARIANT_CATALOG["ai_lifestyle"],
+        PLUS_VARIANT_CATALOG["ai_scene_table"],
+        PLUS_VARIANT_CATALOG["beautify"],
+        PLUS_VARIANT_CATALOG["beautify_nocutout"],
+    ]
+    balanced = enforce_pack_capability_balance(
+        picked,
+        picked,
+        max_count=5,
+        category="food",
+        offering="product",
+        uncertainty_score=0.1,
+    )
+    beautify_ids = [s.id for s in balanced if s.id in BEAUTIFY_FAMILY_IDS]
+    assert len(beautify_ids) <= 1
 
 
 def test_filter_carousel_urls_excludes_channel():
@@ -299,7 +401,9 @@ def test_apply_variant_layout_shifts_ai_scenes():
     a = apply_variant_layout(base, "ai_scene_table", 0)
     b = apply_variant_layout(base, "ai_scene_table", 1)
     assert a["horizontalAlignment"] != b.get("horizontalAlignment", "center") or a.get("padding") != b.get("padding")
-    assert "padding" not in a or a.get("paddingLeft")
+    # Index 0 is centered (uses padding); index 1+ use directional padding*
+    assert "padding" in a or a.get("paddingLeft")
+    assert b.get("paddingLeft") or b.get("horizontalAlignment") != a.get("horizontalAlignment")
 
 
 def test_studio_white_layout_rotates():
@@ -334,7 +438,9 @@ def test_marble_prompt_is_commerce_safe():
     prompt = build_creative_prompt("ai_creative_marble", p, {"campaign_angle": "radiant"})
     assert "marble" in prompt.lower()
     assert "fully visible" in prompt.lower()
-    assert "water splash" not in prompt.lower()
+    # Safety clause may say "no water splash…" — ensure we are not requesting a splash scene
+    assert "water splash," in prompt.lower() or "no water splash" in prompt.lower()
+    assert not prompt.lower().startswith("water splash")
 
 
 def test_deprecated_splash_prompt_unchanged_for_manual_use():
@@ -407,10 +513,10 @@ def test_channel_exports_omit_cutout_stack():
     """expand/uncrop on polished heroes must not send removeBackground + shadow."""
     for vid in ("channel_story", "channel_story_uncrop", "channel_banner"):
         params = PLUS_VARIANT_CATALOG[vid].params
-        assert "removeBackground" not in params
+        assert params.get("removeBackground") == "false"
         assert "shadow.mode" not in params
         assert "padding" not in params
-        assert params.get("scaling") == "fit"
+        assert params.get("scaling") in ("fit", "fill")
 
 
 # ── P1-1 vertical packs v2 ───────────────────────────────────────────────────

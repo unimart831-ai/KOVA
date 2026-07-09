@@ -224,9 +224,35 @@
 
       {% if post.post_format == 'reel' %}
         {% include "components/_reel_media_preview.html" with post=post reel_size="large" %}
-        {% if post.media_prompt %}
+        {% if post.media_prompt and not post.visual_metadata.user_uploaded_reel %}
         <p class="mt-1 text-xs text-gray-400 text-center italic truncate">"{{ post.media_prompt }}"</p>
         {% endif %}
+
+        <div id="media-list" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 mb-3">
+          {% for attachment in post.attachments.all %}
+            {% if attachment.file_type == 'video' %}
+              {% include "content/_media_item.html" with attachment=attachment %}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <form hx-post="{% url 'content:upload_media' post.id %}"
+              hx-encoding="multipart/form-data"
+              hx-on::after-request="if(event.detail.successful) window.location.reload()"
+              class="mt-2 p-3 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 space-y-2">
+          {% csrf_token %}
+          <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+            {% if post.reel_has_video %}Replace with your own reel{% else %}Upload your own reel{% endif %}
+          </p>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400">
+            MP4 or WebM, vertical 9:16 preferred · max 100MB. Kova publishes this file as-is (no recompose).
+          </p>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <input type="file" name="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required
+                   class="w-full sm:w-auto text-sm text-gray-500 dark:text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 dark:file:bg-gray-800 dark:file:text-gray-200 hover:file:bg-gray-200 dark:hover:file:bg-gray-700">
+            <button type="submit" class="btn-secondary btn-sm w-full sm:w-auto">Upload video</button>
+          </div>
+        </form>
 
       {% elif post.post_format == 'story' %}
         {# 9:16 frame preview #}

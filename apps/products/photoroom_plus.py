@@ -219,7 +219,84 @@ def _variant_diversity_family(variant_id: str) -> str:
         return "studio_flat"
     if variant_id.startswith("food_surface_"):
         return "food_surface"
+    if _is_ai_background_variant(variant_id):
+        # Distinct AI scenes stay distinct; lifestyle twins share a family.
+        if variant_id.startswith("ai_lifestyle"):
+            return "ai_lifestyle"
+        return variant_id
+    if variant_id in ("beautify", "beautify_nocutout", "photofix"):
+        return "beautify_family"
     return variant_id
+
+
+# Pack capability taxonomy — used to enforce variety across an expand pack.
+CAPABILITY_STUDIO = "studio"
+CAPABILITY_AI_BACKGROUND = "ai_background"
+CAPABILITY_BEAUTIFY = "beautify"
+CAPABILITY_FLAT_LAY = "flat_lay"
+CAPABILITY_EDIT_AI = "edit_ai"
+CAPABILITY_APPAREL_AI = "apparel_ai"
+CAPABILITY_OTHER = "other"
+
+BEAUTIFY_FAMILY_IDS = frozenset({"beautify", "beautify_nocutout", "photofix"})
+STUDIO_HERO_IDS = frozenset({
+    "studio_white",
+    "studio_brand",
+    "studio_dark",
+    "studio_safe",
+    "service_hero",
+    "digital_desk_hero",
+})
+STANDOUT_VARIANT_IDS = frozenset({
+    "studio_dark",
+    "outline",
+    "background_blur",
+    "relight",
+    "relight_nocutout",
+})
+
+
+def capability_for_variant(variant_id: str) -> str:
+    """Map a catalog variant id to a pack capability bucket."""
+    vid = (variant_id or "").strip()
+    if not vid:
+        return CAPABILITY_OTHER
+    if vid == "flat_lay":
+        return CAPABILITY_FLAT_LAY
+    if vid in BEAUTIFY_FAMILY_IDS:
+        return CAPABILITY_BEAUTIFY
+    if vid in ("ghost_mannequin", "virtual_model", "virtual_model_hold", "virtual_model_adorn", "virtual_model_wear"):
+        return CAPABILITY_APPAREL_AI
+    if vid in EDIT_WITH_AI_VARIANT_IDS:
+        return CAPABILITY_EDIT_AI
+    if _is_ai_background_variant(vid):
+        return CAPABILITY_AI_BACKGROUND
+    if vid.startswith("studio_") or vid in ("service_hero", "digital_desk_hero", "digital_device_mockup"):
+        return CAPABILITY_STUDIO
+    return CAPABILITY_OTHER
+
+
+def category_polish_variant_ids(category: str) -> tuple[str, ...]:
+    """
+    Explicit category polish preference (proof slot).
+
+    apparel/mitumba → flat_lay then ghost; food → beautify_nocutout;
+    beauty/jewelry → beautify; default → relight (photofix is preflight-only).
+    """
+    cat = (category or "general").lower().strip()
+    if cat in ("apparel", "apparel_mitumba"):
+        return ("flat_lay", "ghost_mannequin", "virtual_model")
+    if cat == "food":
+        return ("beautify_nocutout", "beautify", "text_removal", "relight")
+    if cat == "beauty":
+        return ("beautify_nocutout", "beautify", "flat_lay", "relight")
+    if cat == "jewelry":
+        return ("beautify", "studio_dark", "relight")
+    if cat == "electronics":
+        return ("relight", "background_blur", "outline")
+    if cat == "home":
+        return ("flat_lay", "relight", "background_blur")
+    return ("relight", "background_blur", "flat_lay", "outline")
 
 
 def _plan_allows_variant(spec: PlusVariantSpec, plan_rank: int) -> bool:
@@ -251,15 +328,16 @@ SLIDE_ROLE_DIGITAL = (
     ("mockup", ("digital_device_mockup",)),
     ("desire", ("ai_contextual", "ai_lifestyle", "ai_lifestyle_alt")),
 )
+# Proof / polish preferences — kept in sync with category_polish_variant_ids().
 CATEGORY_PROOF_VARIANTS: dict[str, tuple[str, ...]] = {
-    "apparel": ("ghost_mannequin", "virtual_model"),
+    "apparel": ("flat_lay", "ghost_mannequin", "virtual_model"),
     "apparel_mitumba": ("flat_lay", "ghost_mannequin", "virtual_model"),
-    "food": ("beautify_nocutout", "flat_lay", "text_removal", "virtual_model_hold"),
-    "beauty": ("beautify_nocutout", "flat_lay", "beautify", "virtual_model_adorn"),
-    "jewelry": ("beautify", "studio_dark", "virtual_model_adorn"),
-    "electronics": ("relight", "background_blur", "virtual_model_hold"),
-    "home": ("flat_lay", "ai_contextual", "virtual_model_hold"),
-    "general": ("relight", "flat_lay", "background_blur", "virtual_model_hold"),
+    "food": ("beautify_nocutout", "beautify", "text_removal", "relight"),
+    "beauty": ("beautify_nocutout", "beautify", "flat_lay", "relight"),
+    "jewelry": ("beautify", "studio_dark", "relight"),
+    "electronics": ("relight", "background_blur", "outline"),
+    "home": ("flat_lay", "relight", "background_blur"),
+    "general": ("relight", "background_blur", "flat_lay", "outline"),
 }
 MARKETPLACE_CHANNEL_VARIANT_IDS = frozenset({
     "channel_marketplace",
@@ -868,7 +946,7 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
             "flatLay.size": "SQUARE_HD",
             **_export_defaults(),
         },
-        categories=("food", "beauty", "home", "general"),
+        categories=("apparel", "apparel_mitumba", "food", "beauty", "home", "general"),
         priority=88,
     ),
     "ghost_mannequin": PlusVariantSpec(
@@ -1685,7 +1763,10 @@ def _slide_roles_for(
         return SLIDE_ROLE_DIGITAL
 
     pack_vertical = vertical or category
-    proof_ids = vertical_proof_variants(pack_vertical, fallback_category=category)
+    # Explicit category polish first, then vertical preset extras
+    polish_ids = category_polish_variant_ids(category)
+    vertical_proof = vertical_proof_variants(pack_vertical, fallback_category=category)
+    proof_ids = polish_ids + tuple(v for v in vertical_proof if v not in polish_ids)
     commerce_ids: tuple[str, ...] = ()
     if getattr(settings, "PHOTOROOM_CREATIVE_SCENES_ENABLED", True):
         commerce_ids = vertical_commerce_scenes(pack_vertical, fallback_category=category)
@@ -1697,14 +1778,20 @@ def _slide_roles_for(
     elif scene_context.get("prefer_jewelry_macro"):
         desire_prefix = ("ai_creative_marble", "ai_lifestyle") + desire_prefix[1:]
 
+    # Lifestyle first (broad appeal), then distinct commerce scenes for variety
     desire_ids = desire_prefix + commerce_ids
+    seen_desire: list[str] = []
+    for vid in desire_ids:
+        if vid not in seen_desire:
+            seen_desire.append(vid)
+    desire_ids = tuple(seen_desire)
     hero_ids = hero_studio_ids or vertical_hero_studio_ids(pack_vertical) or ("studio_white", "studio_brand")
 
     proof_boost: tuple[str, ...] = ()
     if scene_context.get("has_multi_angles"):
         proof_boost = ("edit_ai_angle",)
     if scene_context.get("prefer_repair_over_ai"):
-        proof_boost = proof_boost + ("relight", "beautify", "flat_lay")
+        proof_boost = proof_boost + ("relight", "photofix", "beautify")
     if scene_context.get("prefer_electronics_relight"):
         proof_boost = ("relight",) + proof_boost
 
@@ -1937,6 +2024,424 @@ def _target_edit_with_ai_count(
     return min(base, cap)
 
 
+def _min_ai_backgrounds_for_pack(max_count: int, *, offering: str) -> int:
+    if offering != "product":
+        return 0
+    if max_count >= 5:
+        return 2
+    if max_count >= 3:
+        return 1
+    return 0
+
+
+def _pick_first_available(
+    preferred_ids: tuple[str, ...] | list[str],
+    by_id: dict[str, PlusVariantSpec],
+    *,
+    picked_ids: set[str],
+    skip_risky: bool,
+    high_uncertainty_ids: frozenset[str],
+) -> PlusVariantSpec | None:
+    for vid in preferred_ids:
+        if vid in picked_ids:
+            continue
+        if skip_risky and vid in high_uncertainty_ids:
+            continue
+        spec = by_id.get(vid)
+        if spec:
+            return spec
+    return None
+
+
+def _scene_pack_lead_variant_ids(scene_pack: str | None) -> tuple[str, ...] | None:
+    """Explicit lead variants for named scene packs (override studio-first)."""
+    from apps.products.scene_packs import (
+        SCENE_PACK_FASHION_FLAT,
+        SCENE_PACK_FOOD_DELIVERY,
+        normalize_scene_pack,
+    )
+
+    pack = normalize_scene_pack(scene_pack)
+    if pack == SCENE_PACK_FOOD_DELIVERY:
+        from apps.products.photoroom_food import FOOD_SURFACE_VARIANT_IDS
+
+        return tuple(FOOD_SURFACE_VARIANT_IDS)
+    if pack == SCENE_PACK_FASHION_FLAT:
+        return ("flat_lay",)
+    return None
+
+
+def enforce_pack_capability_balance(
+    picked: list[PlusVariantSpec],
+    candidates: list[PlusVariantSpec],
+    *,
+    max_count: int,
+    category: str,
+    offering: str = "product",
+    uncertainty_score: float | None = None,
+    scene_pack: str | None = None,
+) -> list[PlusVariantSpec]:
+    """
+    Rebalance an expand pack so capabilities stay mixed:
+
+    - 1 studio hero (when product offering), unless a scene pack sets a lead
+    - ≥2 distinct AI backgrounds when max_count ≥ 5
+    - ≤1 beautify-family and ≤1 flat_lay
+    - 1 category polish slot (flat_lay / beautify / photofix by category)
+    - High uncertainty: skip flat_lay / ghost / virtual_model; prefer photofix
+    """
+    from apps.products.photoroom_api import HIGH_UNCERTAINTY_VARIANT_IDS
+    from apps.products.photoroom_guard import uncertainty_is_high_for_category
+
+    if max_count < 1:
+        return []
+
+    skip_risky = uncertainty_is_high_for_category(uncertainty_score, category)
+    pack_leads = _scene_pack_lead_variant_ids(scene_pack)
+    by_id = {s.id: s for s in candidates}
+    for spec in picked:
+        by_id.setdefault(spec.id, spec)
+
+    # Deduplicate while preserving order
+    ordered: list[PlusVariantSpec] = []
+    seen: set[str] = set()
+    for spec in picked:
+        if spec.id in seen:
+            continue
+        seen.add(spec.id)
+        ordered.append(spec)
+
+    # Cap alteration-heavy capabilities
+    beautify_seen = False
+    flat_lay_seen = False
+    trimmed: list[PlusVariantSpec] = []
+    for spec in ordered:
+        cap = capability_for_variant(spec.id)
+        if cap == CAPABILITY_BEAUTIFY:
+            if beautify_seen:
+                continue
+            beautify_seen = True
+        if cap == CAPABILITY_FLAT_LAY:
+            if flat_lay_seen or skip_risky:
+                continue
+            flat_lay_seen = True
+        if skip_risky and spec.id in HIGH_UNCERTAINTY_VARIANT_IDS:
+            continue
+        trimmed.append(spec)
+    ordered = trimmed
+
+    def _caps(pack: list[PlusVariantSpec]) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for s in pack:
+            c = capability_for_variant(s.id)
+            counts[c] = counts.get(c, 0) + 1
+        return counts
+
+    def _ai_families(pack: list[PlusVariantSpec]) -> set[str]:
+        return {
+            _variant_diversity_family(s.id)
+            for s in pack
+            if capability_for_variant(s.id) == CAPABILITY_AI_BACKGROUND
+        }
+
+    picked_ids = {s.id for s in ordered}
+    min_ai = _min_ai_backgrounds_for_pack(max_count, offering=offering)
+
+    # Scene-pack lead (food surfaces / fashion flat lay) overrides studio-first
+    if offering == "product" and pack_leads:
+        lead = _pick_first_available(
+            pack_leads,
+            by_id,
+            picked_ids=set(),
+            skip_risky=skip_risky,
+            high_uncertainty_ids=HIGH_UNCERTAINTY_VARIANT_IDS,
+        )
+        if lead:
+            ordered = [lead] + [s for s in ordered if s.id != lead.id]
+            picked_ids = {s.id for s in ordered}
+    # Ensure studio hero is first for product packs (default auto pack)
+    elif offering == "product":
+        hero_spec = next(
+            (s for s in ordered if capability_for_variant(s.id) == CAPABILITY_STUDIO),
+            None,
+        )
+        if hero_spec is None:
+            hero_spec = _pick_first_available(
+                ("studio_safe", "studio_white", "studio_brand", "studio_dark"),
+                by_id,
+                picked_ids=picked_ids,
+                skip_risky=False,
+                high_uncertainty_ids=HIGH_UNCERTAINTY_VARIANT_IDS,
+            )
+            if hero_spec:
+                ordered.insert(0, hero_spec)
+                picked_ids.add(hero_spec.id)
+        elif ordered[0].id != hero_spec.id:
+            ordered = [hero_spec] + [s for s in ordered if s.id != hero_spec.id]
+
+    # Ensure category polish (proof) — one slot
+    polish_caps = {CAPABILITY_BEAUTIFY, CAPABILITY_FLAT_LAY, CAPABILITY_APPAREL_AI}
+    soft_polish_ids = frozenset({"relight", "relight_nocutout", "background_blur", "outline"})
+    has_polish = any(capability_for_variant(s.id) in polish_caps for s in ordered)
+    # relight/blur count as polish when no beautify/flat_lay (photofix is preflight-only)
+    has_soft_polish = any(s.id in soft_polish_ids for s in ordered)
+    if not has_polish and not has_soft_polish and max_count >= 3:
+        polish_prefs = category_polish_variant_ids(category)
+        if skip_risky:
+            polish_prefs = tuple(
+                v for v in polish_prefs if v not in HIGH_UNCERTAINTY_VARIANT_IDS
+            ) + ("relight", "background_blur", "outline")
+        polish = _pick_first_available(
+            polish_prefs,
+            by_id,
+            picked_ids=picked_ids,
+            skip_risky=skip_risky,
+            high_uncertainty_ids=HIGH_UNCERTAINTY_VARIANT_IDS,
+        )
+        if polish:
+            # Insert after hero + leading AI scenes when possible
+            insert_at = len(ordered)
+            for i, s in enumerate(ordered):
+                if i == 0:
+                    continue
+                if capability_for_variant(s.id) != CAPABILITY_AI_BACKGROUND:
+                    insert_at = i
+                    break
+            ordered.insert(min(insert_at, len(ordered)), polish)
+            picked_ids.add(polish.id)
+            if capability_for_variant(polish.id) == CAPABILITY_BEAUTIFY:
+                beautify_seen = True
+            if capability_for_variant(polish.id) == CAPABILITY_FLAT_LAY:
+                flat_lay_seen = True
+
+    # Prefer lifestyle as one AI background when available (commerce-only packs feel samey)
+    if (
+        offering == "product"
+        and max_count >= 3
+        and "ai_lifestyle" not in picked_ids
+        and "ai_lifestyle" in by_id
+    ):
+        life = by_id["ai_lifestyle"]
+        if len(_ai_families(ordered)) < min_ai or len(ordered) < max_count:
+            ordered.append(life)
+            picked_ids.add(life.id)
+        else:
+            for i in range(len(ordered) - 1, 0, -1):
+                if capability_for_variant(ordered[i].id) != CAPABILITY_AI_BACKGROUND:
+                    continue
+                if ordered[i].id.startswith(("ai_scene_", "ai_creative_")):
+                    ordered[i] = life
+                    picked_ids.add(life.id)
+                    break
+
+    # Ensure enough distinct AI backgrounds (prefer category commerce scenes)
+    preferred_commerce = CATEGORY_COMMERCE_SCENES.get(category, ())
+    ai_cands = [
+        s for s in candidates
+        if capability_for_variant(s.id) == CAPABILITY_AI_BACKGROUND
+        and s.id not in {x.id for x in ordered}
+    ]
+    ai_cands.sort(
+        key=lambda s: (
+            0 if s.id in preferred_commerce else 1,
+            0 if s.id.startswith("ai_scene_") else 1,
+            -s.priority,
+        ),
+    )
+    # Ensure at least one category commerce scene when available (Growth+ packs)
+    if (
+        offering == "product"
+        and preferred_commerce
+        and max_count >= 4
+        and not any(s.id in preferred_commerce for s in ordered)
+    ):
+        commerce_pick = next((s for s in ai_cands if s.id in preferred_commerce), None)
+        if commerce_pick is None:
+            commerce_pick = next(
+                (by_id[vid] for vid in preferred_commerce if vid in by_id and vid not in {x.id for x in ordered}),
+                None,
+            )
+        if commerce_pick:
+            if len(ordered) < max_count:
+                ordered.append(commerce_pick)
+            else:
+                swapped = False
+                for i in range(len(ordered) - 1, 0, -1):
+                    cap = capability_for_variant(ordered[i].id)
+                    if ordered[i].id == "ai_lifestyle":
+                        continue
+                    if cap == CAPABILITY_STUDIO:
+                        continue
+                    if cap in (CAPABILITY_FLAT_LAY, CAPABILITY_BEAUTIFY):
+                        continue
+                    # Prefer replacing Edit With AI or a second AI scene
+                    if cap in (CAPABILITY_EDIT_AI, CAPABILITY_AI_BACKGROUND, CAPABILITY_OTHER):
+                        ordered[i] = commerce_pick
+                        swapped = True
+                        break
+                if not swapped:
+                    # Last resort: replace last non-hero slot
+                    for i in range(len(ordered) - 1, 0, -1):
+                        if capability_for_variant(ordered[i].id) != CAPABILITY_STUDIO:
+                            ordered[i] = commerce_pick
+                            break
+            ai_cands = [s for s in ai_cands if s.id != commerce_pick.id]
+
+    while len(_ai_families(ordered)) < min_ai and ai_cands and len(ordered) < max_count:
+        families = _ai_families(ordered)
+        next_spec = None
+        for s in ai_cands:
+            fam = _variant_diversity_family(s.id)
+            if fam not in families:
+                next_spec = s
+                break
+        if next_spec is None:
+            next_spec = ai_cands[0]
+        ordered.append(next_spec)
+        ai_cands = [s for s in ai_cands if s.id != next_spec.id]
+
+    # Apparel: keep ghost/virtual as apparel_ai alongside flat_lay when budget allows
+    if (
+        offering == "product"
+        and category in ("apparel", "apparel_mitumba")
+        and max_count >= 6
+        and not skip_risky
+        and not any(capability_for_variant(s.id) == CAPABILITY_APPAREL_AI for s in ordered)
+    ):
+        apparel_ai = _pick_first_available(
+            ("ghost_mannequin", "virtual_model"),
+            by_id,
+            picked_ids={s.id for s in ordered},
+            skip_risky=skip_risky,
+            high_uncertainty_ids=HIGH_UNCERTAINTY_VARIANT_IDS,
+        )
+        if apparel_ai and len(ordered) < max_count:
+            ordered.append(apparel_ai)
+        elif apparel_ai:
+            for i in range(len(ordered) - 1, 0, -1):
+                cap = capability_for_variant(ordered[i].id)
+                if cap == CAPABILITY_STUDIO:
+                    continue
+                if cap in (CAPABILITY_FLAT_LAY, CAPABILITY_BEAUTIFY):
+                    continue
+                if cap == CAPABILITY_AI_BACKGROUND and len(_ai_families(ordered)) <= min_ai:
+                    continue
+                ordered[i] = apparel_ai
+                break
+
+    # If over max_count, drop lowest-priority extras (keep hero/lead, AI diversity, polish)
+    if len(ordered) > max_count:
+        has_polish = any(capability_for_variant(s.id) in polish_caps for s in ordered)
+        must_keep: list[PlusVariantSpec] = []
+        rest: list[PlusVariantSpec] = []
+        ai_kept = 0
+        polish_kept = False  # flat_lay / beautify
+        apparel_ai_kept = False
+        soft_polish_kept = False
+        lead_kept = False
+        studio_kept = False
+        lead_ids = set(pack_leads or ())
+        for s in ordered:
+            cap = capability_for_variant(s.id)
+            keep = False
+            if s.id in lead_ids and not lead_kept:
+                keep = True
+                lead_kept = True
+                if cap in (CAPABILITY_FLAT_LAY, CAPABILITY_BEAUTIFY):
+                    polish_kept = True
+                if cap == CAPABILITY_AI_BACKGROUND:
+                    ai_kept += 1
+            elif (
+                offering == "product"
+                and not pack_leads
+                and cap == CAPABILITY_STUDIO
+                and not studio_kept
+            ):
+                keep = True
+                studio_kept = True
+            elif cap == CAPABILITY_AI_BACKGROUND and ai_kept < min_ai:
+                keep = True
+                ai_kept += 1
+            elif cap in (CAPABILITY_FLAT_LAY, CAPABILITY_BEAUTIFY) and not polish_kept:
+                keep = True
+                polish_kept = True
+            elif cap == CAPABILITY_APPAREL_AI and not apparel_ai_kept and max_count >= 6:
+                keep = True
+                apparel_ai_kept = True
+            elif (
+                s.id in soft_polish_ids
+                and not polish_kept
+                and not soft_polish_kept
+                and not has_polish
+            ):
+                keep = True
+                soft_polish_kept = True
+            if keep:
+                must_keep.append(s)
+            else:
+                rest.append(s)
+        # Prefer keeping ai_lifestyle in the rest fill
+        rest.sort(key=lambda s: (0 if s.id == "ai_lifestyle" else 1, -s.priority))
+        slots_left = max_count - len(must_keep)
+        ordered = must_keep + rest[: max(0, slots_left)]
+        # Re-assert pack lead at front after trim
+        if pack_leads and ordered:
+            lead = next((s for s in ordered if s.id in lead_ids), None)
+            if lead and ordered[0].id != lead.id:
+                ordered = [lead] + [s for s in ordered if s.id != lead.id]
+
+    # Fill remaining with diverse standouts / AI (no second beautify/flat_lay)
+    fill_cands = sorted(
+        [s for s in candidates if s.id not in {x.id for x in ordered}],
+        key=lambda s: -s.priority,
+    )
+    families = {_variant_diversity_family(s.id) for s in ordered}
+    beautify_seen = any(capability_for_variant(s.id) == CAPABILITY_BEAUTIFY for s in ordered)
+    flat_lay_seen = any(capability_for_variant(s.id) == CAPABILITY_FLAT_LAY for s in ordered)
+
+    for spec in fill_cands:
+        if len(ordered) >= max_count:
+            break
+        if skip_risky and spec.id in HIGH_UNCERTAINTY_VARIANT_IDS:
+            continue
+        cap = capability_for_variant(spec.id)
+        if cap == CAPABILITY_BEAUTIFY and beautify_seen:
+            continue
+        if cap == CAPABILITY_FLAT_LAY and (flat_lay_seen or skip_risky):
+            continue
+        fam = _variant_diversity_family(spec.id)
+        if fam in families and fam in ("studio_flat", "food_surface", "ai_lifestyle", "beautify_family"):
+            continue
+        ordered.append(spec)
+        families.add(fam)
+        if cap == CAPABILITY_BEAUTIFY:
+            beautify_seen = True
+        if cap == CAPABILITY_FLAT_LAY:
+            flat_lay_seen = True
+
+    # Final pass: drop duplicate beautify/flat_lay if any slipped in
+    final: list[PlusVariantSpec] = []
+    beautify_seen = False
+    flat_lay_seen = False
+    for spec in ordered:
+        cap = capability_for_variant(spec.id)
+        if cap == CAPABILITY_BEAUTIFY:
+            if beautify_seen:
+                continue
+            beautify_seen = True
+        if cap == CAPABILITY_FLAT_LAY:
+            if flat_lay_seen or skip_risky:
+                continue
+            flat_lay_seen = True
+        if skip_risky and spec.id in HIGH_UNCERTAINTY_VARIANT_IDS:
+            continue
+        final.append(spec)
+        if len(final) >= max_count:
+            break
+
+    return final[: max(1, max_count)]
+
+
 def order_variants_by_slide_role(
     candidates: list[PlusVariantSpec],
     *,
@@ -1948,6 +2453,7 @@ def order_variants_by_slide_role(
     analysis: dict | None = None,
     vertical: str | None = None,
     stall_context: dict | None = None,
+    scene_pack: str | None = None,
 ) -> list[PlusVariantSpec]:
     """Pick variants to fill hero → desire (2–3 AI) → proof → standout."""
     from apps.products.photoroom_api import HIGH_UNCERTAINTY_VARIANT_IDS
@@ -1976,6 +2482,7 @@ def order_variants_by_slide_role(
         stall_context=stall_context,
     )
     skip_risky = uncertainty_is_high_for_category(uncertainty_score, category)
+    pack_leads = _scene_pack_lead_variant_ids(scene_pack)
     if hero_studio_ids is None:
         hero_studio_ids = hero_variant_ids_for_context(
             category=category,
@@ -1989,6 +2496,21 @@ def order_variants_by_slide_role(
         stall_context=stall_context,
     )
 
+    # Named scene packs lead with pack-specific variants (food surfaces / flat lay)
+    if pack_leads:
+        lead = _pick_first_available(
+            pack_leads,
+            by_id,
+            picked_ids=picked_ids,
+            skip_risky=skip_risky,
+            high_uncertainty_ids=HIGH_UNCERTAINTY_VARIANT_IDS,
+        )
+        if lead:
+            picked.append(lead)
+            picked_ids.add(lead.id)
+
+    desire_families: set[str] = set()
+
     for role_name, preferred_ids in _slide_roles_for(
         offering,
         category,
@@ -1996,16 +2518,25 @@ def order_variants_by_slide_role(
         hero_studio_ids=hero_studio_ids,
         scene_context=scene_ctx,
     ):
+        # Skip default studio hero when a scene pack already set the lead
+        if role_name == "hero" and pack_leads and picked:
+            continue
         if role_name == "desire":
             picked_desire = 0
             for vid in preferred_ids:
                 if len(picked) >= max_count or picked_desire >= ai_target:
                     break
                 spec = by_id.get(vid)
-                if spec and vid not in picked_ids:
-                    picked.append(spec)
-                    picked_ids.add(vid)
-                    picked_desire += 1
+                if not spec or vid in picked_ids:
+                    continue
+                fam = _variant_diversity_family(vid)
+                # Harden AI background diversity — one per diversity family
+                if fam in desire_families:
+                    continue
+                picked.append(spec)
+                picked_ids.add(vid)
+                desire_families.add(fam)
+                picked_desire += 1
             continue
 
         if role_name == "lifestyle_edit":
@@ -2040,7 +2571,19 @@ def order_variants_by_slide_role(
             if skip_risky and spec.id in HIGH_UNCERTAINTY_VARIANT_IDS:
                 continue
             family = _variant_diversity_family(spec.id)
-            if family in diversity_families and family in ("studio_flat", "food_surface"):
+            if family in diversity_families and family in (
+                "studio_flat", "food_surface", "ai_lifestyle", "beautify_family",
+            ):
+                continue
+            if (
+                capability_for_variant(spec.id) == CAPABILITY_BEAUTIFY
+                and any(capability_for_variant(s.id) == CAPABILITY_BEAUTIFY for s in picked)
+            ):
+                continue
+            if (
+                capability_for_variant(spec.id) == CAPABILITY_FLAT_LAY
+                and any(capability_for_variant(s.id) == CAPABILITY_FLAT_LAY for s in picked)
+            ):
                 continue
             picked.append(spec)
             picked_ids.add(spec.id)
@@ -2048,7 +2591,15 @@ def order_variants_by_slide_role(
             if len(picked) >= max_count:
                 break
 
-    return picked[: max(1, max_count)]
+    return enforce_pack_capability_balance(
+        picked,
+        candidates,
+        max_count=max_count,
+        category=category,
+        offering=offering,
+        uncertainty_score=uncertainty_score,
+        scene_pack=scene_pack,
+    )
 
 
 def _boost_candidates_for_scene_pack(
@@ -2237,10 +2788,15 @@ def select_plus_variants(
             ghost = PLUS_VARIANT_CATALOG.get("ghost_mannequin")
             if ghost and _plan_rank(ghost.min_plan) <= plan_rank and ghost not in candidates:
                 candidates.append(ghost)
-    elif category == "apparel" and not skip_risky:
-        ghost = PLUS_VARIANT_CATALOG.get("ghost_mannequin")
-        if ghost and _plan_rank(ghost.min_plan) <= plan_rank and ghost not in candidates:
-            candidates.append(ghost)
+    elif category == "apparel":
+        # Pack balance prefers flat_lay as category polish; ghost as apparel AI fallback
+        if not skip_risky:
+            flat = PLUS_VARIANT_CATALOG.get("flat_lay")
+            if flat and flat not in candidates:
+                candidates.append(flat)
+            ghost = PLUS_VARIANT_CATALOG.get("ghost_mannequin")
+            if ghost and _plan_rank(ghost.min_plan) <= plan_rank and ghost not in candidates:
+                candidates.append(ghost)
     _boost_virtual_model_candidates(
         candidates,
         category=category,
@@ -2309,7 +2865,11 @@ def select_plus_variants(
         commerce_vids = vertical_commerce_scenes(vertical, fallback_category=category)
         for vid in commerce_vids:
             spec = PLUS_VARIANT_CATALOG.get(vid)
-            if spec and spec not in candidates:
+            if (
+                spec
+                and _plan_allows_variant(spec, plan_rank)
+                and spec not in candidates
+            ):
                 candidates.append(spec)
 
     if (
@@ -2318,7 +2878,7 @@ def select_plus_variants(
     ):
         for vid in ("edit_ai_staging", "edit_ai_angle"):
             spec = PLUS_VARIANT_CATALOG.get(vid)
-            if spec and _plan_rank(spec.min_plan) <= plan_rank and spec not in candidates:
+            if spec and _plan_allows_variant(spec, plan_rank) and spec not in candidates:
                 candidates.append(spec)
 
     candidates = _boost_candidates_for_scene_pack(
@@ -2355,9 +2915,18 @@ def select_plus_variants(
             analysis=analysis,
             vertical=vertical,
             stall_context=stall_context,
+            scene_pack=scene_pack,
         )
     else:
-        ordered = ordered[: max(1, max_count)]
+        ordered = enforce_pack_capability_balance(
+            ordered[: max(1, max_count)],
+            ordered,
+            max_count=max_count,
+            category=category,
+            offering=offering,
+            uncertainty_score=uncertainty_score,
+            scene_pack=scene_pack,
+        )
 
     if visual_brief is not None:
         from apps.media.photoroom_brief import prioritize_brief_variants, variant_ids_from_brief
@@ -2369,7 +2938,15 @@ def select_plus_variants(
             offering=offering,
         )
         ordered = prioritize_brief_variants(ordered, brief_ids)
-        ordered = ordered[: max(1, max_count)]
+        ordered = enforce_pack_capability_balance(
+            ordered,
+            ordered,
+            max_count=max_count,
+            category=category,
+            offering=offering,
+            uncertainty_score=uncertainty_score,
+            scene_pack=scene_pack,
+        )
 
     return ordered
 

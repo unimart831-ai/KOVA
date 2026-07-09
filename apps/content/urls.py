@@ -10,6 +10,7 @@ urlpatterns = [
     path("studio/", views.content_studio, name="studio"),
     path("studio/posts/", views.studio_posts, name="studio_posts"),
     path("studio/submit/", views.submit_seed, name="submit_seed"),
+    path("studio/upload-reel/", views.upload_reel, name="upload_reel"),
     path("studio/voice/", views.voice_to_seed, name="voice_to_seed"),
     path("studio/dismiss-failed/", views.dismiss_failed_seeds, name="dismiss_failed"),
     path("studio/refresh-suggestions/", views.refresh_suggestions, name="refresh_suggestions"),

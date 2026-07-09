@@ -687,12 +687,18 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
     )
 
     if posts_created:
-        fire_task(
-            create_product_reel_posts,
-            str(product.pk),
-            str(seed_id) if seed_id else "",
-            key_features,
-        )
+        from apps.content.campaign_bundle import content_types_from_seed
+
+        want_reels = True
+        if seed is not None:
+            want_reels = "reels" in content_types_from_seed(seed)
+        if want_reels:
+            fire_task(
+                create_product_reel_posts,
+                str(product.pk),
+                str(seed_id) if seed_id else "",
+                key_features,
+            )
 
 
 @shared_task(name="products.create_product_reel_posts")
@@ -1376,6 +1382,8 @@ def _snap_carousel_eligible(product, platforms: list[str]) -> bool:
 
 def _fire_snap_carousel_reel_after_expand(product, *, seed_id, key_features, analysis, fire_task):
     """Carousel/reel need polished images — run after expand finishes."""
+    from apps.content.campaign_bundle import content_types_from_seed
+    from apps.content.models import ContentSeed
     from apps.platforms.models import SocialAccount
     from apps.media.orchestrator import plan_media_for_product
 
@@ -1388,8 +1396,23 @@ def _fire_snap_carousel_reel_after_expand(product, *, seed_id, key_features, ana
     )
     _REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
 
-    carousel_ok = _snap_carousel_eligible(product, platforms)
-    reel_ok = bool(product.all_image_urls) and any(p in _REEL_PLATFORMS for p in platforms)
+    selected_types = None
+    if seed_id:
+        try:
+            seed = ContentSeed.objects.only("blueprint").get(pk=seed_id)
+            selected_types = content_types_from_seed(seed)
+        except ContentSeed.DoesNotExist:
+            selected_types = None
+
+    want_carousels = selected_types is None or "carousels" in selected_types
+    want_reels = selected_types is None or "reels" in selected_types
+
+    carousel_ok = want_carousels and _snap_carousel_eligible(product, platforms)
+    reel_ok = (
+        want_reels
+        and bool(product.all_image_urls)
+        and any(p in _REEL_PLATFORMS for p in platforms)
+    )
 
     if carousel_ok:
         fire_task(

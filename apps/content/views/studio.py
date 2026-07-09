@@ -67,11 +67,17 @@ def content_studio(request):
     ).select_related("marketing_campaign")[:10]
     failed_seeds = request.user.content_seeds.filter(status="failed")[:5]
 
+    connected_accounts_qs = filter_social_accounts_for_autopilot(
+        request.user,
+        request.user.social_accounts.filter(is_active=True),
+    )
     connected_platforms = list(
-        filter_social_accounts_for_autopilot(
-            request.user,
-            request.user.social_accounts.filter(is_active=True),
-        ).values("platform", "username")
+        connected_accounts_qs.values("platform", "username")
+    )
+    reel_upload_accounts = list(
+        connected_accounts_qs.filter(
+            platform__in=("instagram", "facebook", "tiktok", "linkedin"),
+        ).only("id", "platform", "username", "display_name")
     )
 
     seed_form = ContentSeedForm()
@@ -109,6 +115,7 @@ def content_studio(request):
         "seed_form": seed_form,
         "connected_platforms": json.dumps(connected_platforms),
         "connected_platform_count": len(connected_platforms),
+        "reel_upload_accounts": reel_upload_accounts,
         "total_pending": total_pending,
         "pending_images": pending_images,
         "seed_suggestions": seed_suggestions,
@@ -322,6 +329,115 @@ def post_card(request, post_id):
     if post.user_id not in get_teammate_ids(request.user):
         raise Http404
     return render(request, "components/post_card.html", {"post": post, "show_angle": True})
+
+
+_REEL_UPLOAD_PLATFORMS = ("instagram", "facebook", "tiktok", "linkedin")
+
+
+@login_required
+@require_POST
+@ratelimit(key="user", rate="10/m", block=True)
+def upload_reel(request):
+    """
+    Upload a merchant's own reel video and create draft posts for selected platforms.
+
+    Kova does not recompose the video — it publishes the uploaded MP4 as-is.
+    """
+    from apps.content.views.editing import _attach_user_reel_video
+    from apps.platforms.models import SocialAccount
+
+    uploaded = request.FILES.get("file")
+    if not uploaded:
+        messages.error(request, "Choose a video file (MP4 or WebM) to upload.")
+        return redirect("content:studio")
+
+    content_type = (uploaded.content_type or "").lower()
+    name_lower = (uploaded.name or "").lower()
+    is_video = content_type.startswith("video/") or name_lower.endswith(
+        (".mp4", ".mov", ".webm", ".m4v")
+    )
+    if not is_video:
+        messages.error(request, "Unsupported file — upload an MP4 or WebM reel.")
+        return redirect("content:studio")
+    if uploaded.size > 100 * 1024 * 1024:
+        messages.error(request, "Video too large (max 100MB).")
+        return redirect("content:studio")
+
+    account_ids = request.POST.getlist("account_ids")
+    caption = (request.POST.get("caption") or "").strip()
+    if not caption:
+        caption = "New reel 🎬"
+
+    accounts_qs = filter_social_accounts_for_autopilot(
+        request.user,
+        SocialAccount.objects.filter(
+            user=request.user,
+            is_active=True,
+            platform__in=_REEL_UPLOAD_PLATFORMS,
+        ),
+    )
+    if account_ids:
+        accounts = list(accounts_qs.filter(pk__in=account_ids))
+    else:
+        accounts = list(accounts_qs)
+
+    if not accounts:
+        messages.error(
+            request,
+            "Connect Instagram, Facebook, TikTok, or LinkedIn first — then pick where to publish.",
+        )
+        return redirect("platforms:list")
+
+    profile = getattr(request.user, "profile", None)
+    initial_status = (
+        Post.Status.APPROVED
+        if profile and profile.auto_approve_posts
+        else Post.Status.PENDING_APPROVAL
+    )
+
+    created = 0
+    first_post = None
+    # Read file once; clone bytes per platform so storage gets independent files
+    video_bytes = uploaded.read()
+    from django.core.files.base import ContentFile
+
+    for account in accounts:
+        ext = ".mp4"
+        if name_lower.endswith(".webm"):
+            ext = ".webm"
+        elif name_lower.endswith(".mov"):
+            ext = ".mov"
+        file_copy = ContentFile(video_bytes, name=f"user_reel_{account.platform}{ext}")
+        post = Post.objects.create(
+            user=request.user,
+            social_account=account,
+            platform=account.platform,
+            content_text=caption,
+            content_type="original",
+            post_format=Post.PostFormat.REEL,
+            aspect_ratio=Post.AspectRatio.STORY,
+            status=initial_status,
+            generated_by_agent="user_upload",
+            media_status=Post.MediaStatus.UPLOADED,
+            visual_metadata={
+                "reel_source": "user_upload",
+                "user_uploaded_reel": True,
+                "video_compose_status": "done",
+            },
+        )
+        _attach_user_reel_video(post, file_copy, alt_text="User-uploaded reel")
+        created += 1
+        if first_post is None:
+            first_post = post
+
+    messages.success(
+        request,
+        f"Uploaded reel for {created} platform{'s' if created != 1 else ''} — "
+        f"review and approve to publish.",
+    )
+    if first_post and created == 1:
+        return redirect("content:edit", post_id=first_post.id)
+    return redirect("content:studio")
 
 
 @login_required

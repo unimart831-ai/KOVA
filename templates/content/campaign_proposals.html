@@ -5,12 +5,29 @@
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 max-w-2xl">
   Kova found <strong>{{ proposals|length }} marketing angle{{ proposals|length|pluralize }}</strong> for
   <span class="text-gray-800 dark:text-gray-200">{{ asset.title }}</span>.
-  Each one becomes a full campaign — reel, carousel, posts &amp; commerce page.
+  Choose formats below, then pick an angle — default is all formats.
 </p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
+<div class="max-w-3xl mx-auto space-y-6"
+     x-data="{
+       types: { reels: true, carousels: true, text: true, images: true, stories: true },
+       get all() { return Object.values(this.types).every(Boolean) },
+       set all(v) { Object.keys(this.types).forEach(k => this.types[k] = !!v) },
+       selected() { return Object.entries(this.types).filter(([, on]) => on).map(([k]) => k) },
+       injectTypes(form) {
+         form.querySelectorAll('input[name=content_types][data-injected]').forEach(el => el.remove());
+         this.selected().forEach(val => {
+           const input = document.createElement('input');
+           input.type = 'hidden';
+           input.name = 'content_types';
+           input.value = val;
+           input.dataset.injected = '1';
+           form.appendChild(input);
+         });
+       }
+     }">
 
   {# ── Asset preview ── #}
   <div class="flex items-start gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
@@ -48,12 +65,49 @@
     {% endif %}
   </div>
 
+  {# ── Content types (default: all) ── #}
+  <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+    <div class="flex items-start justify-between gap-3 mb-3">
+      <div>
+        <h3 class="text-sm font-bold text-gray-900 dark:text-white">What should Kova create?</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Applies to whichever angle you pick next. Default is all formats.</p>
+      </div>
+      <label class="inline-flex items-center gap-2 text-xs font-semibold text-kova-700 dark:text-kova-300 cursor-pointer shrink-0">
+        <input type="checkbox" class="rounded border-gray-300 text-kova-600 focus:ring-kova-500" x-model="all">
+        All formats
+      </label>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <label class="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2.5 text-sm cursor-pointer hover:border-kova-300 dark:hover:border-kova-700">
+        <input type="checkbox" class="rounded border-gray-300 text-kova-600 focus:ring-kova-500" x-model="types.reels">
+        <span class="font-medium text-gray-800 dark:text-gray-200">Reels</span>
+      </label>
+      <label class="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2.5 text-sm cursor-pointer hover:border-kova-300 dark:hover:border-kova-700">
+        <input type="checkbox" class="rounded border-gray-300 text-kova-600 focus:ring-kova-500" x-model="types.carousels">
+        <span class="font-medium text-gray-800 dark:text-gray-200">Carousels</span>
+      </label>
+      <label class="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2.5 text-sm cursor-pointer hover:border-kova-300 dark:hover:border-kova-700">
+        <input type="checkbox" class="rounded border-gray-300 text-kova-600 focus:ring-kova-500" x-model="types.text">
+        <span class="font-medium text-gray-800 dark:text-gray-200">Text posts</span>
+      </label>
+      <label class="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2.5 text-sm cursor-pointer hover:border-kova-300 dark:hover:border-kova-700">
+        <input type="checkbox" class="rounded border-gray-300 text-kova-600 focus:ring-kova-500" x-model="types.images">
+        <span class="font-medium text-gray-800 dark:text-gray-200">Image posts</span>
+      </label>
+      <label class="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2.5 text-sm cursor-pointer hover:border-kova-300 dark:hover:border-kova-700">
+        <input type="checkbox" class="rounded border-gray-300 text-kova-600 focus:ring-kova-500" x-model="types.stories">
+        <span class="font-medium text-gray-800 dark:text-gray-200">Stories</span>
+      </label>
+    </div>
+  </div>
+
   {# ── Proposals ── #}
   <div class="space-y-3">
     <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 px-1">Choose your angle</h3>
 
     {% for p in proposals %}
     <form method="post" action="{% url 'content:activate_proposal' asset_id=asset.pk %}"
+          @submit="injectTypes($event.target)"
           class="group relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-5 shadow-sm hover:border-kova-400 dark:hover:border-kova-600 hover:shadow-md transition-all duration-200">
       {% csrf_token %}
       <input type="hidden" name="proposal_id" value="{{ p.id }}">
@@ -89,7 +143,7 @@
   </div>
 
   <p class="text-center text-xs text-gray-400 pb-4">
-    1 campaign = professional visuals + multi-platform posts + your Kova commerce page
+    1 campaign = selected formats for your connected platforms + your Kova commerce page
   </p>
 </div>
 {% endblock %}

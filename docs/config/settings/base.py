@@ -756,6 +756,7 @@ CAROUSEL_MAX_SOURCE_IMAGES = env.int("CAROUSEL_MAX_SOURCE_IMAGES", default=5)
 CAROUSEL_SHOW_COUNTERS = env.bool("CAROUSEL_SHOW_COUNTERS", default=False)
 
 # Campaign QA — minimum quality score required before publish (default 75)
+CAMPAIGN_PUBLISH_QA_ENABLED = env.bool("CAMPAIGN_PUBLISH_QA_ENABLED", default=False)
 CAMPAIGN_PUBLISH_MIN_QUALITY = env.int("CAMPAIGN_PUBLISH_MIN_QUALITY", default=75)
 # Phase 2 — PhotoFix, Composition, Video (see docs.photoroom.com)
 PHOTOROOM_PHOTOFIX_ENABLED = env.bool("PHOTOROOM_PHOTOFIX_ENABLED", default=True)

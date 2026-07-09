@@ -295,17 +295,31 @@ def _map_intent_to_seed(intent: str) -> str:
     return mapping.get(intent, ContentSeed.Intent.OFFER)
 
 
+def parse_content_types_from_post(post_data) -> list[str]:
+    """Parse content-type checkboxes from a request.POST / dict. Default = all."""
+    from apps.content.campaign_bundle import CONTENT_TYPE_ALL, normalize_content_types
+
+    raw = post_data.getlist("content_types") if hasattr(post_data, "getlist") else post_data.get("content_types")
+    if raw is None:
+        return sorted(CONTENT_TYPE_ALL)
+    if isinstance(raw, str):
+        raw = [x.strip() for x in raw.split(",") if x.strip()]
+    return sorted(normalize_content_types(raw))
+
+
 def activate_proposal(
     user,
     asset,
     proposal: SeedProposal | dict,
     *,
     target_platforms: list | None = None,
+    content_types: list[str] | None = None,
 ):
     """
     User picked one proposal — create ContentSeed + MarketingCampaign and queue generation.
     """
     from apps.billing.enforcement import check_seed_limit
+    from apps.content.campaign_bundle import CONTENT_TYPE_ALL, normalize_content_types
     from apps.content.campaigns import ensure_campaign_for_seed
     from apps.content.models import ContentSeed
     from apps.content.tasks import generate_from_seed
@@ -322,6 +336,7 @@ def activate_proposal(
     product = getattr(asset, "product", None)
     _retire_snap_orphan_seeds(user, product)
 
+    selected_types = sorted(normalize_content_types(content_types))
     meta = proposal.to_dict()
     idea = proposal.title
     if proposal.rationale:
@@ -338,6 +353,7 @@ def activate_proposal(
         blueprint={
             "proposal": meta,
             "suggested_formats": proposal.suggested_formats,
+            "selected_content_types": selected_types,
             "objective": proposal.intent,
         },
     )

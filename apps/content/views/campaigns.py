@@ -55,6 +55,9 @@ def activate_campaign_proposal(request, asset_id):
         pk=asset_id, user=request.user,
     )
     proposal_id = (request.POST.get("proposal_id") or "").strip()
+    from apps.content.seed_proposals import parse_content_types_from_post
+
+    content_types = parse_content_types_from_post(request.POST)
 
     cached = get_cached_proposals(request, asset)
     if cached and proposal_id in cached:
@@ -67,7 +70,9 @@ def activate_campaign_proposal(request, asset_id):
         return redirect("content:asset_proposals", asset_id=asset_id)
 
     try:
-        seed = activate_proposal(request.user, asset, proposal)
+        seed = activate_proposal(
+            request.user, asset, proposal, content_types=content_types,
+        )
     except PlanLimitExceeded as exc:
         if request.headers.get("HX-Request"):
             return seed_limit_block_response(request, exc.message)

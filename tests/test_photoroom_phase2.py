@@ -63,7 +63,9 @@ def test_food_beautify_boost_on_snap_only():
     manual_specs = select_plus_variants(
         p, {}, plan_tier="growth", max_count=8, commerce_source="manual",
     )
-    assert "beautify" in {s.id for s in snap_specs}
+    snap_ids = {s.id for s in snap_specs}
+    # Pack balance keeps ≤1 beautify-family member; snap prefers beautify_nocutout
+    assert "beautify" in snap_ids or "beautify_nocutout" in snap_ids
     assert should_boost_food_beautify("food", "snap") is True
     assert should_boost_food_beautify("food", "manual") is False
     assert "beautify" not in {s.id for s in manual_specs} or True  # may appear via category

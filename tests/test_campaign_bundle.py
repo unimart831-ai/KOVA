@@ -66,6 +66,34 @@ class TestRequiredBundleRoles:
         assert "ig_reel" not in roles
         assert "fb_reel" not in roles
 
+    def test_facebook_includes_carousel(self):
+        roles = required_bundle_roles({"facebook"})
+        assert "fb_feed" in roles
+        assert "fb_carousel" in roles
+        assert "fb_reel" in roles
+
+    def test_content_types_filter_reels_only(self):
+        roles = required_bundle_roles(
+            {"instagram", "facebook"},
+            content_types={"reels"},
+        )
+        assert "ig_reel" in roles
+        assert "fb_reel" in roles
+        assert "ig_carousel" not in roles
+        assert "fb_carousel" not in roles
+        assert "ig_feed" not in roles
+
+    def test_content_types_filter_carousels_and_text(self):
+        roles = required_bundle_roles(
+            {"instagram", "facebook"},
+            content_types={"carousels", "text"},
+        )
+        assert "ig_carousel" in roles
+        assert "fb_carousel" in roles
+        assert "fb_feed" in roles
+        assert "ig_reel" not in roles
+        assert "fb_reel" not in roles
+
 
 @pytest.mark.django_db
 class TestFunnelCarousel:
