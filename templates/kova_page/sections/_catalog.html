@@ -1,8 +1,21 @@
 {% if products %}
-<div>
-  <h2 class="text-base font-semibold text-gray-800 mb-3">{% if business_model == "digital" %}All products{% else %}Shop all{% endif %}</h2>
-  <div class="grid grid-cols-2 gap-3">
-    {% for product in products %}{% include "kova_page/sections/_product_card.html" %}{% endfor %}
+<section class="kc-hub-section" aria-label="Catalog">
+  {% if business_model == "digital" %}
+  {% include "products/public/_shop_section_head.html" with section_title="All products" %}
+  {% else %}
+  {% include "products/public/_shop_section_head.html" with section_title="Shop all" %}
+  {% endif %}
+  <div class="shop-grid shop-product-grid" role="list">
+    {% for product in products %}
+    {% if product.commerce_slug %}
+    {% include "products/public/_shop_product_card.html" %}
+    {% endif %}
+    {% endfor %}
   </div>
-</div>
+  {% if shop_slug %}
+  <p style="margin-top:1rem">
+    <a href="{% url 'public_shop' page_slug=shop_slug %}" class="shop-btn shop-btn--outline shop-btn--sm">Open full shop</a>
+  </p>
+  {% endif %}
+</section>
 {% endif %}

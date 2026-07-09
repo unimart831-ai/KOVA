@@ -1,0 +1,18 @@
+<section class="kc-reels reels-section" aria-label="Shop reels">
+  <div class="kc-container">
+    {% include "products/public/_shop_section_head.html" with section_title="Watch & shop" section_sub="See products in motion" %}
+    <div class="kc-reels-track shop-hero-carousel">
+      {% for reel in flash_reels %}
+      <article class="kc-reel-card">
+        <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}" class="kc-reel-link" aria-label="Explore {{ reel.product_name }}"></a>
+        <video class="reel-video" src="{{ reel.video_url }}" poster="{{ reel.thumbnail_url }}" muted autoplay loop playsinline preload="metadata"></video>
+        <button type="button" class="reel-unmute-btn" aria-label="Toggle sound">🔇</button>
+        <div class="kc-reel-overlay">
+          <strong>{{ reel.product_name }}</strong>
+          {% if reel.product_price %}<span>{{ reel.product_price }}</span>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>

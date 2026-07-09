@@ -90,4 +90,7 @@ def page_contact(request, slug):
     return render(request, "kova_page/thankyou.html", {
         "profile": profile,
         "name": name,
+        "brand_name": profile.company_name or profile.user.full_name or "Kova",
+        "commerce_branding": {},
+        "seo_title": f"Message sent — {profile.company_name or 'Kova'}",
     })

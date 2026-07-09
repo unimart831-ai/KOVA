@@ -1,6 +1,6 @@
 {% extends "products/public/base_shop.html" %}
 
-{% block body_class %}{{ storefront_body_class|default:'' }} kc-shop--marketplace{% endblock %}
+{% block body_class %}{{ storefront_body_class|default:'' }}{% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">{{ structured_data_json|default:shop_schema_json|safe }}</script>
@@ -9,83 +9,44 @@
 {% block content %}
 {% with bm=storefront.business_model|default:'product' %}
 
-{% include "products/public/_shop_trust_strip.html" %}
+{% include "products/public/_shop_hero.html" %}
 
 {% if bm == 'product' %}
-{# ── Marketplace layout (screenshot-style) ── #}
 
-{% include "products/public/_shop_boosted_carousel.html" %}
+{% if featured_products %}
+<section class="kc-featured-strip kc-section--tight" aria-label="Featured">
+  <div class="kc-container">
+    {% include "products/public/_shop_section_head.html" with section_title="Featured" section_link="#shop-catalog" section_link_label="Browse all" %}
+    <div class="kc-featured-track" role="list">
+      {% for product in featured_products|slice:":8" %}
+      {% include "products/public/_shop_product_card.html" %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if reels_first and flash_reels %}
+{% include "products/public/_shop_reels_section.html" %}
+{% endif %}
 
 {% if category_nav %}
-<nav class="kc-container mp-categories-wrap" aria-label="Categories">
-  <div class="kc-categories mp-categories">
-    <a href="#shop-catalog" class="category-chip kc-category-chip is-active" data-target="#shop-catalog">
-      <span class="kc-cat-icon" aria-hidden="true">🛍️</span> All
-    </a>
+<nav class="kc-container kc-categories-wrap" aria-label="Categories">
+  <div class="kc-categories">
+    <a href="#shop-catalog" class="category-chip kc-category-chip is-active" data-target="#shop-catalog">All</a>
     {% for cat in category_nav %}
     {% if cat.slug != 'all' %}
-    <a href="{{ cat.anchor }}" class="category-chip kc-category-chip" data-target="{{ cat.anchor }}">
-      {% if cat.icon %}<span class="kc-cat-icon" aria-hidden="true">{{ cat.icon }}</span>{% endif %}
-      {{ cat.name }}
-    </a>
+    <a href="{{ cat.anchor }}" class="category-chip kc-category-chip" data-target="{{ cat.anchor }}">{{ cat.name }}</a>
     {% endif %}
     {% endfor %}
   </div>
 </nav>
 {% endif %}
 
-{% if products %}
-<section class="mp-section" aria-label="Recommended">
+<section id="shop-catalog" class="kc-section shop-catalog-section" aria-label="Catalog">
   <div class="kc-container">
-    {% include "products/public/_shop_section_head.html" with section_icon="✏️" section_title="Recommended" section_link="#shop-catalog" section_link_label="Browse all" %}
-    <div class="shop-grid shop-product-grid mp-product-grid" role="list">
-      {% for product in products|slice:":12" %}
-      {% include "products/public/_shop_product_card.html" with card_variant="grid" %}
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-{% if featured_products %}
-<section class="mp-section mp-section--spotlight" aria-label="Spotlight">
-  <div class="kc-container">
-    {% include "products/public/_shop_section_head.html" with section_icon="⭐" section_title="Spotlight" section_link="#shop-catalog" section_link_label="Browse all" %}
-    <div class="shop-grid shop-product-grid mp-product-grid" role="list">
-      {% for product in featured_products|slice:":8" %}
-      {% include "products/public/_shop_product_card.html" with card_variant="spotlight" %}
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-{% endif %}
-
-{% if flash_reels %}
-<section class="kc-reels reels-section mp-reels-section" aria-label="Shop reels">
-  <div class="kc-container">
-    {% include "products/public/_shop_section_head.html" with section_icon="🎬" section_title="Watch & shop" %}
-    <div class="kc-reels-track shop-hero-carousel">
-      {% for reel in flash_reels %}
-      <article class="kc-reel-card">
-        {% if reel.flash_badge %}<span class="kc-reel-flash">{{ reel.flash_badge }}</span>{% endif %}
-        <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}" class="kc-reel-link" aria-label="Explore {{ reel.product_name }}"></a>
-        <video class="reel-video" src="{{ reel.video_url }}" poster="{{ reel.thumbnail_url }}" muted autoplay loop playsinline preload="metadata"></video>
-        <button type="button" class="reel-unmute-btn" aria-label="Toggle sound">🔇</button>
-        <div class="kc-reel-overlay">
-          <strong>{{ reel.product_name }}</strong>
-          {% if reel.product_price %}<span>{{ reel.product_price }}</span>{% endif %}
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-
-<section id="shop-catalog" class="mp-section shop-catalog-section" aria-label="All offers">
-  <div class="kc-container">
-    {% include "products/public/_shop_section_head.html" with section_title=catalog_section_label|default:"All offers" %}
-    <span class="mp-catalog-count" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
+    {% include "products/public/_shop_section_head.html" with section_title=catalog_section_label|default:"Shop the collection" %}
+    <span class="kc-catalog-count" data-catalog-count>{{ products|length }} item{{ products|length|pluralize }}</span>
     <p class="shop-search-empty" id="shop-search-empty" hidden>No products match your search.</p>
 
     {% if not products %}
@@ -99,40 +60,41 @@
       {% for group in products_by_category %}
       <section class="shop-category-section kc-category-block" id="cat-{{ group.name|slugify }}" aria-label="{{ group.name }}">
         {% if products_by_category|length > 1 or group.name != "All offers" %}
-        <h3 class="mp-category-label">{{ group.name }}</h3>
+        <h3 class="kc-category-label">{{ group.name }}</h3>
         {% endif %}
-        <div class="shop-grid shop-product-grid mp-product-grid" role="list">
+        <div class="shop-grid shop-product-grid" role="list">
           {% for product in group.products %}
-          {% include "products/public/_shop_product_card.html" with card_variant="grid" %}
+          {% include "products/public/_shop_product_card.html" %}
           {% endfor %}
         </div>
       </section>
       {% endfor %}
     </div>
     {% else %}
-    <div class="shop-grid shop-product-grid mp-product-grid" role="list">
+    <div class="shop-grid shop-product-grid" role="list">
       {% for product in products %}
-      {% include "products/public/_shop_product_card.html" with card_variant="grid" %}
+      {% include "products/public/_shop_product_card.html" %}
       {% endfor %}
     </div>
     {% endif %}
   </div>
 </section>
 
-{% else %}
-{# ── Service / professional layout ── #}
-{% include "products/public/_shop_hero.html" %}
-{% include "products/public/_shop_value_props.html" %}
+{% if flash_reels and not reels_first %}
+{% include "products/public/_shop_reels_section.html" %}
+{% endif %}
 
+{% else %}
+{# Service / professional #}
 {% if bm == 'professional' and portfolio_items %}
 <section class="kc-section kc-section--tight" aria-label="Portfolio">
   <div class="kc-container">
     {% include "products/public/_shop_section_head.html" with section_title="Portfolio" %}
-    <div class="shop-grid shop-product-grid mp-product-grid" role="list">
+    <div class="shop-grid shop-product-grid" role="list">
       {% for item in portfolio_items %}
-      <article class="shop-product-card mp-card">
-        <div class="shop-product-card-body mp-card-body">
-          <h3 class="shop-product-card-title mp-card-title">{{ item.title }}</h3>
+      <article class="shop-product-card" role="listitem">
+        <div class="shop-product-card-body">
+          <h3 class="shop-product-card-title">{{ item.title }}</h3>
           {% if item.summary %}<p class="shop-product-card-teaser">{{ item.summary|truncatewords:24 }}</p>{% endif %}
         </div>
       </article>
@@ -143,24 +105,24 @@
 {% endif %}
 
 {% if bm == 'service' and service_products %}
-<section class="mp-section" aria-label="Services">
+<section class="kc-section kc-section--tight" aria-label="Services">
   <div class="kc-container">
     {% include "products/public/_shop_section_head.html" with section_title="Our services" section_link=booking_url section_link_label="Book now" %}
-    <div class="shop-grid shop-product-grid mp-product-grid" role="list">
+    <div class="shop-grid shop-product-grid" role="list">
       {% for product in service_products %}
-      {% include "products/public/_shop_product_card.html" with card_variant="grid" %}
+      {% include "products/public/_shop_product_card.html" %}
       {% endfor %}
     </div>
   </div>
 </section>
 {% endif %}
 
-<section id="shop-catalog" class="mp-section shop-catalog-section" aria-label="Catalog">
+<section id="shop-catalog" class="kc-section shop-catalog-section" aria-label="Catalog">
   <div class="kc-container">
     {% include "products/public/_shop_section_head.html" with section_title=catalog_section_label|default:"Browse" %}
-    <div class="shop-grid shop-product-grid mp-product-grid" role="list">
+    <div class="shop-grid shop-product-grid" role="list">
       {% for product in products %}
-      {% include "products/public/_shop_product_card.html" with card_variant="grid" %}
+      {% include "products/public/_shop_product_card.html" %}
       {% endfor %}
     </div>
   </div>
@@ -177,7 +139,7 @@
 {% endif %}
 
 {% if shop_testimonials %}
-<section class="mp-section" aria-label="Testimonials">
+<section class="kc-section" aria-label="Testimonials">
   <div class="kc-container">
     {% include "products/public/_shop_section_head.html" with section_title="What clients say" %}
     <div class="kc-testimonials-grid">
@@ -193,7 +155,7 @@
 {% endif %}
 
 {% if faq_items %}
-<section class="mp-section shop-faq" aria-label="FAQ">
+<section class="kc-section shop-faq" aria-label="FAQ">
   <div class="kc-container">
     {% include "products/public/_shop_section_head.html" with section_title="Questions & answers" %}
     <div class="shop-faq-list">
@@ -219,12 +181,12 @@
 
 {% block sticky %}
 {% if wa_url or booking_url %}
-<div class="kc-sticky-bar mp-sticky-bar" aria-label="Quick action">
-  <span class="mp-sticky-brand">{{ brand_name }}</span>
+<div class="kc-sticky-bar" aria-label="Quick action">
+  <span class="kc-sticky-brand">{{ brand_name }}</span>
   {% if booking_url and storefront.business_model != 'product' %}
-  <a href="{{ booking_url }}" class="shop-btn shop-btn--market shop-btn--sm">Book now</a>
+  <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--sm">Book now</a>
   {% elif wa_url %}
-  <a href="{{ wa_url }}" class="shop-btn shop-btn--market shop-btn--sm" target="_blank" rel="noopener">Order on WhatsApp</a>
+  <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--sm" target="_blank" rel="noopener">Order on WhatsApp</a>
   {% endif %}
 </div>
 {% endif %}

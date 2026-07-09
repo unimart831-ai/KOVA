@@ -1,16 +1,22 @@
 {% if services %}
-<div class="bg-white rounded-2xl shadow-sm p-5">
-  <h2 class="text-base font-semibold text-gray-800 mb-3">{% if business_model == "professional" %}Services{% else %}What we offer{% endif %}</h2>
-  <ul class="space-y-2">
-    {% for svc in services %}
-    <li class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-      <span class="text-gray-800 font-medium">{% if svc.name %}{{ svc.name }}{% else %}{{ svc }}{% endif %}</span>
-      <span class="text-sm text-gray-500 ml-2">
-        {% if svc.price_kes %}KSh {{ svc.price_kes }}{% endif %}
-        {% if svc.duration_minutes %} · {{ svc.duration_minutes }}min{% endif %}
-      </span>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
+<section class="kc-hub-section" aria-label="Services">
+  {% if business_model == "professional" %}
+  {% include "products/public/_shop_section_head.html" with section_title="Services" %}
+  {% else %}
+  {% include "products/public/_shop_section_head.html" with section_title="What we offer" %}
+  {% endif %}
+  <div class="kc-hub-card">
+    <ul style="list-style:none;margin:0;padding:0;display:grid;gap:0.65rem">
+      {% for svc in services %}
+      <li style="display:flex;justify-content:space-between;gap:1rem;padding-bottom:0.65rem;border-bottom:1px solid var(--kc-border)">
+        <span style="font-weight:600">{% if svc.name %}{{ svc.name }}{% else %}{{ svc }}{% endif %}</span>
+        <span style="font-size:0.85rem;color:var(--kc-muted);white-space:nowrap">
+          {% if svc.price_kes %}KSh {{ svc.price_kes }}{% endif %}
+          {% if svc.duration_minutes %} · {{ svc.duration_minutes }}min{% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
 {% endif %}

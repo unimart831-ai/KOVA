@@ -72,13 +72,23 @@ def build_hub_context(profile, user) -> dict:
         if s != "salesperson" or has_salesperson
     ]
 
+    from apps.products.commerce_links import resolve_page_slug
+    from apps.products.commerce_seo import brand_name as storefront_brand_name
+    from apps.teams.branding import get_commerce_branding
+
+    brand = storefront_brand_name(profile, user)
+    shop_slug = resolve_page_slug(profile)
+    commerce_branding = get_commerce_branding(user, profile)
+    page_title = brand or "Kova Page"
+    seo_description = (getattr(profile, "page_headline", "") or "").strip() or f"{page_title} on Kova"
+
     return {
         "profile": profile,
         "user": user,
         "business_model": business_model,
         "sections": sections,
         "products": products,
-        "featured_products": featured,
+        "featured_products": featured or products[:6],
         "booking_link": booking_link,
         "services": services,
         "portfolio": portfolio,
@@ -95,7 +105,13 @@ def build_hub_context(profile, user) -> dict:
             testimonials=testimonials,
             whatsapp=whatsapp,
         ),
-        "page_title": profile.company_name or user.full_name or "Kova Page",
+        "page_title": page_title,
+        "brand_name": brand,
+        "shop_slug": shop_slug,
+        "commerce_branding": commerce_branding,
+        "seo_title": page_title,
+        "seo_description": seo_description,
+        "powered_by_kova": True,
     }
 
 

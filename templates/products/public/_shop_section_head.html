@@ -1,11 +1,9 @@
-<div class="mp-section-head">
-  <div class="mp-section-head-left">
-    {% if section_icon %}
-    <span class="mp-section-icon" aria-hidden="true">{{ section_icon }}</span>
-    {% endif %}
-    <h2 class="mp-section-title">{{ section_title }}</h2>
+<div class="kc-section-head">
+  <div>
+    <h2 class="kc-section-title">{{ section_title }}</h2>
+    {% if section_sub %}<p class="kc-section-sub">{{ section_sub }}</p>{% endif %}
   </div>
   {% if section_link %}
-  <a href="{{ section_link }}" class="mp-section-link">{{ section_link_label|default:"Browse all" }}</a>
+  <a href="{{ section_link }}" class="kc-section-meta" style="color:var(--kc-accent)">{{ section_link_label|default:"Browse all" }}</a>
   {% endif %}
 </div>

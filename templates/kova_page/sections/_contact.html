@@ -1,25 +1,27 @@
-{# Q4: How do I buy? · Q5: What happens after? #}
-<div class="bg-white rounded-2xl shadow-sm p-5">
-  <h2 class="text-base font-semibold text-gray-800 mb-1">Send an enquiry</h2>
-  <p class="text-xs text-gray-500 mb-4">{{ five_questions.how_to_buy }} · {{ five_questions.what_after }}</p>
-  <form id="contact-form" method="post" action="{% url 'kova_page:contact' slug=profile.page_slug %}">
-    {% csrf_token %}
-    <div class="space-y-3">
-      <input type="text" name="name" placeholder="Your name *" required
-        class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
-      <input type="tel" name="phone" placeholder="WhatsApp / phone number"
-        class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
-      <input type="email" name="email" placeholder="Email (optional)"
-        class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400">
-      <textarea name="message" placeholder="What are you looking for?" rows="3"
-        class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-kova-400 resize-none"></textarea>
-      <button type="submit"
-        class="w-full bg-kova-600 hover:bg-kova-700 text-white font-semibold py-3 rounded-xl transition-colors">
-        Send enquiry
-      </button>
+<section class="kc-hub-section" aria-label="Contact">
+  <div class="kc-hub-card">
+    {% include "products/public/_shop_section_head.html" with section_title="Send an enquiry" section_sub=five_questions.how_to_buy %}
+    <p style="margin:0 0 1rem;font-size:0.85rem;color:var(--kc-muted)">{{ five_questions.what_after }}</p>
+    <form id="contact-form" method="post" action="{% url 'kova_page:contact' slug=profile.page_slug %}">
+      {% csrf_token %}
+      <div class="shop-kova-form-fields">
+        <div class="shop-field">
+          <input type="text" name="name" placeholder="Your name *" required>
+        </div>
+        <div class="shop-field">
+          <input type="tel" name="phone" placeholder="WhatsApp / phone number">
+        </div>
+        <div class="shop-field">
+          <input type="email" name="email" placeholder="Email (optional)">
+        </div>
+        <div class="shop-field">
+          <textarea name="message" placeholder="What are you looking for?" rows="3"></textarea>
+        </div>
+        <button type="submit" class="shop-btn shop-btn--primary shop-btn--lg">Send enquiry</button>
+      </div>
+    </form>
+    <div id="contact-success" hidden style="margin-top:1rem;text-align:center;font-weight:600;color:var(--kc-accent)">
+      Message sent — we'll be in touch soon.
     </div>
-  </form>
-  <div id="contact-success" class="hidden mt-3 text-center text-growth-600 font-medium text-sm">
-    ✅ Message sent! We'll be in touch soon.
   </div>
-</div>
+</section>

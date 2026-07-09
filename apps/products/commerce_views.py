@@ -32,13 +32,10 @@ from apps.products.storefront import (
     catalog_section_label,
     featured_products,
     hero_carousel_slides,
-    hero_promo_products,
     products_by_category,
-    resolve_hero_layout,
     resolve_storefront,
     service_offerings_for_shop,
     shop_faq_items,
-    split_marketplace_hero_promos,
     storefront_body_classes,
 )
 from apps.products.product_copy import (
@@ -156,7 +153,6 @@ def public_shop_index(request, page_slug):
 
     aux = load_shop_auxiliary(profile, user, page_slug)
     shop_reels = aux["shop_reels"]
-    media_gallery = aux["media_gallery"]
     shop_testimonials = aux["shop_testimonials"]
     portfolio_items_prefetch = aux["portfolio_items"]
     storefront = resolve_storefront(profile, user, products, shop_reels)
@@ -175,7 +171,6 @@ def public_shop_index(request, page_slug):
         enrich_flash_reels,
         shop_category_nav,
         shop_hero_collage,
-        shop_promo_banners,
     )
 
     for p in products:
@@ -183,19 +178,20 @@ def public_shop_index(request, page_slug):
 
     attach_product_wa_urls(products, brand, profile, user, request=request)
 
-    featured = featured_products(products, limit=10)
-    promos = hero_promo_products(products)
+    featured = featured_products(products, limit=8)
+    if not featured and products:
+        featured = list(products[:6])
     carousel_slides = hero_carousel_slides(
         shop_reels, products, featured=featured, brand_name=brand,
     )
-    hero_layout = resolve_hero_layout(products, promos, carousel_slides)
-    promo_left, promo_right = split_marketplace_hero_promos(promos, carousel_slides)
     category_groups = products_by_category(products)
     flash_reels = enrich_flash_reels(shop_reels)
     category_nav = shop_category_nav(category_groups)
     hero_collage = shop_hero_collage(products, featured)
-    promo_banner_left, promo_banner_right = shop_promo_banners(
-        products, featured, reels=shop_reels,
+    section_order = storefront.get("section_order") or []
+    reels_first = bool(section_order) and (
+        (len(section_order) > 0 and section_order[0] == "reels")
+        or (len(section_order) > 1 and section_order[1] == "reels")
     )
     portfolio_items = portfolio_items_prefetch if storefront.get("show_portfolio") else []
     service_products = service_offerings_for_shop(products) if storefront.get("business_model") == "service" else []
@@ -219,15 +215,11 @@ def public_shop_index(request, page_slug):
         "shop_slug": resolve_page_slug(profile),
         "brand_name": brand,
         "shop_reels": shop_reels,
-        "media_gallery": media_gallery,
         "storefront": storefront,
         "storefront_body_class": storefront_body_classes(storefront, extra=body_extra),
         "hero_mode": storefront["hero_mode"],
         "powered_by_kova": storefront["powered_by_kova"],
         "featured_products": featured,
-        "hero_layout": hero_layout,
-        "hero_promo_left": promo_left,
-        "hero_promo_right": promo_right,
         "hero_carousel_slides": carousel_slides,
         "products_by_category": category_groups,
         "catalog_section_label": storefront.get("catalog_label") or catalog_section_label(category_groups),
@@ -239,8 +231,7 @@ def public_shop_index(request, page_slug):
         "flash_reels": flash_reels,
         "category_nav": category_nav,
         "hero_collage": hero_collage,
-        "promo_banner_left": promo_banner_left,
-        "promo_banner_right": promo_banner_right,
+        "reels_first": reels_first,
         "shop_testimonials": shop_testimonials,
         "portfolio_items": portfolio_items,
         "service_products": service_products,

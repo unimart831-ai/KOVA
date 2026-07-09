@@ -1,6 +1,6 @@
 {% extends "products/public/base_shop.html" %}
 
-{% block body_class %}{{ storefront_body_class|default:'' }} kc-shop--marketplace{% endblock %}
+{% block body_class %}{{ storefront_body_class|default:'' }}{% endblock %}
 
 {% block nav %}{% include "products/public/_shop_nav.html" with hide_shop_search=True hide_header_wa=True %}{% endblock %}
 
@@ -29,18 +29,6 @@
         {% endfor %}
       </ol>
     </nav>
-  </div>
-
-  <div class="offer-trust-strip">
-    <div class="offer-trust-strip-inner">
-      {% if wa_url %}
-      <span class="offer-trust-pill">Order on WhatsApp</span>
-      {% if mpesa_available %}<span class="offer-trust-pill">M-Pesa accepted</span>{% endif %}
-      {% elif mpesa_available %}
-      <span class="offer-trust-pill">Secure M-Pesa checkout</span>
-      {% endif %}
-      <span class="offer-trust-pill">{% if product.offering_type == 'digital' %}Instant delivery{% else %}Verified seller{% endif %}</span>
-    </div>
   </div>
 
   {% if product_reel %}
@@ -100,18 +88,17 @@
         {% for highlight in product_highlights %}<li>{{ highlight }}</li>{% endfor %}
       </ul>
       {% endif %}
-      <div class="offer-guarantee-strip" aria-label="Purchase confidence">
-        {% if wa_url %}
-        <div class="offer-guarantee-item"><span>💬</span> WhatsApp support</div>
-        {% endif %}
-        {% if mpesa_available %}
-        <div class="offer-guarantee-item"><span>📱</span> M-Pesa ready</div>
-        {% endif %}
-        <div class="offer-guarantee-item"><span>✓</span> Verified seller</div>
-      </div>
+
       {% if can_purchase %}
       {% include "products/public/_checkout_whatsapp_first.html" %}
       {% endif %}
+
+      <p class="offer-trust-line">
+        {% if wa_url %}<span>Order on WhatsApp</span>{% endif %}
+        {% if mpesa_available %}<span>M-Pesa ready</span>{% endif %}
+        <span>{% if product.offering_type == 'digital' %}Instant delivery{% else %}Verified seller{% endif %}</span>
+      </p>
+
       <aside class="offer-seller-card" aria-label="Seller">
         <a class="offer-seller-link" href="{{ shop_index_url }}">
           {% if commerce_branding.logo_url %}
@@ -122,7 +109,7 @@
           <span>
             <span class="offer-seller-name">{{ brand_name }}</span>
             {% if profile.city %}<span class="offer-seller-city">{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</span>{% endif %}
-            <span class="offer-seller-cta">View all offers →</span>
+            <span class="offer-seller-cta">View full shop →</span>
           </span>
         </a>
       </aside>
@@ -163,10 +150,9 @@
   {% if related_products %}
   <section class="offer-related" aria-label="More from this shop">
     <div class="kc-section-head">
-      <h2 class="kc-section-title">You may also like</h2>
-      <p class="kc-section-sub">More from {{ brand_name }}</p>
+      <h2 class="kc-section-title">More from {{ brand_name }}</h2>
     </div>
-    <div class="shop-grid shop-product-grid">
+    <div class="shop-grid shop-product-grid" role="list">
       {% for related in related_products %}
       {% with product=related %}
       {% include "products/public/_shop_product_card.html" %}
@@ -193,9 +179,9 @@
     <span class="offer-sticky-price-value">{{ product.display_price }}</span>
   </div>
   {% endif %}
-  <div class="offer-sticky-actions" style="display:flex;gap:0.5rem">
+  <div class="offer-sticky-actions">
     {% if wa_url %}
-    <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--wa-primary shop-btn--sm" target="_blank" rel="noopener">WhatsApp</a>
+    <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--sm" target="_blank" rel="noopener">WhatsApp</a>
     {% endif %}
     {% if mpesa_available %}
     <a href="#mpesa-checkout" class="shop-btn shop-btn--outline shop-btn--sm">M-Pesa</a>

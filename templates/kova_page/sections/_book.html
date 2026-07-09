@@ -1,6 +1,7 @@
 {% if booking_link %}
-<a href="{% url 'bookings:public_book' slug=booking_link.slug %}"
-   class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-kova-600 text-white font-semibold text-base hover:bg-kova-700 transition-colors shadow-lg">
-  📅 Book an appointment
-</a>
+<section class="kc-hub-section">
+  <a href="{% url 'bookings:public_book' slug=booking_link.slug %}" class="shop-btn shop-btn--primary shop-btn--lg" style="width:100%">
+    Book an appointment
+  </a>
+</section>
 {% endif %}

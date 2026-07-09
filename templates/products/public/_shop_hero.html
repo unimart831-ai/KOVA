@@ -1,23 +1,30 @@
-{# Hero — spotlight, carousel, or marketplace layout #}
-<section class="kc-hero{% if hero_layout == 'marketplace' %} kc-hero--marketplace{% endif %}">
+{# Brand-first storefront hero — brand is the hero signal #}
+<section class="kc-hero" aria-label="{{ brand_name }}">
   <div class="kc-container kc-hero-grid">
     <div class="kc-hero-copy">
-      <p class="kc-hero-eyebrow">{{ brand_name }}</p>
-      <h1 class="kc-hero-title">
-        {% if profile.page_headline %}{{ profile.page_headline }}
-        {% elif bm == 'service' %}What we offer
-        {% elif bm == 'professional' %}{{ brand_name }}
-        {% else %}Shop {{ brand_name }}{% endif %}
-      </h1>
-      {% if about_blurb %}
-      <p class="kc-hero-lead">{{ about_blurb|truncatewords:32 }}</p>
+      <div class="kc-hero-brand-mark">
+        {% if commerce_branding.logo_url %}
+        <img class="kc-hero-logo" src="{{ commerce_branding.logo_url }}" alt="">
+        {% else %}
+        <span class="kc-hero-logo-fallback" aria-hidden="true">{{ brand_name|slice:":1"|upper }}</span>
+        {% endif %}
+        <h1 class="kc-hero-brand-name">{{ brand_name }}</h1>
+      </div>
+
+      {% if profile.page_headline %}
+      <p class="kc-hero-lead" style="font-size:clamp(1.15rem,2.5vw,1.4rem);color:var(--kc-text);font-weight:600;max-width:28ch;margin-top:0">
+        {{ profile.page_headline }}
+      </p>
+      {% elif about_blurb %}
+      <p class="kc-hero-lead">{{ about_blurb|truncatewords:28 }}</p>
       {% elif bm == 'service' %}
-      <p class="kc-hero-lead">Book appointments, explore our services, and reach us on WhatsApp.</p>
+      <p class="kc-hero-lead">Book appointments, explore services, and reach us on WhatsApp.</p>
       {% elif bm == 'professional' %}
-      <p class="kc-hero-lead">Expertise, case studies, and consultation — all in one place.</p>
-      {% elif wa_url %}
-      <p class="kc-hero-lead">Browse our catalog, order on WhatsApp, and get confirmed in minutes — no website required.</p>
+      <p class="kc-hero-lead">Expertise and consultation — order or book in one place.</p>
+      {% else %}
+      <p class="kc-hero-lead">Browse the collection and order on WhatsApp — price confirmed in chat.</p>
       {% endif %}
+
       <div class="kc-hero-actions">
         {% if bm == 'service' and booking_url %}
         <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--lg">Book now</a>
@@ -25,81 +32,75 @@
         <a href="{{ booking_url }}" class="shop-btn shop-btn--primary shop-btn--lg">Book a consultation</a>
         {% else %}
         <a href="#shop-catalog" class="shop-btn shop-btn--primary shop-btn--lg">
-          {% if bm == 'professional' %}View portfolio{% else %}Shop our collection{% endif %}
+          {% if catalog_section_label %}{{ catalog_section_label }}{% else %}Shop the collection{% endif %}
         </a>
         {% endif %}
         {% if wa_url %}
         <a href="{{ wa_url }}" class="shop-btn shop-btn--wa shop-btn--lg" target="_blank" rel="noopener">
-          {% if bm == 'service' %}Book via WhatsApp{% elif bm == 'professional' %}Message us{% else %}Chat on WhatsApp{% endif %}
+          {% if bm == 'service' %}Book via WhatsApp{% elif bm == 'professional' %}Message us{% else %}Order on WhatsApp{% endif %}
         </a>
         {% endif %}
-        <button type="button" class="shop-btn shop-btn--outline kc-share-btn shop-share-btn" hidden
-                data-share-title="{{ brand_name }}"
-                data-share-url="{{ canonical_url }}">Share shop</button>
       </div>
+
+      <p class="kc-hero-trust-line">
+        {% if wa_url %}<span>WhatsApp orders</span>{% endif %}
+        {% if mpesa_shop_enabled %}<span>M-Pesa accepted</span>{% endif %}
+        {% if products %}<span>{{ products|length }} offer{{ products|length|pluralize }}</span>{% endif %}
+      </p>
     </div>
 
-    {% if hero_layout == 'carousel' or hero_layout == 'marketplace' %}
-      {% if hero_carousel_slides %}
-      <div class="kc-hero-visual" aria-label="Featured products">
-        <div class="kc-hero-carousel-wrap" data-hero-carousel>
-          <div class="kc-hero-carousel-viewport">
-            <div class="kc-hero-carousel-track">
-              {% for slide in hero_carousel_slides %}
-              {% if slide.kind == 'reel' %}
-              {% with reel=slide.reel %}
-              <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}"
-                 class="kc-hero-carousel-slide">
-                <video src="{{ reel.video_url }}" poster="{{ reel.thumbnail_url }}" muted loop playsinline preload="metadata"></video>
-                <div class="kc-hero-carousel-caption">
-                  <strong>{{ reel.product_name }}</strong>
-                  {% if reel.product_price %}<span>{{ reel.product_price }}</span>{% endif %}
-                </div>
-              </a>
-              {% endwith %}
-              {% elif slide.kind == 'product' %}
-              <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=slide.commerce_slug %}"
-                 class="kc-hero-carousel-slide">
-                <img src="{{ slide.image_url }}" alt="{{ slide.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
-                <div class="kc-hero-carousel-caption">
-                  <strong>{{ slide.title }}</strong>
-                  {% if slide.price %}<span>{{ slide.price }}</span>{% endif %}
-                </div>
-              </a>
-              {% elif slide.kind == 'brand' %}
-              <div class="kc-hero-carousel-slide" style="background:var(--kc-accent);display:grid;place-items:center;">
-                <div class="kc-hero-carousel-caption" style="position:static;text-align:center;padding:2rem;">
-                  <strong>{{ slide.title|default:brand_name }}</strong>
-                  <span>Your trusted shop</span>
-                </div>
+    {% if hero_carousel_slides %}
+    <div class="kc-hero-visual" aria-label="Featured products">
+      <div class="kc-hero-carousel-wrap" data-hero-carousel>
+        <div class="kc-hero-carousel-viewport">
+          <div class="kc-hero-carousel-track">
+            {% for slide in hero_carousel_slides %}
+            {% if slide.kind == 'reel' %}
+            {% with reel=slide.reel %}
+            <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=reel.commerce_slug %}"
+               class="kc-hero-carousel-slide">
+              <video src="{{ reel.video_url }}" poster="{{ reel.thumbnail_url }}" muted loop playsinline preload="metadata"></video>
+              <div class="kc-hero-carousel-caption">
+                <strong>{{ reel.product_name }}</strong>
+                {% if reel.product_price %}<span>{{ reel.product_price }}</span>{% endif %}
               </div>
-              {% endif %}
-              {% endfor %}
+            </a>
+            {% endwith %}
+            {% elif slide.kind == 'product' %}
+            <a href="{% url 'public_commerce' page_slug=shop_slug commerce_slug=slide.commerce_slug %}"
+               class="kc-hero-carousel-slide">
+              <img src="{{ slide.image_url }}" alt="{{ slide.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+              <div class="kc-hero-carousel-caption">
+                <strong>{{ slide.title }}</strong>
+                {% if slide.price %}<span>{{ slide.price }}</span>{% endif %}
+              </div>
+            </a>
+            {% elif slide.kind == 'brand' %}
+            <div class="kc-hero-carousel-slide" style="background:var(--kc-accent);display:grid;place-items:center;">
+              <div class="kc-hero-carousel-caption" style="position:static;text-align:center;padding:2rem;">
+                <strong>{{ slide.title|default:brand_name }}</strong>
+              </div>
             </div>
+            {% endif %}
+            {% endfor %}
           </div>
-          {% if hero_carousel_slides|length > 1 %}
-          <button type="button" class="kc-hero-carousel-nav kc-hero-carousel-nav--prev" data-carousel-prev aria-label="Previous slide">‹</button>
-          <button type="button" class="kc-hero-carousel-nav kc-hero-carousel-nav--next" data-carousel-next aria-label="Next slide">›</button>
-          {% endif %}
         </div>
         {% if hero_carousel_slides|length > 1 %}
-        <div class="kc-hero-carousel-dots" role="tablist" aria-label="Hero slides">
-          {% for slide in hero_carousel_slides %}
-          <button type="button" class="kc-hero-carousel-dot{% if forloop.first %} is-active{% endif %}"
-                  data-carousel-dot="{{ forloop.counter0 }}"
-                  aria-label="Slide {{ forloop.counter }}"
-                  {% if forloop.first %}aria-selected="true"{% endif %}></button>
-          {% endfor %}
-        </div>
+        <button type="button" class="kc-hero-carousel-nav kc-hero-carousel-nav--prev" data-carousel-prev aria-label="Previous slide">‹</button>
+        <button type="button" class="kc-hero-carousel-nav kc-hero-carousel-nav--next" data-carousel-next aria-label="Next slide">›</button>
         {% endif %}
       </div>
-      {% elif hero_collage %}
-      <div class="kc-hero-collage" aria-hidden="true">
-        {% for item in hero_collage|slice:":4" %}
-        <img src="{{ item.image }}" alt="" class="kc-collage-{% cycle 'a' 'b' 'c' 'd' %}" loading="lazy">
+      {% if hero_carousel_slides|length > 1 %}
+      <div class="kc-hero-carousel-dots" role="tablist" aria-label="Hero slides">
+        {% for slide in hero_carousel_slides %}
+        <button type="button" class="kc-hero-carousel-dot{% if forloop.first %} is-active{% endif %}"
+                data-carousel-dot="{{ forloop.counter0 }}"
+                aria-label="Slide {{ forloop.counter }}"
+                {% if forloop.first %}aria-selected="true"{% endif %}></button>
         {% endfor %}
       </div>
       {% endif %}
+    </div>
     {% elif hero_collage %}
     <div class="kc-hero-collage" aria-hidden="true">
       {% for item in hero_collage|slice:":4" %}

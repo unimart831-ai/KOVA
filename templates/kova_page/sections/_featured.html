@@ -1,9 +1,12 @@
 {% if featured_products %}
-<div>
-  <h2 class="text-base font-semibold text-gray-800 mb-1">Featured</h2>
-  <p class="text-xs text-gray-500 mb-3">Instant access after purchase</p>
-  <div class="grid grid-cols-2 gap-3">
-    {% for product in featured_products %}{% include "kova_page/sections/_product_card.html" %}{% endfor %}
+<section class="kc-hub-section" aria-label="Featured">
+  {% include "products/public/_shop_section_head.html" with section_title="Featured" section_sub="Ready to order" %}
+  <div class="shop-grid shop-product-grid" role="list">
+    {% for product in featured_products %}
+    {% if product.commerce_slug %}
+    {% include "products/public/_shop_product_card.html" %}
+    {% endif %}
+    {% endfor %}
   </div>
-</div>
+</section>
 {% endif %}
