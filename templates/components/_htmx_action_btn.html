@@ -1,0 +1,31 @@
+{# Reusable HTMX action button with inline loading state #}
+{# Required: post, url, label. Optional: label_busy, confirm, tone, title, extra_class, hx_vals #}
+{% with busy=label_busy|default:label %}
+<button type="button"
+        hx-post="{{ url }}"
+        hx-target="#post-{{ post.id }}"
+        hx-swap="outerHTML settle:80ms"
+        hx-indicator="#post-{{ post.id }}-busy"
+        hx-disabled-elt="this"
+        {% if hx_vals %}hx-vals='{{ hx_vals }}'{% endif %}
+        {% if confirm %}hx-confirm="{{ confirm }}"{% endif %}
+        class="card-action-btn group/btn inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3 text-xs font-medium rounded-lg transition-colors disabled:opacity-60 disabled:pointer-events-none
+          {% if tone == 'danger' %}text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30
+          {% elif tone == 'ghost' %}text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800
+          {% elif tone == 'orange' %}text-white bg-orange-600 hover:bg-orange-700 shadow-sm
+          {% elif tone == 'primary' %}text-white bg-kova-600 hover:bg-kova-700 shadow-sm
+          {% else %}text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}
+          {{ extra_class }}"
+        {% if title %}title="{{ title }}"{% endif %}>
+  <span class="inline-flex items-center gap-1.5 group-[.htmx-request]/btn:hidden">
+    {% if icon == 'trash' %}
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    {% endif %}
+    {{ label }}
+  </span>
+  <span class="hidden group-[.htmx-request]/btn:inline-flex items-center gap-1.5">
+    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+    {{ busy }}
+  </span>
+</button>
+{% endwith %}

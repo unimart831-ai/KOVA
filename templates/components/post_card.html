@@ -5,12 +5,21 @@ Partials: _card_header.html, _card_body.html, _card_actions.html, _card_schedule
 {% endcomment %}
 
 <div id="post-{{ post.id }}"
-     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow"
+     class="relative bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow"
      {% if post.media_processing %}
      hx-get="{% url 'content:post_card' post.id %}"
      hx-trigger="kovaRefresh from:body, every 15s"
      hx-swap="outerHTML"
      {% endif %}>
+
+  <div id="post-{{ post.id }}-busy"
+       class="htmx-indicator absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-white/75 dark:bg-gray-900/75 backdrop-blur-[1px]"
+       aria-hidden="true">
+    <svg class="w-6 h-6 animate-spin text-kova-600 dark:text-kova-400" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+  </div>
 
   {% if compact_card %}
     {% include "components/_card_header_compact.html" %}

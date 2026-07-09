@@ -1,4 +1,11 @@
 {# Schedule modal — teleported to body for z-index stacking #}
+{% if not schedule_url %}
+  {% if schedule_mode == 'republish' %}
+    {% url 'content:republish' post.id as schedule_url %}
+  {% else %}
+    {% url 'content:approve' post.id as schedule_url %}
+  {% endif %}
+{% endif %}
 <template x-teleport="body">
   <div x-show="showSchedule" x-cloak
        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -121,7 +128,7 @@
 
         {# Smart scheduling options #}
         <div class="p-2">
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'post_now'}); showSchedule = false"
+          <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'post_now' } })); showSchedule = false"
                   class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
             <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gold-50 dark:bg-gold-950/50">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-gold-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -129,7 +136,7 @@
             <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Post Now</p><p class="text-xs text-gray-400 dark:text-gray-500">Publish immediately</p></div>
           </button>
 
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'next_best'}); showSchedule = false"
+          <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'next_best' } })); showSchedule = false"
                   class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
             <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-kova-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
@@ -137,7 +144,7 @@
             <div><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Best Slot</p><p class="text-xs text-gray-400 dark:text-gray-500">Peak time for {% if post.social_account %}{{ post.social_account.get_platform_display }}{% elif post.platform %}{{ post.platform|title }}{% endif %}</p></div>
           </button>
 
-          <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'smart_queue'}); showSchedule = false"
+          <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'smart_queue' } })); showSchedule = false"
                   class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-left transition-colors">
             <span class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-kova-50 dark:bg-kova-950/50">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-kova-500" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
@@ -150,15 +157,15 @@
         <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-800">
           <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Quick Schedule</p>
           <div class="flex flex-wrap gap-1.5">
-            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:30min'}); showSchedule = false"
+            <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'quick:30min' } })); showSchedule = false"
                     class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">30 min</button>
-            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:1hr'}); showSchedule = false"
+            <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'quick:1hr' } })); showSchedule = false"
                     class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">1 hour</button>
-            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:3hr'}); showSchedule = false"
+            <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'quick:3hr' } })); showSchedule = false"
                     class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">3 hours</button>
-            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_am'}); showSchedule = false"
+            <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'quick:tomorrow_am' } })); showSchedule = false"
                     class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 9AM</button>
-            <button @click="$dispatch('schedule-{{ post.id }}', {intent: 'quick:tomorrow_pm'}); showSchedule = false"
+            <button @click="window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'quick:tomorrow_pm' } })); showSchedule = false"
                     class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">Tomorrow 6PM</button>
           </div>
         </div>
@@ -169,7 +176,7 @@
           <div class="flex items-center gap-2">
             <input type="datetime-local" x-ref="picker{{ post.id }}"
                    class="flex-1 min-w-0 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-kova-500 focus:border-kova-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <button @click="if($refs['picker{{ post.id }}'].value) { $dispatch('schedule-{{ post.id }}', {intent: 'exact', datetime: $refs['picker{{ post.id }}'].value}); showSchedule = false }"
+            <button @click="if($refs['picker{{ post.id }}'].value) { window.dispatchEvent(new CustomEvent('kova:schedule-post', { detail: { postId: '{{ post.id }}', url: '{{ schedule_url }}', intent: 'exact', datetime: $refs['picker{{ post.id }}'].value } })); showSchedule = false }"
                     class="px-4 py-2 text-sm font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">Set</button>
           </div>
         </div>

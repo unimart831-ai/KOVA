@@ -775,6 +775,15 @@ textarea {
     @apply bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300;
   }
 
+  /* HTMX in-flight indicators on post cards */
+  .htmx-indicator {
+    @apply opacity-0 pointer-events-none transition-opacity duration-150;
+  }
+  .htmx-request .htmx-indicator,
+  .htmx-request.htmx-indicator {
+    @apply opacity-100 pointer-events-auto;
+  }
+
   @media (min-width: 640px) {
     .sm\:touch-target-none {
       min-height: 0;

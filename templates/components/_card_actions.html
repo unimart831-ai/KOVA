@@ -1,178 +1,97 @@
 {# Post card actions — approve/schedule modal, reject, edit, regenerate, view details #}
 
 {% if post.publish_needs_retry and post.status == 'pending_approval' %}
-  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
+  {% url 'content:republish' post.id as republish_url %}
+  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
        x-data="{ showSchedule: false }">
-    <p class="text-xs text-red-600 dark:text-red-400 truncate flex-1" title="{{ post.publish_failure_message }}">
+    <p class="text-xs text-red-600 dark:text-red-400 line-clamp-2 flex-1" title="{{ post.publish_failure_message }}">
       {{ post.publish_failure_message|truncatechars:80 }}
     </p>
-    <button @click="showSchedule = true" type="button"
-            class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors shrink-0">
-      Publish
-    </button>
-    {% include "components/_card_schedule_modal.html" with schedule_mode="republish" %}
+    <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+      {% include "components/_htmx_action_btn.html" with url=republish_url label="Publish now" label_busy="Publishing…" tone="orange" hx_vals='{"schedule_intent": "post_now"}' extra_class="flex-1 sm:flex-none" %}
+    </div>
+    {% include "components/_card_schedule_modal.html" with schedule_mode="republish" schedule_url=republish_url %}
   </div>
-  <script>
-    (function() {
-      var key = '_kr_{{ post.id }}';
-      if (window[key]) document.removeEventListener('schedule-{{ post.id }}', window[key]);
-      window[key] = function(e) {
-        var intent = e.detail.intent;
-        var values = {schedule_intent: intent};
-        if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
-        var tok = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (tok) values.csrfmiddlewaretoken = tok.value;
-        else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
-        htmx.ajax('POST', '{% url "content:republish" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
-      };
-      document.addEventListener('schedule-{{ post.id }}', window[key]);
-    })();
-  </script>
 
 {% elif post.status == 'pending_approval' or post.status == 'draft' %}
-  <div class="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700"
+  {% url 'content:approve' post.id as approve_url %}
+  {% url 'content:reject' post.id as reject_url %}
+  {% url 'content:delete_post' post.id as delete_url %}
+  {% url 'content:regenerate' post.id as regen_url %}
+  <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700"
        x-data="{ showSchedule: false }">
 
-    {# Approve button opens modal #}
     <button @click="showSchedule = true" type="button"
             {% if post.reel_compose_pending %}disabled title="Motion reel is still composing — wait a moment"{% endif %}
-            class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg transition-colors shadow-sm
+            class="inline-flex items-center gap-1.5 min-h-[36px] px-3 text-xs font-medium rounded-lg transition-colors shadow-sm
                    {% if post.reel_compose_pending %}text-gray-400 bg-gray-200 dark:bg-gray-800 cursor-not-allowed opacity-60{% else %}text-white bg-kova-600 hover:bg-kova-700{% endif %}">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
       Approve
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:10px;height:10px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
     </button>
 
-    <button hx-post="{% url 'content:reject' post.id %}"
-            hx-target="#post-{{ post.id }}"
-            hx-swap="outerHTML"
-            class="h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
-      Reject
-    </button>
+    {% include "components/_htmx_action_btn.html" with url=reject_url label="Reject" tone="ghost" %}
     <a href="{% url 'content:edit' post.id %}"
-       class="h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors inline-flex items-center">
+       class="min-h-[36px] px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors inline-flex items-center">
       Edit
     </a>
-    <button hx-post="{% url 'content:delete_post' post.id %}"
-            hx-target="#post-{{ post.id }}"
-            hx-swap="outerHTML"
-            hx-confirm="Delete this post? This cannot be undone."
-            class="h-8 px-2 text-xs text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors inline-flex items-center" title="Delete">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-    </button>
+    {% include "components/_htmx_action_btn.html" with url=delete_url label="Delete" label_busy="Removing…" tone="danger" icon="trash" confirm="Delete this post? This cannot be undone." title="Delete" extra_class="px-2" %}
+    {% include "components/_htmx_action_btn.html" with url=regen_url label="Regenerate" label_busy="Regenerating…" tone="ghost" extra_class="ml-auto" %}
 
-    {# Regenerate button #}
-    <button hx-post="{% url 'content:regenerate' post.id %}"
-            hx-target="#post-{{ post.id }}"
-            hx-swap="outerHTML"
-            class="ml-auto h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-kova-50 dark:hover:bg-kova-950/30 rounded-lg transition-colors inline-flex items-center gap-1.5 group">
-      <svg class="w-3.5 h-3.5 group-[.htmx-request]:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-      <svg class="w-3.5 h-3.5 animate-spin hidden group-[.htmx-request]:block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-      <span class="group-[.htmx-request]:hidden">Regenerate</span>
-      <span class="hidden group-[.htmx-request]:inline">Regenerating...</span>
-    </button>
-
-    {# ── Schedule modal ── #}
-    {% include "components/_card_schedule_modal.html" %}
+    {% include "components/_card_schedule_modal.html" with schedule_mode="approve" schedule_url=approve_url %}
   </div>
 
-  <script>
-    (function() {
-      var key = '_ks_{{ post.id }}';
-      // Remove previous listener to prevent duplicates after HTMX swaps
-      if (window[key]) document.removeEventListener('schedule-{{ post.id }}', window[key]);
-      window[key] = function(e) {
-        var intent = e.detail.intent;
-        var values = {schedule_intent: intent};
-        if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
-        var tok = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (tok) values.csrfmiddlewaretoken = tok.value;
-        else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
-        htmx.ajax('POST', '{% url "content:approve" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
-      };
-      document.addEventListener('schedule-{{ post.id }}', window[key]);
-    })();
-  </script>
-
 {% elif post.status == 'rejected' %}
-  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center">
+  {% url 'content:delete_post' post.id as delete_url %}
+  {% url 'content:regenerate' post.id as regen_url %}
+  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-2">
     <a href="{% url 'content:edit' post.id %}"
-       class="inline-flex items-center h-8 px-3 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+       class="inline-flex items-center min-h-[36px] px-3 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
       Revise
     </a>
-    <button hx-post="{% url 'content:delete_post' post.id %}"
-            hx-target="#post-{{ post.id }}"
-            hx-swap="outerHTML"
-            hx-confirm="Delete this post? This cannot be undone."
-            class="h-8 px-2 text-xs text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors inline-flex items-center" title="Delete">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-    </button>
-    <button hx-post="{% url 'content:regenerate' post.id %}"
-            hx-target="#post-{{ post.id }}"
-            hx-swap="outerHTML"
-            class="ml-auto h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-kova-50 dark:hover:bg-kova-950/30 rounded-lg transition-colors inline-flex items-center gap-1.5 group">
-      <svg class="w-3.5 h-3.5 group-[.htmx-request]:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-      <svg class="w-3.5 h-3.5 animate-spin hidden group-[.htmx-request]:block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-      <span class="group-[.htmx-request]:hidden">Regenerate</span>
-      <span class="hidden group-[.htmx-request]:inline">Regenerating...</span>
-    </button>
+    {% include "components/_htmx_action_btn.html" with url=delete_url label="Delete" label_busy="Removing…" tone="danger" icon="trash" confirm="Delete this post? This cannot be undone." title="Delete" extra_class="px-2" %}
+    {% include "components/_htmx_action_btn.html" with url=regen_url label="Regenerate" label_busy="Regenerating…" tone="ghost" extra_class="ml-auto" %}
   </div>
 
 {% elif post.status == 'published' or post.status == 'failed' or post.status == 'scheduled' or post.status == 'approved' or post.publish_needs_retry %}
-  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2"
+  {% url 'content:republish' post.id as republish_url %}
+  {% url 'content:delete_post' post.id as delete_url %}
+  <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
        x-data="{ showSchedule: false }">
     <a href="{% url 'content:post_detail' post.id %}"
-       class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+       class="inline-flex items-center gap-1 min-h-[36px] px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
       View details
     </a>
-    <div class="flex items-center gap-2">
+
+    <div class="flex flex-wrap items-center gap-2 sm:justify-end">
       {% if post.status != 'published' and post.status != 'publishing' %}
-      <button hx-post="{% url 'content:delete_post' post.id %}"
-              hx-target="#post-{{ post.id }}"
-              hx-swap="outerHTML"
-              hx-confirm="Remove this post from the queue? This can't be undone."
-              class="h-8 px-2 text-xs text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors inline-flex items-center" title="Remove from queue">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-      </button>
+        {% include "components/_htmx_action_btn.html" with url=delete_url label="Remove" label_busy="Removing…" tone="danger" icon="trash" confirm="Remove this post from the queue? This can't be undone." title="Remove from queue" extra_class="px-2" %}
       {% endif %}
+
       {% if post.status != 'published' %}
-      {% if 'rate limit' in post.publish_failure_message|lower or '429' in post.publish_failure_message %}
-      <form method="post" action="{% url 'content:reschedule_rate_limited' post.id %}"
-            hx-post="{% url 'content:reschedule_rate_limited' post.id %}"
-            hx-target="#post-{{ post.id }}" hx-swap="outerHTML">
-        {% csrf_token %}
-        <button type="submit"
-                class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors">
-          Retry in 30 min
-        </button>
-      </form>
-      {% endif %}
-      <button @click="showSchedule = true" type="button"
-              class="inline-flex items-center gap-1 h-8 px-3 text-xs font-medium text-white {% if post.status == 'failed' or post.publish_needs_retry %}bg-orange-600 hover:bg-orange-700{% else %}bg-kova-600 hover:bg-kova-700{% endif %} rounded-lg transition-colors">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        {% if post.status == 'scheduled' %}Reschedule{% elif post.status == 'failed' or post.publish_needs_retry %}Retry publish{% else %}Publish{% endif %}
-      </button>
-      {% include "components/_card_schedule_modal.html" with schedule_mode="republish" %}
+        {% if 'rate limit' in post.publish_failure_message|lower or '429' in post.publish_failure_message %}
+          {% url 'content:reschedule_rate_limited' post.id as rate_url %}
+          {% include "components/_htmx_action_btn.html" with url=rate_url label="Retry in 30 min" label_busy="Scheduling…" tone="primary" %}
+        {% endif %}
+
+        {% if post.status == 'failed' or post.publish_needs_retry %}
+          {% url 'content:retry_publish' post.id as retry_url %}
+          {% include "components/_htmx_action_btn.html" with url=retry_url label="Retry now" label_busy="Retrying…" tone="orange" %}
+          <button @click="showSchedule = true" type="button"
+                  class="inline-flex items-center justify-center min-h-[36px] px-3 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            Schedule…
+          </button>
+        {% else %}
+          {% if post.status == 'approved' %}
+            {% include "components/_htmx_action_btn.html" with url=republish_url label="Publish now" label_busy="Publishing…" tone="primary" hx_vals='{"schedule_intent": "post_now"}' %}
+          {% endif %}
+          <button @click="showSchedule = true" type="button"
+                  class="inline-flex items-center justify-center gap-1 min-h-[36px] px-3 text-xs font-medium text-white bg-kova-600 hover:bg-kova-700 rounded-lg transition-colors shadow-sm">
+            {% if post.status == 'scheduled' %}Reschedule{% else %}Publish{% endif %}
+          </button>
+        {% endif %}
+
+        {% include "components/_card_schedule_modal.html" with schedule_mode="republish" schedule_url=republish_url %}
       {% endif %}
     </div>
   </div>
-  {% if post.status != 'published' %}
-  <script>
-    (function() {
-      var key = '_kr_{{ post.id }}';
-      if (window[key]) document.removeEventListener('schedule-{{ post.id }}', window[key]);
-      window[key] = function(e) {
-        var intent = e.detail.intent;
-        var values = {schedule_intent: intent};
-        if (intent === 'exact' && e.detail.datetime) values.exact_datetime = e.detail.datetime;
-        var tok = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (tok) values.csrfmiddlewaretoken = tok.value;
-        else { var h = document.body.getAttribute('hx-headers'); if(h){try{values.csrfmiddlewaretoken=JSON.parse(h)['X-CSRFToken']}catch(x){}} }
-        htmx.ajax('POST', '{% url "content:republish" post.id %}', {target:'#post-{{ post.id }}', swap:'outerHTML', values:values});
-      };
-      document.addEventListener('schedule-{{ post.id }}', window[key]);
-    })();
-  </script>
-  {% endif %}
 {% endif %}

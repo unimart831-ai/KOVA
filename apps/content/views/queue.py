@@ -412,7 +412,8 @@ def approve_post(request, post_id):
 
     if post.status not in (Post.Status.DRAFT, Post.Status.PENDING_APPROVAL):
         if is_htmx:
-            return render(request, "components/post_card.html", {"post": post})
+            from apps.content.views.card_helpers import render_post_card
+            return render_post_card(request, post)
         return redirect("content:post_detail", post_id=post.id)
 
     if post.needs_media:
@@ -423,7 +424,8 @@ def approve_post(request, post_id):
             f"{platform_name} requires an image. Upload one before approving.",
         )
         if is_htmx:
-            return render(request, "components/post_card.html", {"post": post})
+            from apps.content.views.card_helpers import render_post_card
+            return render_post_card(request, post)
         return redirect("content:post_detail", post_id=post.id)
 
     intent = request.POST.get("schedule_intent", "next_best")
@@ -486,7 +488,18 @@ def approve_post(request, post_id):
         fire_task(publish_post, str(post.id))
 
     if is_htmx:
-        return render(request, "components/post_card.html", {"post": post})
+        import json
+
+        from apps.content.views.card_helpers import render_post_card
+
+        toast = (
+            {"message": "Publishing…", "type": "info"}
+            if intent == "post_now"
+            else {"message": "Post scheduled", "type": "success"}
+        )
+        response = render_post_card(request, post)
+        response["HX-Trigger"] = json.dumps({"notify": toast})
+        return response
     return redirect("content:post_detail", post_id=post.id)
 
 
@@ -494,9 +507,12 @@ def approve_post(request, post_id):
 @require_POST
 def republish_post(request, post_id):
     """Reschedule or immediately republish an approved, scheduled, or failed post."""
+    import json
+
     from django.contrib import messages
 
     from apps.content.approval import republish_post_for_user
+    from apps.content.views.card_helpers import render_post_card
 
     post = get_object_or_404(Post.objects.select_related("social_account", "user"), id=post_id)
     if not can_approve_post(request.user, post):
@@ -517,12 +533,20 @@ def republish_post(request, post_id):
         messages.warning(request, msg)
         if is_htmx:
             post.refresh_from_db()
-            return render(request, "components/post_card.html", {"post": post})
+            return render_post_card(request, post)
         return redirect("content:post_detail", post_id=post.id)
 
     post.refresh_from_db()
     if is_htmx:
-        return render(request, "components/post_card.html", {"post": post})
+        intent = request.POST.get("schedule_intent", "post_now")
+        toast = (
+            {"message": "Publishing…", "type": "info"}
+            if intent == "post_now"
+            else {"message": "Post scheduled", "type": "success"}
+        )
+        response = render_post_card(request, post)
+        response["HX-Trigger"] = json.dumps({"notify": toast})
+        return response
     return redirect("content:post_detail", post_id=post.id)
 
 
@@ -617,7 +641,15 @@ def reject_post(request, post_id):
         post.status = Post.Status.REJECTED
         post.save(update_fields=["status", "updated_at"])
     if request.headers.get("HX-Request"):
-        return render(request, "components/post_card.html", {"post": post})
+        import json
+
+        from apps.content.views.card_helpers import render_post_card
+
+        response = render_post_card(request, post)
+        response["HX-Trigger"] = json.dumps({
+            "notify": {"message": "Post rejected", "type": "info"},
+        })
+        return response
     return redirect("content:post_detail", post_id=post.id)
 
 

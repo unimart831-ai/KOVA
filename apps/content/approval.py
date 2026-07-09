@@ -186,7 +186,12 @@ def republish_post_for_user(
             "message": pause_reason,
         }
 
-    safety = check_post_safe(post)
+    from apps.content.safety import check_text_safe
+
+    if post.status == Post.Status.FAILED:
+        safety = check_text_safe(post.content_text, user=post.user)
+    else:
+        safety = check_post_safe(post)
     if not safety.safe:
         block_post_for_policy(post, safety, source="republish")
         return {

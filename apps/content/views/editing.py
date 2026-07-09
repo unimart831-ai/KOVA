@@ -1,5 +1,7 @@
 import json
 
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
@@ -22,6 +24,12 @@ def delete_post(request, post_id):
     if post.status in (Post.Status.PUBLISHED, Post.Status.PUBLISHING):
         return HttpResponse("Cannot delete a published post", status=400)
     post.soft_delete()
+    if request.headers.get("HX-Request"):
+        response = HttpResponse("")
+        response["HX-Trigger"] = json.dumps({
+            "notify": {"message": "Post removed from queue", "type": "success"},
+        })
+        return response
     return HttpResponse("")
 
 
@@ -382,7 +390,15 @@ def reschedule_rate_limited(request, post_id):
     post.save(update_fields=["status", "scheduled_at", "publish_error", "ai_reasoning", "updated_at"])
 
     if request.headers.get("HX-Request"):
-        return render(request, "components/post_card.html", {"post": post})
+        import json
+
+        from apps.content.views.card_helpers import render_post_card
+
+        response = render_post_card(request, post)
+        response["HX-Trigger"] = json.dumps({
+            "notify": {"message": "Scheduled for retry in 30 minutes", "type": "success"},
+        })
+        return response
     messages.info(request, "Scheduled for retry in 30 minutes.")
     return redirect("content:queue")
 
@@ -410,7 +426,13 @@ def retry_publish(request, post_id):
     fire_task(publish_post, str(post.id))
 
     if request.headers.get("HX-Request"):
-        return render(request, "components/post_card.html", {"post": post})
+        from apps.content.views.card_helpers import render_post_card
+
+        response = render_post_card(request, post)
+        response["HX-Trigger"] = json.dumps({
+            "notify": {"message": "Publishing…", "type": "info"},
+        })
+        return response
     messages.info(request, "Retrying publish…")
     return redirect("content:queue")
 
