@@ -86,9 +86,14 @@
         </p>
       </div>
     </div>
-    <a href="{% url 'content:share_moment' %}" class="btn-primary shrink-0 whitespace-nowrap">
-      Open Quick Share →
-    </a>
+    <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+      <a href="{% url 'content:share_list' %}" class="btn-secondary whitespace-nowrap text-center">
+        My shares
+      </a>
+      <a href="{% url 'content:share_moment' %}" class="btn-primary whitespace-nowrap text-center">
+        New Quick Share →
+      </a>
+    </div>
   </div>
   {% endif %}
 

@@ -66,6 +66,8 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
     base = Post.objects.filter(user_id__in=visible_user_ids).select_related(
         "social_account", "seed", "user",
     )
+    from apps.content.share_bundle import exclude_share_bundle_posts
+    base = exclude_share_bundle_posts(base, visible_user_ids)
 
     failed_qs = _apply_queue_filters(
         base.filter(status__in=("failed", "blocked")).order_by("-created_at"),

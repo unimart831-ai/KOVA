@@ -155,6 +155,9 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
         "user",
     ).order_by("-created_at")
 
+    from apps.content.share_bundle import exclude_share_bundle_posts
+    posts = exclude_share_bundle_posts(posts, visible_user_ids)
+
     if platform_filter:
         posts = posts.filter(platform=platform_filter)
     if format_filter:
@@ -471,6 +474,7 @@ def share_moment(request):
         "hands_free": autopilot_on or bool(profile and profile.auto_approve_posts),
         "platform_labels": platform_labels,
         "default_gap_hours": 4,
+        "active_tab": "shares",
     })
 
 
@@ -572,15 +576,14 @@ def share_moment_submit(request):
         messages.success(
             request,
             f"Done — {result.posts_created} posts queued across {platform_count} platform"
-            f"{'s' if platform_count != 1 else ''}. Kova wrote the caption, set the order, "
-            f"and scheduled everything. Check Queue for timing.",
+            f"{'s' if platform_count != 1 else ''}. Kova scheduled everything in order.",
         )
-        return redirect("content:queue")
-    messages.success(
-        request,
-        f"Created {result.posts_created} {kind_label} posts — review and approve in Studio.",
-    )
-    return redirect(f"{reverse('content:studio')}#studio-posts-section")
+    else:
+        messages.success(
+            request,
+            f"Created {result.posts_created} {kind_label} posts — review and approve below.",
+        )
+    return redirect("content:share_detail", seed_id=result.seed_id)
 
 
 @login_required

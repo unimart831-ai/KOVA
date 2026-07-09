@@ -1759,13 +1759,30 @@ def publish_post(self, post_id: str):
             return {"error": "Token refresh failed"}
 
     if account.needs_reauth:
-        _fail_post(post, "Account needs re-authentication")
-        Notification.create_for_user(
-            post.user, "publish_failed",
-            f"{account.get_platform_display()} needs to be reconnected.",
-            related_post=post,
-        )
-        return {"error": "Needs reauth"}
+        if account.platform in ("facebook", "instagram"):
+            from apps.platforms.token_recovery import try_recover_meta_token
+
+            if try_recover_meta_token(account):
+                logger.info(
+                    "Recovered %s account %s before publish for post %s",
+                    account.platform, account.pk, post_id,
+                )
+            else:
+                _fail_post(post, "Account needs re-authentication")
+                Notification.create_for_user(
+                    post.user, "publish_failed",
+                    f"{account.get_platform_display()} needs to be reconnected.",
+                    related_post=post,
+                )
+                return {"error": "Needs reauth"}
+        else:
+            _fail_post(post, "Account needs re-authentication")
+            Notification.create_for_user(
+                post.user, "publish_failed",
+                f"{account.get_platform_display()} needs to be reconnected.",
+                related_post=post,
+            )
+            return {"error": "Needs reauth"}
 
     # Publish
     try:
@@ -2700,8 +2717,15 @@ def fetch_post_metrics(post_id: str):
         )
     except Exception as e:
         error_str = str(e)
-        # Detect permission errors and activate circuit breaker
-        if "pages_read_engagement" in error_str or "OAuthException" in error_str:
+        # Detect permission errors and activate circuit breaker (not deprecated API noise)
+        is_permission_error = "pages_read_engagement" in error_str
+        if not is_permission_error and "OAuthException" in error_str:
+            is_permission_error = (
+                "code\":190" in error_str
+                or "code\":102" in error_str
+                or "code\":200" in error_str
+            )
+        if is_permission_error:
             meta = account.metadata or {}
             meta["metrics_permission_error_at"] = timezone.now().isoformat()
             account.metadata = meta

@@ -76,6 +76,42 @@ def _is_video_media_url(url: str) -> bool:
     return path.endswith((".mp4", ".mov", ".avi", ".webm", ".m4v"))
 
 
+# Graph API error codes that mean the user must reconnect — NOT every OAuthException.
+_FB_AUTH_ERROR_CODES = frozenset({190, 102, 463, 200})
+
+
+def _graph_error_details(response: httpx.Response) -> dict:
+    """Parse a Graph API error payload into code/message/auth flags."""
+    try:
+        err = response.json().get("error") or {}
+        if isinstance(err, dict):
+            code = err.get("code")
+            return {
+                "code": code,
+                "message": str(err.get("message", "")),
+                "is_auth": code in _FB_AUTH_ERROR_CODES,
+            }
+    except Exception:
+        pass
+    text = response.text or ""
+    return {
+        "code": 190 if "code\":190" in text else None,
+        "message": text[:300],
+        "is_auth": "code\":190" in text,
+    }
+
+
+def _normalize_fb_post_id(post_id: str, page_id: str = "") -> str:
+    """
+    Facebook feed post IDs are often ``{page_id}_{post_id}``.
+    Reels/videos sometimes store only the numeric segment — prefix when we can.
+    """
+    post_id = (post_id or "").strip()
+    if not post_id or "_" in post_id or not page_id:
+        return post_id
+    return f"{page_id}_{post_id}"
+
+
 def _graph_api_error_text(response: httpx.Response, *, limit: int = 500) -> str:
     """Extract a readable error from a Graph API error response."""
     try:
@@ -598,6 +634,8 @@ class FacebookProvider(BaseProvider):
                 finish_resp.raise_for_status()
                 finish_data = finish_resp.json()
                 post_id = finish_data.get("post_id") or video_id
+                if post_id and page_id and "_" not in str(post_id):
+                    post_id = f"{page_id}_{post_id}"
                 url = f"https://www.facebook.com/reel/{video_id}"
                 try:
                     plink_resp = client.get(f"{FB_API_BASE}/{post_id}", params={
@@ -875,9 +913,9 @@ class FacebookProvider(BaseProvider):
 
         except httpx.HTTPStatusError as e:
             error_text = e.response.text
+            details = _graph_error_details(e.response)
             logger.error("Facebook metrics fetch failed: %s", error_text)
-            # Re-raise permission errors so the circuit breaker in tasks can catch them
-            if "pages_read_engagement" in error_text or "OAuthException" in error_text:
+            if details.get("is_auth") or "pages_read_engagement" in error_text:
                 raise RuntimeError(f"Facebook permission error: {error_text[:300]}")
             return PostMetrics()
 
@@ -931,9 +969,11 @@ class FacebookProvider(BaseProvider):
 
     def get_comments(self, access_token: str, post_id: str, **kwargs) -> list[dict]:
         """Fetch comments on a Page post. Requires pages_manage_engagement."""
+        page_id = kwargs.get("page_id", "")
+        normalized_id = _normalize_fb_post_id(post_id, page_id)
         try:
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
-                resp = client.get(f"{FB_API_BASE}/{post_id}/comments", params={
+                resp = client.get(f"{FB_API_BASE}/{normalized_id}/comments", params={
                     "fields": "id,from{id,name},message,created_time",
                     "limit": kwargs.get("limit", 50),
                     "access_token": access_token,
@@ -951,14 +991,27 @@ class FacebookProvider(BaseProvider):
                 ]
         except httpx.HTTPStatusError as e:
             error_body = e.response.text
-            logger.error("Facebook get comments failed for post %s: %s", post_id, error_body)
+            details = _graph_error_details(e.response)
+            logger.error(
+                "Facebook get comments failed for post %s (normalized=%s, code=%s): %s",
+                post_id, normalized_id, details.get("code"), error_body,
+            )
             # "does not exist" = deleted/unavailable post — NOT an auth error
             if "does not exist" in error_body:
                 logger.info("Post %s no longer exists on Facebook — skipping", post_id)
                 return []
-            # Detect genuine token/permission errors — caller should mark account for reauth
-            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body):
-                raise PlatformAuthError(f"Facebook token/permission error: {error_body[:300]}") from e
+            # Deprecated endpoint / unsupported post type — skip quietly (not reconnect)
+            if details.get("code") == 12 or "singular statuses" in error_body.lower():
+                logger.info(
+                    "Post %s uses unsupported legacy Facebook API — skipping comments",
+                    post_id,
+                )
+                return []
+            # Only genuine token/permission errors should trigger reauth strikes
+            if details.get("is_auth"):
+                raise PlatformAuthError(
+                    f"Facebook token/permission error: {error_body[:300]}"
+                ) from e
             return []
 
     def post_comment(self, page_token: str = "", post_id: str = "",
@@ -1901,12 +1954,15 @@ class InstagramProvider(BaseProvider):
                 ]
         except httpx.HTTPStatusError as e:
             error_body = e.response.text
+            details = _graph_error_details(e.response)
             logger.error("Instagram get comments failed for post %s: %s", post_id, error_body)
             if "does not exist" in error_body:
                 logger.info("Post %s no longer exists on Instagram — skipping", post_id)
                 return []
-            if e.response.status_code == 400 and ("OAuthException" in error_body or "code\":190" in error_body):
-                raise PlatformAuthError(f"Instagram token/permission error: {error_body[:300]}") from e
+            if details.get("is_auth"):
+                raise PlatformAuthError(
+                    f"Instagram token/permission error: {error_body[:300]}"
+                ) from e
             return []
 
     def post_comment(self, page_token: str = "", post_id: str = "",

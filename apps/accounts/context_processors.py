@@ -17,6 +17,7 @@ def nav_badges(request):
 
     badges = {
         "nav_badge_queue": _count_pending_posts(request.user),
+        "nav_badge_shares": _count_share_attention(request.user),
         "nav_badge_inbox": _count_unread_inbox(request.user),
         "nav_badge_leads": _count_new_leads(request.user),
         "nav_badge_whatsapp": _count_unread_whatsapp(request.user),
@@ -29,9 +30,42 @@ def nav_badges(request):
 def _count_pending_posts(user):
     try:
         from apps.content.models import Post
+        from apps.content.share_bundle import exclude_share_bundle_posts
+        from apps.teams.permissions import get_teammate_ids
+
+        qs = Post.objects.filter(
+            user_id__in=get_teammate_ids(user),
+            status=Post.Status.PENDING_APPROVAL,
+        )
+        return exclude_share_bundle_posts(qs, get_teammate_ids(user)).count()
+    except Exception:
+        return 0
+
+
+def _count_share_attention(user):
+    """Quick Share bundles with pending review or failed posts."""
+    try:
+        from apps.content.models import ContentSeed, Post
+        from apps.teams.permissions import get_teammate_ids
+
+        visible = get_teammate_ids(user)
+        seed_ids = list(
+            ContentSeed.objects.filter(
+                user_id__in=visible,
+                blueprint__share_bundle=True,
+            ).values_list("id", flat=True)
+        )
+        if not seed_ids:
+            return 0
         return Post.objects.filter(
-            user=user, status=Post.Status.PENDING_APPROVAL
-        ).count()
+            seed_id__in=seed_ids,
+            status__in=(
+                Post.Status.PENDING_APPROVAL,
+                Post.Status.DRAFT,
+                Post.Status.FAILED,
+                Post.Status.BLOCKED,
+            ),
+        ).values("seed_id").distinct().count()
     except Exception:
         return 0
 

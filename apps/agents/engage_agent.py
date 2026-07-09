@@ -186,75 +186,109 @@ def _fetch_post_comments(user, account, provider):
         )
         return 0
 
-    # For Facebook/Instagram, use the selected Page's token instead of user token
-    token = account.access_token
-    if account.platform in ("facebook", "instagram"):
-        meta = account.metadata or {}
-        pages = meta.get("pages", [])
-        if pages:
-            selected_id = meta.get("selected_page_id")
-            selected_page = (
-                next((p for p in pages if p["id"] == selected_id), None)
-                if selected_id else None
-            ) or pages[0]
-            token = selected_page.get("access_token", account.access_token)
+    def _resolve_token():
+        page_token = account.access_token
+        page_id = ""
+        if account.platform in ("facebook", "instagram"):
+            meta = account.metadata or {}
+            pages = meta.get("pages", [])
+            if pages:
+                selected_id = meta.get("selected_page_id")
+                selected_page = (
+                    next((p for p in pages if p["id"] == selected_id), None)
+                    if selected_id else None
+                ) or pages[0]
+                page_token = selected_page.get("access_token", account.access_token)
+                page_id = selected_page.get("id", "")
+            elif account.platform == "instagram":
+                page_token = meta.get("page_access_token") or account.access_token
+                page_id = meta.get("page_id", "")
+        return page_token, page_id
+
+    token, page_id = _resolve_token()
 
     for post in recent_posts:
-        try:
-            comments = provider.get_comments(
-                access_token=token,
-                post_id=post.platform_post_id,
-            )
-            logger.info(
-                "Engage fetch: %d comments on post %s (%s)",
-                len(comments), post.platform_post_id, account.platform,
-            )
-            # Successful API call — clear any previous error counter
-            account.clear_errors()
-
-            for comment in comments:
-                ext_id = str(comment.get("id", ""))
-                if not ext_id:
-                    continue
-
-                # Skip if already tracked
-                if Interaction.objects.filter(
-                    social_account=account,
-                    platform_interaction_id=ext_id,
-                ).exists():
-                    continue
-
-                interaction = Interaction.objects.create(
-                    user=user,
-                    social_account=account,
-                    post=post,
-                    interaction_type=Interaction.InteractionType.COMMENT,
-                    author_name=comment.get("author_name", "Unknown"),
-                    author_username=comment.get("author_id", ""),
-                    content=comment.get("text", ""),
-                    platform_interaction_id=ext_id,
+        auth_failed = False
+        for attempt in range(2):
+            try:
+                comments = provider.get_comments(
+                    access_token=token,
+                    post_id=post.platform_post_id,
+                    page_id=page_id,
                 )
-                from apps.engage.realtime import notify_engage_new
-                notify_engage_new(interaction)
-                new_count += 1
+                logger.info(
+                    "Engage fetch: %d comments on post %s (%s)",
+                    len(comments), post.platform_post_id, account.platform,
+                )
+                # Successful API call — clear any previous error counter
+                account.clear_errors()
 
-        except PlatformAuthError as e:
-            # Token expired or permissions missing — permanent auth failure
-            logger.error(
-                "Auth error for %s account %s — strike %d: %s",
-                account.platform, account.id,
-                (account.metadata or {}).get("consecutive_errors", 0) + 1, e,
-            )
-            account.mark_error(str(e), status_code=401)
-            if not account.is_active:
-                _notify_account_deactivated(user, account, str(e))
+                for comment in comments:
+                    ext_id = str(comment.get("id", ""))
+                    if not ext_id:
+                        continue
+
+                    # Skip if already tracked
+                    if Interaction.objects.filter(
+                        social_account=account,
+                        platform_interaction_id=ext_id,
+                    ).exists():
+                        continue
+
+                    interaction = Interaction.objects.create(
+                        user=user,
+                        social_account=account,
+                        post=post,
+                        interaction_type=Interaction.InteractionType.COMMENT,
+                        author_name=comment.get("author_name", "Unknown"),
+                        author_username=comment.get("author_id", ""),
+                        content=comment.get("text", ""),
+                        platform_interaction_id=ext_id,
+                    )
+                    from apps.engage.realtime import notify_engage_new
+                    notify_engage_new(interaction)
+                    new_count += 1
+                break
+
+            except PlatformAuthError as e:
+                if (
+                    attempt == 0
+                    and account.platform in ("facebook", "instagram")
+                ):
+                    from apps.platforms.token_recovery import (
+                        refresh_meta_page_tokens,
+                        try_recover_meta_token,
+                    )
+
+                    if try_recover_meta_token(account) or refresh_meta_page_tokens(account):
+                        token, page_id = _resolve_token()
+                        logger.info(
+                            "Recovered %s account %s after auth error — retrying post %s",
+                            account.platform, account.id, post.platform_post_id,
+                        )
+                        continue
+
+                # Token expired or permissions missing — permanent auth failure
+                logger.error(
+                    "Auth error for %s account %s — strike %d: %s",
+                    account.platform, account.id,
+                    (account.metadata or {}).get("consecutive_errors", 0) + 1, e,
+                )
+                account.mark_error(str(e), status_code=401)
+                if not account.is_active:
+                    _notify_account_deactivated(user, account, str(e))
+                auth_failed = True
+                break
+
+            except Exception as e:
+                logger.warning(
+                    "Failed to fetch comments for post %s on %s: %s",
+                    post.platform_post_id, account.platform, e,
+                )
+                break
+
+        if auth_failed:
             break  # stop trying other posts on this account
-
-        except Exception as e:
-            logger.warning(
-                "Failed to fetch comments for post %s on %s: %s",
-                post.platform_post_id, account.platform, e,
-            )
 
     return new_count
 

@@ -11,8 +11,10 @@ from apps.content.share_bundle import (
     campaign_rollout_minutes_for_post,
     create_share_bundle,
     infer_share_context,
+    is_share_bundle_seed,
     parse_uploaded_files,
     resolve_automated_share_options,
+    summarize_share_bundle,
 )
 
 
@@ -146,3 +148,30 @@ def test_resolve_automated_share_options_hands_free(share_user, monkeypatch):
     assert opts["schedule_mode"] == "autopilot"
     assert opts["generate_caption"] is True
     assert opts["photo_mode"] == "auto"
+
+
+def test_is_share_bundle_seed():
+    from apps.content.models import ContentSeed
+
+    seed = ContentSeed(blueprint={"share_bundle": True})
+    assert is_share_bundle_seed(seed) is True
+    assert is_share_bundle_seed(ContentSeed(blueprint={})) is False
+
+
+def test_summarize_share_bundle(share_user, ig_account, monkeypatch):
+    monkeypatch.setattr(
+        "apps.content.share_bundle.generate_share_caption",
+        lambda *a, **k: "Caption",
+    )
+    items = parse_uploaded_files([
+        SimpleUploadedFile("a.jpg", b"1", content_type="image/jpeg"),
+    ])
+    result = create_share_bundle(
+        share_user, [ig_account], items, caption="Event", schedule_mode="manual",
+    )
+    seed = ContentSeed.objects.get(pk=result.seed_id)
+    posts = list(Post.objects.filter(seed=seed))
+    summary = summarize_share_bundle(seed, posts)
+    assert summary["share_kind"] == "photo"
+    assert summary["post_count"] == 1
+    assert summary["needs_attention"] is True

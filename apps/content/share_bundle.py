@@ -521,3 +521,151 @@ def _schedule_share_posts(user, posts, *, gap_hours: int = 4, publish_first: boo
         post.status = Post.Status.SCHEDULED
         mark_user_scheduled_publish(post)
         post.save(update_fields=["scheduled_at", "status", "visual_metadata", "updated_at"])
+
+
+def is_share_bundle_seed(seed) -> bool:
+    if not seed:
+        return False
+    blueprint = getattr(seed, "blueprint", None) or {}
+    return bool(blueprint.get("share_bundle"))
+
+
+def share_bundle_seed_ids_for_users(user_ids) -> list:
+    """Seed IDs for Quick Share bundles — used to exclude from Studio/Queue."""
+    from apps.content.models import ContentSeed
+
+    return list(
+        ContentSeed.objects.filter(
+            user_id__in=user_ids,
+            blueprint__share_bundle=True,
+        ).values_list("id", flat=True)
+    )
+
+
+def exclude_share_bundle_posts(qs, user_ids):
+    """Remove Quick Share posts from a queryset (they live on the Shares pages)."""
+    seed_ids = share_bundle_seed_ids_for_users(user_ids)
+    if not seed_ids:
+        return qs
+    return qs.exclude(seed_id__in=seed_ids)
+
+
+def _share_status_counts(posts) -> dict:
+    counts = {
+        "pending": 0,
+        "scheduled": 0,
+        "published": 0,
+        "failed": 0,
+        "publishing": 0,
+        "other": 0,
+    }
+    for post in posts:
+        status = post.status
+        if status in ("draft", "pending_approval"):
+            counts["pending"] += 1
+        elif status == "published":
+            counts["published"] += 1
+        elif status in ("failed", "blocked", "rate_limited"):
+            counts["failed"] += 1
+        elif status == "publishing":
+            counts["publishing"] += 1
+        elif status in ("approved", "scheduled") or post.scheduled_at:
+            counts["scheduled"] += 1
+        else:
+            counts["other"] += 1
+    return counts
+
+
+def summarize_share_bundle(seed, posts) -> dict:
+    """Lightweight summary for list cards."""
+    blueprint = seed.blueprint or {}
+    posts = list(posts)
+    platforms = sorted({p.platform for p in posts if p.platform})
+    counts = _share_status_counts(posts)
+    attention = counts["pending"] + counts["failed"] + counts["publishing"]
+    return {
+        "seed": seed,
+        "title": (seed.idea or "Quick Share").split("\n")[0][:120],
+        "share_kind": blueprint.get("share_kind", "photo"),
+        "media_count": blueprint.get("media_count", len(posts)),
+        "schedule_mode": blueprint.get("schedule_mode", "manual"),
+        "gap_hours": blueprint.get("gap_hours", 4),
+        "platforms": platforms,
+        "platform_count": len(platforms),
+        "post_count": len(posts),
+        "counts": counts,
+        "needs_attention": attention > 0,
+        "attention_count": attention,
+        "created_at": seed.created_at,
+        "all_published": counts["published"] == len(posts) and len(posts) > 0,
+    }
+
+
+def build_share_bundle_detail(seed, posts) -> dict:
+    """Full detail context for a single Quick Share bundle."""
+    from apps.content.campaign_approval import campaign_approval_summary
+
+    blueprint = seed.blueprint or {}
+    posts = sorted(
+        list(posts),
+        key=lambda p: (
+            campaign_rollout_minutes_for_post(p),
+            p.platform or "",
+        ),
+    )
+    summary = summarize_share_bundle(seed, posts)
+    campaign = getattr(seed, "marketing_campaign", None)
+    approval = campaign_approval_summary(posts, bundle=None)
+
+    timeline = []
+    for post in posts:
+        dna = post.content_dna or {}
+        media_order = dna.get("media_order") or (dna.get("publish_sequence_index", 0) + 1)
+        timeline.append({
+            "post": post,
+            "sequence_index": dna.get("publish_sequence_index", 0),
+            "media_order": media_order,
+            "bundle_role": dna.get("bundle_role", ""),
+        })
+
+    return {
+        **summary,
+        "campaign": campaign,
+        "posts": posts,
+        "timeline": timeline,
+        "caption": posts[0].content_text if posts else "",
+        "context": seed.notes or "",
+        "approval": approval,
+        "can_approve_all": approval.get("can_approve_campaign", False),
+        "can_reschedule": any(
+            p.status in ("approved", "scheduled", "draft", "pending_approval")
+            for p in posts
+        ),
+    }
+
+
+def reschedule_share_bundle(user, seed, *, gap_hours: int = 4, publish_first: bool = False) -> int:
+    """Re-stagger all reschedule-eligible posts in a share bundle."""
+    from apps.content.models import Post
+
+    posts = list(
+        Post.objects.filter(
+            seed=seed,
+            user=user,
+            generated_by_agent="user_share",
+        ).select_related("social_account")
+    )
+    eligible = [
+        p for p in posts
+        if p.status in (
+            Post.Status.APPROVED,
+            Post.Status.SCHEDULED,
+            Post.Status.DRAFT,
+            Post.Status.PENDING_APPROVAL,
+        )
+    ]
+    if not eligible:
+        return 0
+    _schedule_share_posts(user, eligible, gap_hours=gap_hours, publish_first=publish_first)
+    return len(eligible)
+

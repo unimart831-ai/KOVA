@@ -68,6 +68,11 @@ _FACEBOOK = {
         "Facebook has temporarily restricted this account.",
         "Check your Facebook Page for any policy warnings or restrictions, then try again.",
     ),
+    12: ErrorInfo(
+        "Facebook returned a deprecated API response for this post type.",
+        "No action needed — Kova will skip comment sync for this post format.",
+        retryable=False,
+    ),
     100: ErrorInfo(
         "Facebook rejected this post — the content or media has an issue.",
         "Edit the post and try again. Check image format, caption length, and hashtags.",
@@ -245,9 +250,11 @@ def translate_error(platform: str, code: int | None, raw: str = "") -> ErrorInfo
             retryable=True, is_rate_limit=True,
         )
 
-    # Auth-like strings in raw message
+    # Auth-like strings in raw message (exclude deprecated-API noise)
     raw_lower = raw.lower()
-    if any(kw in raw_lower for kw in ("token", "expired", "invalid_token", "oauth", "401", "unauthorized")):
+    if "singular statuses" in raw_lower or "(#12)" in raw_lower:
+        return codes.get(12, _UNKNOWN)
+    if any(kw in raw_lower for kw in ("token", "expired", "invalid_token", "401", "unauthorized")):
         return ErrorInfo(
             f"Your {platform.title()} connection has expired or been revoked.",
             f"Go to Settings → Platforms → Reconnect {platform.title()}.",

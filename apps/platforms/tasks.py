@@ -9,6 +9,7 @@ import logging
 from datetime import timedelta
 
 from celery import shared_task
+from django.db import models
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -81,12 +82,18 @@ def refresh_expiring_tokens():
     # FB long-lived tokens last ~60 days with no refresh token.
     # Extend them 14 days before expiry by exchanging for a new 60-day token.
     fb_threshold = timezone.now() + timedelta(days=14)
-    fb_accounts = SocialAccount.objects.filter(
-        is_active=True,
-        platform__in=["facebook", "instagram"],
-        token_expires_at__isnull=False,
-        token_expires_at__lte=fb_threshold,
-    ).exclude(refresh_token__gt="")  # FB accounts have empty refresh_token
+    # Include accounts with unknown expiry — legacy connects may lack token_expires_at.
+    # Also retry recently-expiring inactive accounts so a valid token can self-heal.
+    fb_accounts = (
+        SocialAccount.objects.filter(
+            platform__in=["facebook", "instagram"],
+        )
+        .filter(
+            models.Q(is_active=True, token_expires_at__isnull=True)
+            | models.Q(token_expires_at__lte=fb_threshold)
+        )
+        .exclude(refresh_token__gt="")  # FB accounts have empty refresh_token
+    )
 
     for account in fb_accounts:
         provider = get_provider(account.platform)
@@ -101,10 +108,15 @@ def refresh_expiring_tokens():
             account.token_expires_at = _extract_token_expiry(new_tokens)
             # Re-fetch page tokens (they inherit from the new user token)
             _refresh_page_tokens(account, new_tokens["access_token"])
+            meta = account.metadata or {}
+            meta["consecutive_errors"] = 0
+            account.metadata = meta
+            if not account.is_active:
+                account.is_active = True
             account.last_error = ""
             account.save(
                 update_fields=[
-                    "access_token", "token_expires_at",
+                    "access_token", "token_expires_at", "is_active",
                     "last_error", "metadata", "updated_at",
                 ]
             )
