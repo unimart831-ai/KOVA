@@ -23,15 +23,23 @@ REEL_RECIPES: tuple[str, ...] = (
 RECIPE_TEMPLATES: dict[str, str] = {
     "story_arc": "story_arc",
     "flash_drop": "flash_commerce",
-    "lifestyle_story": "story_arc",
-    "product_reveal": "story_arc",
+    "lifestyle_story": "lifestyle_story",
+    "product_reveal": "product_reveal",
 }
 
 RECIPE_MOODS: dict[str, str] = {
     "story_arc": "upbeat",
     "flash_drop": "urgent",
-    "lifestyle_story": "upbeat",
+    "lifestyle_story": "calm",
     "product_reveal": "upbeat",
+}
+
+# Per-recipe transition duration (seconds) — lifestyle slower, flash snappier.
+RECIPE_TRANSITION_SEC: dict[str, float] = {
+    "story_arc": 0.45,
+    "flash_drop": 0.35,
+    "lifestyle_story": 0.55,
+    "product_reveal": 0.40,
 }
 
 # Category nudges rotation index (Phase C) — still rotates, bias by +0/+1.
@@ -94,10 +102,10 @@ CATEGORY_PACING: dict[str, dict[str, float]] = {
         SLIDE_ROLE_DESIRE: 1.10,
     },
     "food": {
-        SLIDE_ROLE_STAGING: 0.78,
-        SLIDE_ROLE_ANGLE: 0.78,
-        SLIDE_ROLE_DESIRE: 0.72,
-        SLIDE_ROLE_HOOK: 0.88,
+        SLIDE_ROLE_STAGING: 0.90,
+        SLIDE_ROLE_ANGLE: 0.90,
+        SLIDE_ROLE_DESIRE: 0.88,
+        SLIDE_ROLE_HOOK: 0.95,
     },
     "apparel": {
         SLIDE_ROLE_DESIRE: 1.18,
@@ -303,7 +311,7 @@ def _order_urls_for_recipe(urls: list[str], recipe_id: str, *, max_slides: int) 
     return ordered[:max_slides]
 
 
-def _short_hook(text: str, *, max_len: int = 42) -> str:
+def _short_hook(text: str, *, max_len: int = 48) -> str:
     """Punchy on-screen hook — one line, no filler."""
     cleaned = " ".join((text or "").split())
     if len(cleaned) <= max_len:
@@ -322,6 +330,81 @@ def _short_cta(cta_label: str) -> str:
     return replacements.get(label, label)[:36]
 
 
+# Category-aware scroll-stoppers — used when no campaign hook override is set.
+_CATEGORY_HOOK_TEMPLATES: dict[str, tuple[str, ...]] = {
+    "food": (
+        "Fresh. Ready. Yours.",
+        "Taste the difference",
+        "Made to crave",
+    ),
+    "beauty": (
+        "Glow starts here",
+        "Your skin, elevated",
+        "Beauty that shows",
+    ),
+    "apparel": (
+        "Wear the vibe",
+        "Looks that sell themselves",
+        "Style that turns heads",
+    ),
+    "jewelry": (
+        "Shine without trying",
+        "Details that dazzle",
+        "Luxury you can feel",
+    ),
+    "electronics": (
+        "Power meets design",
+        "Tech that just works",
+        "Upgrade your everyday",
+    ),
+    "home": (
+        "Home, elevated",
+        "Spaces that feel right",
+        "Comfort, redesigned",
+    ),
+    "general": (
+        "Worth every shilling",
+        "See why they love it",
+        "Quality you can trust",
+    ),
+}
+
+
+def craft_scroll_stopping_hook(
+    *,
+    product_name: str = "",
+    category: str = "general",
+    key_feature: str = "",
+    hook_override: str = "",
+    price_label: str = "",
+    seed: str = "",
+) -> str:
+    """
+    Build a scroll-stopping first-frame hook like an experienced SMM would write.
+
+    Priority: explicit override → benefit/feature → category template → product name.
+    Never returns a bare truncated product name when a stronger option exists.
+    """
+    if hook_override and hook_override.strip():
+        return _short_hook(hook_override.strip())
+
+    feature = " ".join((key_feature or "").split())
+    if feature and len(feature) >= 8:
+        # Benefit-led: lead with the feature, not the SKU name
+        return _short_hook(feature)
+
+    cat = (category or "general").lower()
+    templates = _CATEGORY_HOOK_TEMPLATES.get(cat, _CATEGORY_HOOK_TEMPLATES["general"])
+    digest = hashlib.sha256((seed or product_name or "hook").encode()).hexdigest()
+    pick = templates[int(digest[:4], 16) % len(templates)]
+
+    name = " ".join((product_name or "").split())
+    # If the product name is short and punchy, pair it with the template
+    if name and 3 <= len(name) <= 22 and name.lower() not in pick.lower():
+        return _short_hook(f"{pick}\n{name}", max_len=56)
+    return _short_hook(pick)
+
+
 def build_hook_texts(
     *,
     slide_count: int,
@@ -331,18 +414,28 @@ def build_hook_texts(
     hook_override: str = "",
     brand_name: str = "",
     cta_label: str = "Order on WhatsApp",
+    category: str = "general",
+    key_feature: str = "",
+    seed: str = "",
 ) -> list[str]:
     """
     Role-aware copy — text only on hook + CTA beats; hero/lifestyle slides stay clean.
 
-    hook role: product name (one line)
+    hook role: scroll-stopping benefit / curiosity line
     cta role: price + CTA (two lines max in lower third)
-  """
+    """
     texts = [""] * slide_count
     if slide_count == 0:
         return texts
 
-    hook = _short_hook(hook_override or product_name)
+    hook = craft_scroll_stopping_hook(
+        product_name=product_name,
+        category=category,
+        key_feature=key_feature,
+        hook_override=hook_override,
+        price_label=price_label,
+        seed=seed or product_name,
+    )
     price = (price_label or "").strip()[:32]
     cta = _short_cta(cta_label)
 
@@ -493,6 +586,7 @@ def build_reel_plan(
     cta_label: str = "Order on WhatsApp",
     recipe_id: str | None = None,
     max_slides: int | None = None,
+    key_feature: str = "",
 ) -> ReelComposePlan | None:
     """
     Build a full compose plan from raw studio polish URLs.
@@ -551,15 +645,14 @@ def build_reel_plan(
             hook_override=hook_override,
             brand_name=brand_name,
             cta_label=cta_label,
+            category=category,
+            key_feature=key_feature,
+            seed=seed,
         )
     transitions = build_transitions(roles)
     ken = build_ken_burns_variants(roles)
 
-    transition_sec = None
-    if recipe == "flash_drop":
-        transition_sec = 0.35
-    else:
-        transition_sec = 0.45
+    transition_sec = RECIPE_TRANSITION_SEC.get(recipe, 0.45)
 
     durations = build_slide_durations(
         roles,

@@ -24,6 +24,7 @@ from apps.agents.strategist_agent import get_engagement_report, run_strategy_cyc
 from apps.analytics.competitor_intel import get_competitor_context_for_brief
 from apps.billing.models import get_plan_limits
 from apps.briefs.models import DailyBrief
+from apps.briefs.owner_alerts import send_owner_alert_task  # noqa: F401 — registers task on worker boot
 from apps.content.models import ContentSeed, Post
 from apps.notifications.models import Notification
 

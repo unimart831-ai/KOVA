@@ -362,11 +362,8 @@ def mpesa_commerce_callback(request):
             except Exception:
                 logger.exception("WhatsApp commerce receipt failed for %s", checkout_id)
 
-        try:
-            from apps.products.commerce_wa_orders import notify_seller_mpesa_order
-            notify_seller_mpesa_order(commerce_payment)
-        except Exception:
-            logger.exception("Seller M-Pesa notification failed for %s", checkout_id)
+        # Seller notification handled by the CommercePayment post-save signal
+        # (apps.products.signals.on_commerce_payment_completed).
 
         logger.info(
             "M-Pesa commerce payment tracked: %s KES %s product=%s",

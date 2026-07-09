@@ -65,8 +65,8 @@
         Today
       </a>
 
-      {# ── 2. Customers — leads, inbox, WhatsApp, reviews ── #}
-      {% nav_active request.path '/engage/' '/whatsapp/' '/leads/' '/reviews/' as customers_active %}
+      {# ── 2. Customers — leads, inbox, WhatsApp ── #}
+      {% nav_active request.path '/engage/' '/whatsapp/' '/leads/' as customers_active %}
       <details class="group mb-0.5" {% if customers_active %}open{% endif %}>
         <summary class="nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
           <svg class="mr-3 h-5 w-5 {% if customers_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %} group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -108,7 +108,7 @@
       </a>
 
       {# ── 4. Commerce — products, bookings, links ── #}
-      {% nav_active request.path '/products/' '/bookings/' '/links/' '/qr/' as commerce_active %}
+      {% nav_active request.path '/products/' '/bookings/' '/links/' as commerce_active %}
       <details class="group mb-0.5" {% if commerce_active %}open{% endif %}>
         <summary class="nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
           <svg class="mr-3 h-5 w-5 {% if commerce_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %} group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -137,8 +137,8 @@
         </div>
       </details>
 
-      {# ── 5. Growth — revenue, attribution, analytics ── #}
-      {% nav_active request.path '/analytics/revenue' '/analytics/attribution' '/analytics/' '!/analytics/pixel' '!/analytics/competitors' '!/analytics/screenshot-compete' '!/analytics/content' as results_active %}
+      {# ── 5. Growth — revenue, analytics ── #}
+      {% nav_active request.path '/analytics/revenue' '/analytics/' as results_active %}
       <a href="{% url 'analytics:revenue' %}" data-nav-group="growth"
          {% if results_active %}aria-current="page"{% endif %}
          class="{% if results_active %}nav-link-active{% else %}nav-link{% endif %}">
@@ -149,7 +149,7 @@
       </a>
 
       {# ── 6. Business — brand, platforms, settings, billing ── #}
-      {% nav_active request.path '/accounts/settings' '/teams/' '/billing/' '/agents/' '/help/' '/analytics/pixel' '/ai-learning' '/platforms/' '/accounts/business-brain' as settings_active %}
+      {% nav_active request.path '/accounts/settings' '/billing/' '/agents/' '/platforms/' '/accounts/business-brain' as settings_active %}
       <details class="group mt-2" {% if settings_active %}open{% endif %}>
         <summary class="nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
           <svg class="mr-3 h-5 w-5 {% if settings_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %} group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

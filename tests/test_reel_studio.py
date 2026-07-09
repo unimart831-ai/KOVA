@@ -16,7 +16,10 @@ def test_filter_reel_sources_excludes_carousels():
     ]
     out = filter_reel_sources(urls)
     assert not any("carousels" in u for u in out)
-    assert out[0].endswith("composition_hero_a.jpg")
+    # Native 9:16 story exports open the reel; composition hero stays in the pack
+    assert out[0].endswith("channel_story_b.jpg")
+    assert any(u.endswith("composition_hero_a.jpg") for u in out)
+    assert any(u.endswith("studio_white_c.jpg") for u in out)
 
 
 def test_sanitize_hooks_strips_hero_slide_copy():

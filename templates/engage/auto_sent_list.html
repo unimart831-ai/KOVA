@@ -10,6 +10,7 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-6 space-y-4">
+  {% include "engage/_inbox_tabs.html" with active_tab="auto_sent" %}
 
   {% if not replies %}
     <div class="card">

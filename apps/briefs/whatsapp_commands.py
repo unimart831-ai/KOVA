@@ -21,6 +21,11 @@ Commands:
   book          — booking page link + services
   money         — revenue + leads summary this week
   snap          — send a product photo to list + create content
+  price         — list product prices
+  price X 2500  — update product X's price
+  stock         — stock overview (low / out of stock)
+  stock X 10    — set product X's quantity
+  stock X out   — mark product X out of stock
 """
 
 from __future__ import annotations
@@ -50,6 +55,8 @@ HELP_TEXT = (
     "• REJECT — reject next post\n"
     "• LEADS — hot leads + need reply\n"
     "• BOOK — your booking page + services\n"
+    "• PRICE — product prices (PRICE <name> <amount> to update)\n"
+    "• STOCK — stock overview (STOCK <name> <qty|OUT|IN> to update)\n"
     "• REPLIES — AI reply drafts waiting for approval\n"
     "• APPROVE REPLY — send the latest AI draft\n"
     "• REJECT REPLY — discard the latest AI draft\n"
@@ -296,6 +303,12 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
 
     if text in {"money", "revenue", "sales"}:
         return _handle_money(user)
+
+    if text == "price" or text.startswith("price "):
+        return _handle_price(user, text)
+
+    if text == "stock" or text.startswith("stock "):
+        return _handle_stock(user, text)
 
     return (
         f"Didn't recognize \"{raw_text[:40]}\".\n\n{HELP_TEXT}",
@@ -583,6 +596,203 @@ def _handle_money(user) -> tuple[str, str, bool, dict]:
             "revenue_week": summary["total_kes"],
             "leads_week": summary["leads_week"],
         },
+    )
+
+
+def _match_products_by_name(user, name_query: str):
+    """Return active products whose name contains the query (case-insensitive)."""
+    from apps.products.models import Product
+
+    return list(
+        Product.objects.filter(
+            user=user, is_active=True, name__icontains=name_query.strip(),
+        ).order_by("name")[:6]
+    )
+
+
+def _parse_amount_token(token: str):
+    """Parse '2500', '2,500', 'ksh2500', 'kes2500' → Decimal or None."""
+    from decimal import Decimal, InvalidOperation
+
+    cleaned = token.lower().replace(",", "")
+    for prefix in ("ksh", "kes", "sh"):
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix):]
+            break
+    try:
+        value = Decimal(cleaned)
+    except InvalidOperation:
+        return None
+    return value if value >= 0 else None
+
+
+def _handle_price(user, text: str) -> tuple[str, str, bool, dict]:
+    """PRICE — list prices. PRICE <name> <amount> — update a product's price."""
+    from apps.products.models import Product
+
+    parts = text.split()
+
+    if len(parts) == 1:
+        products = list(
+            Product.objects.filter(user=user, is_active=True).order_by("name")[:10]
+        )
+        if not products:
+            return (
+                "No products yet. Send a product photo to Snap to Sell, "
+                "or add products in the app.",
+                "price", True, {},
+            )
+        lines = [f"• {p.name} — {p.display_price or 'no price set'}" for p in products]
+        return (
+            "Your prices:\n" + "\n".join(lines)
+            + "\n\nTo update: PRICE <product> <amount>\ne.g. PRICE shoes 2500",
+            "price", True, {"count": len(products)},
+        )
+
+    amount = _parse_amount_token(parts[-1])
+    name_query = " ".join(parts[1:-1]).strip()
+    if amount is None or not name_query:
+        return (
+            "To update a price: PRICE <product> <amount>\ne.g. PRICE shoes 2500",
+            "price", False, {},
+        )
+
+    matches = _match_products_by_name(user, name_query)
+    if not matches:
+        return (
+            f"No product matching \"{name_query}\". Reply PRICE to see your list.",
+            "price", False, {},
+        )
+    if len(matches) > 1:
+        options = "\n".join(f"• {p.name}" for p in matches)
+        return (
+            f"Found {len(matches)} products matching \"{name_query}\":\n{options}\n\n"
+            "Be more specific, e.g. PRICE " + matches[0].name.lower() + f" {amount:,.0f}",
+            "price", False, {},
+        )
+
+    product = matches[0]
+    old = product.display_price or "no price"
+    product.price = amount
+    product.save(update_fields=["price", "updated_at"])
+    return (
+        f"Done ✅ *{product.name}* is now {product.currency} {amount:,.0f} (was {old}).\n"
+        "Your shop page and WhatsApp catalog are updated.",
+        "price", True,
+        {"product_id": str(product.pk), "new_price": str(amount)},
+    )
+
+
+def _handle_stock(user, text: str) -> tuple[str, str, bool, dict]:
+    """STOCK — overview. STOCK <name> <qty> — set quantity. STOCK <name> OUT/IN."""
+    from apps.products.models import Product, StockUpdate
+
+    parts = text.split()
+
+    if len(parts) == 1:
+        base = Product.objects.filter(user=user, is_active=True)
+        out = list(base.filter(stock_status=Product.StockStatus.OUT_OF_STOCK)[:5])
+        low = list(base.filter(stock_status=Product.StockStatus.LOW_STOCK)[:5])
+        in_stock_count = base.filter(
+            stock_status__in=[Product.StockStatus.IN_STOCK, Product.StockStatus.UNLIMITED,
+                              Product.StockStatus.MADE_TO_ORDER],
+        ).count()
+        if not out and not low and in_stock_count == 0:
+            return ("No products yet. Send a product photo to Snap to Sell.", "stock", True, {})
+        lines = [f"✅ {in_stock_count} product(s) in stock"]
+        if low:
+            lines.append("\n⚠️ Low stock:")
+            lines.extend(
+                f"• {p.name}" + (f" ({p.quantity} left)" if p.quantity is not None else "")
+                for p in low
+            )
+        if out:
+            lines.append("\n❌ Out of stock:")
+            lines.extend(f"• {p.name}" for p in out)
+        lines.append(
+            "\nTo update: STOCK <product> <qty>\n"
+            "e.g. STOCK shoes 10 · STOCK shoes OUT · STOCK shoes IN"
+        )
+        return ("\n".join(lines), "stock", True, {"low": len(low), "out": len(out)})
+
+    last = parts[-1].lower()
+    name_query = " ".join(parts[1:-1]).strip()
+
+    quantity = None
+    new_status = None
+    if last in {"out", "off", "gone"}:
+        new_status = Product.StockStatus.OUT_OF_STOCK
+    elif last in {"in", "back", "available"}:
+        new_status = Product.StockStatus.IN_STOCK
+    else:
+        parsed = _parse_amount_token(last)
+        if parsed is not None and parsed == int(parsed):
+            quantity = int(parsed)
+
+    if not name_query or (quantity is None and new_status is None):
+        return (
+            "To update stock: STOCK <product> <qty>\n"
+            "e.g. STOCK shoes 10 · STOCK shoes OUT · STOCK shoes IN",
+            "stock", False, {},
+        )
+
+    matches = _match_products_by_name(user, name_query)
+    if not matches:
+        return (
+            f"No product matching \"{name_query}\". Reply STOCK to see your list.",
+            "stock", False, {},
+        )
+    if len(matches) > 1:
+        options = "\n".join(f"• {p.name}" for p in matches)
+        return (
+            f"Found {len(matches)} products matching \"{name_query}\":\n{options}\n\n"
+            "Be more specific with the name.",
+            "stock", False, {},
+        )
+
+    product = matches[0]
+    prev_status = product.stock_status
+    prev_qty = product.quantity
+
+    if quantity is not None:
+        product.quantity = quantity
+        if quantity <= 0:
+            product.stock_status = Product.StockStatus.OUT_OF_STOCK
+        elif quantity <= product.low_stock_threshold:
+            product.stock_status = Product.StockStatus.LOW_STOCK
+        else:
+            product.stock_status = Product.StockStatus.IN_STOCK
+    else:
+        product.stock_status = new_status
+        if new_status == Product.StockStatus.OUT_OF_STOCK:
+            product.quantity = 0
+
+    product.save(update_fields=["quantity", "stock_status", "updated_at"])
+
+    try:
+        StockUpdate.objects.create(
+            product=product,
+            previous_status=prev_status,
+            new_status=product.stock_status,
+            previous_quantity=prev_qty,
+            new_quantity=product.quantity,
+            reason=StockUpdate.Reason.MANUAL,
+            notes="Updated via WhatsApp STOCK command",
+        )
+    except Exception:
+        logger.exception("StockUpdate log failed for product %s", product.pk)
+
+    status_label = {
+        Product.StockStatus.IN_STOCK: "in stock",
+        Product.StockStatus.LOW_STOCK: "low stock",
+        Product.StockStatus.OUT_OF_STOCK: "out of stock",
+    }.get(product.stock_status, product.stock_status)
+    qty_txt = f" ({product.quantity} units)" if product.quantity is not None else ""
+    return (
+        f"Done ✅ *{product.name}* is now {status_label}{qty_txt}.\n"
+        "Your shop page and WhatsApp catalog reflect this immediately.",
+        "stock", True,
+        {"product_id": str(product.pk), "status": product.stock_status},
     )
 
 

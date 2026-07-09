@@ -618,6 +618,10 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
 
     posts_created = 0
     initial_status = initial_commerce_post_status(user)
+    from apps.products.platform_visuals import aspect_ratio_for, pick_platform_images
+
+    product_image_pool = list(product.all_image_urls or [])
+
     for account in accounts:
         from apps.content.post_copy import build_commerce_caption
 
@@ -639,10 +643,18 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
             content_type="original",
             status=initial_status,
             post_format=Post.PostFormat.CAROUSEL,
-            aspect_ratio=Post.AspectRatio.SQUARE,
+            aspect_ratio=aspect_ratio_for(account.platform, "carousel"),
             visual_strategy="carousel",
             media_status="pending",
             generated_by_agent="create",
+            visual_metadata={
+                "platform_visual_profile": account.platform,
+                "source_image_pool": pick_platform_images(
+                    product_image_pool,
+                    platform=account.platform,
+                    post_format="carousel",
+                )[:8],
+            },
         )
 
         media_urls = generate_branded_carousel_urls(
@@ -700,9 +712,13 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
 
     REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
 
-    def _product_reel_image_sources(product):
+    def _product_reel_image_sources(product, *, platform: str = ""):
+        from apps.products.platform_visuals import pick_platform_images
+
         upload_only = product.uses_upload_images_only
         urls = list(product.all_image_urls)
+        if platform:
+            urls = pick_platform_images(urls, platform=platform, post_format="reel")
         curated = curate_reel_image_urls(urls, upload_only=upload_only)
         sources = []
         for url in curated:
@@ -743,6 +759,8 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
         logger.info("create_product_reel_posts: no images for product %s", product_id)
         return
 
+    from apps.products.platform_visuals import aspect_ratio_for, pick_platform_images
+
     accounts = SocialAccount.objects.filter(
         user=user, is_active=True, platform__in=REEL_PLATFORMS,
     )
@@ -773,13 +791,18 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
             visual_strategy = "carousel"
         else:
             upload_only = product.uses_upload_images_only
-            source_images = curate_reel_image_urls(
-                list(direct_images),
-                upload_only=upload_only,
-            )
+            source_images = _product_reel_image_sources(product, platform=account.platform)
             reel_template = "story_arc"
             visual_strategy = "single_photo" if len(source_images) == 1 else "carousel"
 
+        if len(source_images) < 1:
+            # Fall back to platform-picked story exports from the full product pool
+            fallback = pick_platform_images(
+                list(product.all_image_urls),
+                platform=account.platform,
+                post_format="reel",
+            )
+            source_images = curate_reel_image_urls(fallback, upload_only=upload_only_reel)
         if len(source_images) < 1:
             continue
 

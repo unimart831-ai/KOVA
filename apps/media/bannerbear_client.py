@@ -91,7 +91,9 @@ def build_product_carousel_slides(
   key_features: list | None = None,
 ) -> list[str]:
   """
-  Build up to 5 branded carousel slide URLs via Bannerbear templates.
+  Build up to 6 branded carousel slide URLs via Bannerbear templates.
+
+  Arc: cover → feature slides (unique images) → CTA with price.
   Returns empty list when templates or API are not configured.
   """
   template = _template_uid("product_carousel_cover")
@@ -102,18 +104,39 @@ def build_product_carousel_slides(
   if not images:
     return []
 
+  # Prefer studio-polished assets when available (same curation as Pillow path)
+  try:
+    from apps.content.carousel_studio import curate_carousel_images
+
+    curated = curate_carousel_images(images)
+    if curated:
+      images = curated
+  except Exception:
+    pass
+
   slides: list[str] = []
   price = product.display_price or ""
-  features = key_features or []
+  features = [str(f).strip() for f in (key_features or []) if str(f).strip()]
+  used_images: set[str] = set()
 
+  def _next_image(preferred_idx: int) -> str:
+    if preferred_idx < len(images) and images[preferred_idx] not in used_images:
+      return images[preferred_idx]
+    for img in images:
+      if img not in used_images:
+        return img
+    return images[preferred_idx % len(images)]
+
+  cover_img = _next_image(0)
+  used_images.add(cover_img)
   cover = render_template(
     template,
     dna.bannerbear_modifications(
       title=product.name,
       subtitle=(product.description or "")[:120],
       price=price,
-      image_url=images[0],
-      cta="Shop now",
+      image_url=cover_img,
+      cta="Swipe for details →",
     ),
   )
   if cover:
@@ -122,7 +145,8 @@ def build_product_carousel_slides(
   feature_template = _template_uid("product_carousel_slide")
   if feature_template:
     for idx, feat in enumerate(features[:3]):
-      img = images[min(idx + 1, len(images) - 1)]
+      img = _next_image(idx + 1)
+      used_images.add(img)
       url = render_template(
         feature_template,
         dna.bannerbear_modifications(
@@ -136,13 +160,15 @@ def build_product_carousel_slides(
 
   cta_template = _template_uid("product_carousel_cta")
   if cta_template and price:
+    # Prefer a different image than the cover for the CTA slide
+    cta_img = _next_image(1 if len(images) > 1 else 0)
     url = render_template(
       cta_template,
       dna.bannerbear_modifications(
         title=product.name,
         price=price,
         cta="Order on WhatsApp",
-        image_url=images[0],
+        image_url=cta_img,
       ),
     )
     if url:

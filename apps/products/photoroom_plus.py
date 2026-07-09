@@ -165,7 +165,7 @@ LAYOUT_VARIANT_IDS = frozenset({
     "outline",
 }) | AI_SCENE_VARIANT_IDS | COMMERCE_SCENE_VARIANT_IDS | SOFT_CREATIVE_VARIANT_IDS
 
-# Studio variants that receive pr-ai-shadows-model-version when enabled (Phase 2).
+# Studio + AI scene variants that receive pr-ai-shadows-model-version when enabled.
 STUDIO_SHADOW_HEADER_VARIANT_IDS = frozenset({
     "studio_white",
     "studio_brand",
@@ -178,6 +178,21 @@ STUDIO_SHADOW_HEADER_VARIANT_IDS = frozenset({
     "uncrop",
     "channel_marketplace",
     "channel_marketplace_jpeg",
+    "ai_lifestyle",
+    "ai_lifestyle_alt",
+    "ai_contextual",
+    "ai_scene_table",
+    "ai_scene_shelf",
+    "ai_scene_wall",
+    "ai_scene_retail",
+    "ai_creative_marble",
+    "ai_creative_botanical",
+    "ai_creative_podium",
+    "food_surface_marble",
+    "food_surface_rustic",
+    "food_surface_delivery",
+    "flat_lay",
+    "ghost_mannequin",
 })
 
 PLAN_TIER_ORDER = ("starter", "kova", "growth", "pro", "agency")
@@ -247,6 +262,13 @@ class PlusVariantSpec:
     pack_eligible: bool = True  # False = preflight/channel only, not scene pack
 
 
+def _default_shadow_mode() -> str:
+    """Use Photoroom's 2026 AI Shadows model when enabled (docs: ai.auto-with-overrides)."""
+    if getattr(settings, "PHOTOROOM_AI_SHADOWS_MODEL_ENABLED", True):
+        return "ai.auto-with-overrides"
+    return str(getattr(settings, "PHOTOROOM_DEFAULT_SHADOW", "ai.preset-soft"))
+
+
 def _export_defaults() -> dict[str, str]:
     out = {
         "referenceBox": "originalImage",
@@ -262,8 +284,8 @@ def _export_defaults() -> dict[str, str]:
 def _shadow_studio() -> dict[str, str]:
     return {
         "removeBackground": "true",
-        "padding": str(getattr(settings, "PHOTOROOM_PADDING", 0.06)),
-        "shadow.mode": str(getattr(settings, "PHOTOROOM_DEFAULT_SHADOW", "ai.soft")),
+        "padding": str(getattr(settings, "PHOTOROOM_PADDING", 0.12)),
+        "shadow.mode": _default_shadow_mode(),
     }
 
 
@@ -290,7 +312,7 @@ def _marketplace_export_params(*, export_format: str) -> dict[str, str]:
         "background.color": "FFFFFF",
         "outputSize": str(getattr(settings, "PHOTOROOM_MARKETPLACE_SIZE", "1000x1000")),
         "padding": str(getattr(settings, "PHOTOROOM_MARKETPLACE_PADDING", 0.075)),
-        "shadow.mode": str(getattr(settings, "PHOTOROOM_DEFAULT_SHADOW", "ai.soft")),
+        "shadow.mode": _default_shadow_mode(),
         "scaling": "fill",
         "referenceBox": "originalImage",
         "export.format": export_format,
@@ -321,6 +343,8 @@ _CHANNEL_EXPORT_STRIP_ON_RETRY = frozenset({
     "shadow.directionOverride",
     "shadow.intensityOverride",
     "shadow.softnessOverride",
+    "shadow.spreadOverride",
+    "shadow.subjectPoseOverride",
     "background.color",
 })
 
@@ -1043,6 +1067,16 @@ PLUS_VARIANT_CATALOG: dict[str, PlusVariantSpec] = {
         priority=28,
         pack_eligible=False,
     ),
+    "channel_feed_portrait": PlusVariantSpec(
+        id="channel_feed_portrait",
+        label="Instagram feed portrait (4:5)",
+        params=_channel_export_params(mode="expand", size_placeholder="{feed_portrait_output_size}"),
+        categories=(),
+        offering_types=("product", "service", "digital"),
+        min_plan="growth",
+        priority=31,
+        pack_eligible=False,
+    ),
     "channel_marketplace": PlusVariantSpec(
         id="channel_marketplace",
         label="Marketplace (Google Shopping PNG)",
@@ -1559,6 +1593,8 @@ def resolve_variant_params(
             resolved[key] = str(getattr(settings, "PHOTOROOM_STORY_SIZE", "1080x1920"))
         elif value == "{banner_output_size}":
             resolved[key] = str(getattr(settings, "PHOTOROOM_BANNER_SIZE", "1920x1080"))
+        elif value == "{feed_portrait_output_size}":
+            resolved[key] = str(getattr(settings, "PHOTOROOM_FEED_PORTRAIT_SIZE", "1080x1350"))
         elif value == "{touchup_prompt}":
             resolved[key] = build_touchup_prompt(product, analysis)
         elif value == "{edit_ai_staging_prompt}":
@@ -2047,7 +2083,11 @@ def _boost_virtual_model_candidates(
     offering: str = "product",
 ) -> None:
     """Add category-appropriate virtual model variant when feature is enabled."""
-    if offering != "product" or skip_risky or not getattr(settings, "PHOTOROOM_VIRTUAL_MODEL_ENABLED", False):
+    if offering != "product" or skip_risky:
+        return
+    if not getattr(settings, "PHOTOROOM_VIRTUAL_MODEL_ENABLED", False):
+        return
+    if not getattr(settings, "PHOTOROOM_VIRTUAL_MODEL_AUTO_PACK", False):
         return
     from apps.products.photoroom_virtual_models import (
         catalog_variant_for_strategy,
@@ -2359,6 +2399,7 @@ def photoroom_edit(
     """Call Photoroom Plus v2/edit; returns bytes and x-uncertainty-score when present."""
     from apps.products.photoroom_api import (
         PhotoroomEditResult,
+        apply_new_shadow_model,
         check_sandbox_quota,
         normalize_photoroom_edit_params,
         parse_uncertainty_score,
@@ -2366,6 +2407,7 @@ def photoroom_edit(
     )
 
     params = normalize_photoroom_edit_params(dict(params))
+    params, extra_headers = apply_new_shadow_model(params, extra_headers)
     if additional_image_urls:
         for idx, extra_url in enumerate(additional_image_urls[:4]):
             public_extra = _resolve_public_image_url(extra_url)

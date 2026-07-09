@@ -113,8 +113,12 @@ def build_professional_plan(post, image_sources: list[str], meta: dict):
 
     category = "general"
     analysis = meta.get("analysis") or {}
+    key_feature = ""
     if post.product:
         category = detect_product_category(post.product, analysis)
+        features = analysis.get("key_features") or []
+        if features:
+            key_feature = str(features[0])
 
     brand_name = meta.get("reel_brand_name", "")
     if not brand_name and post.product:
@@ -133,6 +137,7 @@ def build_professional_plan(post, image_sources: list[str], meta: dict):
         brand_name=brand_name,
         cta_label=meta.get("reel_cta_label", "Order on WhatsApp"),
         recipe_id=meta.get("reel_recipe_id"),
+        key_feature=key_feature,
     )
     if not plan:
         return sources, None, meta
@@ -143,7 +148,7 @@ def build_professional_plan(post, image_sources: list[str], meta: dict):
 
         rs = ReelStrategy.from_dict(meta.get("reel_strategy"))
         if rs:
-            strategy_hooks = rs.hook_texts_for_compose()
+            strategy_hooks = rs.hook_texts_for_compose(plan.slide_roles)
             while len(strategy_hooks) < len(plan.slide_roles):
                 strategy_hooks.append("")
             hooks = sanitize_hooks_for_roles(strategy_hooks, plan.slide_roles)

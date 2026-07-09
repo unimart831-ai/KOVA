@@ -40,9 +40,12 @@ def test_professional_plan_product_first_layouts():
         product, analysis, analysis["key_features"], image_count=4,
     )
     layouts = [s["layout"] for s in plan]
+    roles = [s["role"] for s in plan]
     assert layouts[0] == "clean_split"
     assert "minimal_caption" in layouts
-    assert layouts[-1] == "price_bar"
+    assert "price_bar" in layouts
+    assert layouts[-1] == "closing_cta"
+    assert roles[-1] == "cta"
     assert plan[0]["role"] == "hook"
     assert all("✨" not in s.get("headline", "") for s in plan)
 
@@ -55,13 +58,16 @@ def test_assign_images_unique_per_slide():
         "/media/studio_brand_d.jpg",
     ]
     plan = [
-        {"layout": "clean_split", "image_index": 0},
-        {"layout": "minimal_caption", "image_index": 1},
-        {"layout": "side_panel", "image_index": 2},
+        {"layout": "clean_split", "image_index": 0, "role": "hook"},
+        {"layout": "minimal_caption", "image_index": 1, "role": "showcase"},
+        {"layout": "side_panel", "image_index": 2, "role": "benefit"},
+        {"layout": "price_bar", "image_index": 1, "role": "price"},
     ]
     assigned = assign_images_to_plan(plan, urls)
     image_urls = [s["image_url"] for s in assigned]
     assert len(set(image_urls)) == len(image_urls)
+    # Price slide should not reuse the hook image when alternatives exist
+    assert assigned[0]["image_url"] != assigned[3]["image_url"]
 
 
 def test_prepare_carousel_generation_binds_urls():

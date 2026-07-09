@@ -170,6 +170,109 @@ class TestDispatchCommand:
         assert post.status == Post.Status.APPROVED
 
 
+class TestPriceStockCommands:
+    def test_price_list_empty(self, pro_user):
+        text, cmd, ok, _ = _dispatch_command(pro_user, "price")
+        assert cmd == "price"
+        assert ok is True
+        assert "No products yet" in text
+
+    def test_price_list_with_products(self, pro_user):
+        from apps.products.models import Product
+
+        Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
+        text, cmd, ok, meta = _dispatch_command(pro_user, "price")
+        assert ok is True
+        assert "Leather Shoes" in text
+        assert meta["count"] == 1
+
+    def test_price_update(self, pro_user):
+        from apps.products.models import Product
+
+        p = Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
+        text, cmd, ok, meta = _dispatch_command(pro_user, "price shoes 3000")
+        assert ok is True
+        assert "3,000" in text
+        p.refresh_from_db()
+        assert p.price == 3000
+
+    def test_price_update_no_match(self, pro_user):
+        text, cmd, ok, _ = _dispatch_command(pro_user, "price widget 500")
+        assert ok is False
+        assert "No product matching" in text
+
+    def test_price_update_ambiguous(self, pro_user):
+        from apps.products.models import Product
+
+        Product.objects.create(user=pro_user, name="Red Shoes", price=1000)
+        Product.objects.create(user=pro_user, name="Blue Shoes", price=1200)
+        text, cmd, ok, _ = _dispatch_command(pro_user, "price shoes 3000")
+        assert ok is False
+        assert "Red Shoes" in text and "Blue Shoes" in text
+
+    def test_stock_overview(self, pro_user):
+        from apps.products.models import Product
+
+        Product.objects.create(user=pro_user, name="In Stock Item", price=100)
+        Product.objects.create(
+            user=pro_user, name="Gone Item", price=100,
+            stock_status=Product.StockStatus.OUT_OF_STOCK,
+        )
+        text, cmd, ok, meta = _dispatch_command(pro_user, "stock")
+        assert cmd == "stock"
+        assert ok is True
+        assert "Gone Item" in text
+        assert meta["out"] == 1
+
+    def test_stock_set_quantity(self, pro_user):
+        from apps.products.models import Product, StockUpdate
+
+        p = Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
+        text, cmd, ok, meta = _dispatch_command(pro_user, "stock shoes 10")
+        assert ok is True
+        p.refresh_from_db()
+        assert p.quantity == 10
+        assert p.stock_status == Product.StockStatus.IN_STOCK
+        assert StockUpdate.objects.filter(product=p).exists()
+
+    def test_stock_quantity_triggers_low_stock(self, pro_user):
+        from apps.products.models import Product
+
+        p = Product.objects.create(
+            user=pro_user, name="Leather Shoes", price=2500, low_stock_threshold=5,
+        )
+        _dispatch_command(pro_user, "stock shoes 3")
+        p.refresh_from_db()
+        assert p.stock_status == Product.StockStatus.LOW_STOCK
+
+    def test_stock_mark_out(self, pro_user):
+        from apps.products.models import Product
+
+        p = Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
+        text, cmd, ok, _ = _dispatch_command(pro_user, "stock shoes out")
+        assert ok is True
+        p.refresh_from_db()
+        assert p.stock_status == Product.StockStatus.OUT_OF_STOCK
+        assert p.quantity == 0
+
+    def test_stock_mark_back_in(self, pro_user):
+        from apps.products.models import Product
+
+        p = Product.objects.create(
+            user=pro_user, name="Leather Shoes", price=2500,
+            stock_status=Product.StockStatus.OUT_OF_STOCK, quantity=0,
+        )
+        text, cmd, ok, _ = _dispatch_command(pro_user, "stock shoes in")
+        assert ok is True
+        p.refresh_from_db()
+        assert p.stock_status == Product.StockStatus.IN_STOCK
+
+    def test_help_mentions_price_and_stock(self, pro_user):
+        text, _, _, _ = _dispatch_command(pro_user, "help")
+        assert "PRICE" in text
+        assert "STOCK" in text
+
+
 class TestBriefWhatsAppLog:
     @patch("apps.briefs.whatsapp_commands._send_owner_action_buttons", return_value=True)
     @patch("apps.briefs.whatsapp_commands._send_owner_reply", return_value=True)

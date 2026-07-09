@@ -562,7 +562,17 @@ def slide_durations_for_roles(
     if template == "flash_commerce":
         for i, role in enumerate(slide_roles):
             if role not in (SLIDE_ROLE_HOOK, SLIDE_ROLE_CTA, SLIDE_ROLE_HERO):
-                weights[i] *= 0.85
+                weights[i] *= 0.88  # snappy but readable (was 0.85)
+    elif template == "lifestyle_story":
+        for i, role in enumerate(slide_roles):
+            if role in (SLIDE_ROLE_HERO, "staging", "desire"):
+                weights[i] *= 1.12  # slower lifestyle holds
+    elif template == "product_reveal":
+        for i, role in enumerate(slide_roles):
+            if role == SLIDE_ROLE_HERO:
+                weights[i] *= 1.20  # long product reveal
+            elif role == SLIDE_ROLE_HOOK:
+                weights[i] *= 0.92
 
     raw_total = sum(weights)
     gaps = max(len(slide_roles) - 1, 0)
@@ -597,16 +607,44 @@ def _slide_durations_for(
     if count == 1:
         return [3.8]
 
-    # Flash commerce: rapid cuts for Explore/Reels algorithm
+    # Flash commerce: snappy but readable — never below 2.2s middle beats
     if template == "flash_commerce":
         durations: list[float] = []
         for i in range(count):
             if i == 0:
-                durations.append(2.2)  # Quick hook
+                durations.append(2.4)  # Hook — still punchy
             elif i == count - 1:
-                durations.append(2.8)  # CTA held slightly longer
+                durations.append(3.0)  # CTA held for price readability
             else:
-                durations.append(1.8)  # Rapid middle cuts
+                durations.append(2.2)  # Middle cuts — readable, not frantic
+        return durations
+
+    # Lifestyle story: slower dissolves, longer hero holds
+    if template == "lifestyle_story":
+        durations = []
+        for i in range(count):
+            if i == 0:
+                durations.append(3.0)
+            elif i == 1:
+                durations.append(4.0)  # Staging / lifestyle hold
+            elif i == count - 1:
+                durations.append(3.2)
+            else:
+                durations.append(3.0)
+        return durations
+
+    # Product reveal: quick hook, long hero reveal, crisp CTA
+    if template == "product_reveal":
+        durations = []
+        for i in range(count):
+            if i == 0:
+                durations.append(2.5)
+            elif i == 1:
+                durations.append(4.2)  # Product reveal held
+            elif i == count - 1:
+                durations.append(3.0)
+            else:
+                durations.append(2.6)
         return durations
 
     # Story arc: longer storytelling beats

@@ -190,9 +190,17 @@ def _render_content_slide(width: int, height: int, slide_number: int,
     return img
 
 
-def _render_closing_slide(width: int, height: int, cta_text: str,
-                          brand_name: str, colors: dict) -> Image.Image:
-    """Closing slide: CTA + brand name. Drives action."""
+def _render_closing_slide(
+    width: int,
+    height: int,
+    cta_text: str,
+    brand_name: str,
+    colors: dict,
+    *,
+    price: str = "",
+    product_name: str = "",
+) -> Image.Image:
+    """Closing CTA slide — brand + price + clear WhatsApp action. No product overlay."""
     img = Image.new("RGB", (width, height))
     draw = ImageDraw.Draw(img)
 
@@ -200,29 +208,67 @@ def _render_closing_slide(width: int, height: int, cta_text: str,
     _add_accent_bar(draw, width, height, colors["accent"], "top")
     _add_accent_bar(draw, width, height, colors["accent"], "bottom")
 
-    # CTA text
-    cta_size = int(min(width, height) * 0.06)
+    padding_x = int(width * 0.1)
+    y = int(height * 0.28)
+
+    if product_name:
+        name_size = int(min(width, height) * 0.032)
+        font_name = _get_font(name_size, bold=True)
+        name_bbox = draw.textbbox((0, 0), product_name[:40], font=font_name)
+        name_w = name_bbox[2] - name_bbox[0]
+        draw.text(
+            ((width - name_w) // 2, y),
+            product_name[:40],
+            font=font_name,
+            fill=_hex_to_rgb(colors["text_muted"]),
+        )
+        y += name_bbox[3] - name_bbox[1] + int(height * 0.04)
+
+    if price:
+        price_size = int(min(width, height) * 0.07)
+        font_price = _get_font(price_size, bold=True)
+        price_bbox = draw.textbbox((0, 0), price, font=font_price)
+        price_w = price_bbox[2] - price_bbox[0]
+        draw.text(
+            ((width - price_w) // 2, y),
+            price,
+            font=font_price,
+            fill=(255, 255, 255),
+        )
+        y += price_bbox[3] - price_bbox[1] + int(height * 0.06)
+
+    cta_size = int(min(width, height) * 0.055)
     font_cta = _get_font(cta_size, bold=True)
     cta_bbox = draw.textbbox((0, 0), cta_text, font=font_cta)
     cta_w = cta_bbox[2] - cta_bbox[0]
     cta_h = cta_bbox[3] - cta_bbox[1]
-
-    cta_y = (height - cta_h) // 2 - int(height * 0.05)
-    draw.text(
-        ((width - cta_w) // 2, cta_y),
-        cta_text,
-        font=font_cta,
+    # Accent pill behind CTA
+    pill_pad_x = int(width * 0.04)
+    pill_pad_y = int(height * 0.018)
+    pill_x0 = (width - cta_w) // 2 - pill_pad_x
+    pill_y0 = y - pill_pad_y
+    pill_x1 = (width + cta_w) // 2 + pill_pad_x
+    pill_y1 = y + cta_h + pill_pad_y
+    draw.rounded_rectangle(
+        [(pill_x0, pill_y0), (pill_x1, pill_y1)],
+        radius=int(height * 0.02),
         fill=_hex_to_rgb(colors["accent"]),
     )
+    draw.text(
+        ((width - cta_w) // 2, y),
+        cta_text,
+        font=font_cta,
+        fill=(255, 255, 255),
+    )
+    y = pill_y1 + int(height * 0.05)
 
-    # Brand name
     if brand_name:
-        brand_size = int(min(width, height) * 0.035)
+        brand_size = int(min(width, height) * 0.03)
         font_brand = _get_font(brand_size)
         brand_bbox = draw.textbbox((0, 0), brand_name, font=font_brand)
         brand_w = brand_bbox[2] - brand_bbox[0]
         draw.text(
-            ((width - brand_w) // 2, cta_y + cta_h + int(height * 0.06)),
+            ((width - brand_w) // 2, y),
             brand_name,
             font=font_brand,
             fill=_hex_to_rgb(colors["text_muted"]),
@@ -1258,7 +1304,13 @@ def generate_product_carousel(
     colors = _get_brand_palette(profile)
     brand_name = getattr(profile, "company_name", "") if profile else ""
 
-    total_slides = len(slide_plan) + 1
+    has_plan_cta = any(
+        (s.get("role") or "").lower() == "cta" or s.get("layout") == "closing_cta"
+        for s in slide_plan
+    )
+    if not closing_cta or closing_cta == "Shop Now":
+        closing_cta = "Order on WhatsApp"
+    total_slides = len(slide_plan) + (0 if has_plan_cta else 1)
 
     media_urls = []
     try:
@@ -1271,7 +1323,16 @@ def generate_product_carousel(
             ]
             layout = spec.get("layout", "benefit_bottom")
 
-            if layout == "hero_hook":
+            if layout == "closing_cta":
+                slide = _render_closing_slide(
+                    width, height,
+                    spec.get("headline", closing_cta),
+                    brand_name or spec.get("subtext", ""),
+                    colors,
+                    price=spec.get("body", product.display_price or ""),
+                    product_name=spec.get("subtext", product.name or ""),
+                )
+            elif layout == "hero_hook":
                 slide = _render_product_hero_hook_slide(
                     width, height, img_src,
                     spec.get("headline", product.name),
@@ -1357,9 +1418,14 @@ def generate_product_carousel(
                 )
             slide_images.append(slide)
 
-        slide_images.append(
-            _render_closing_slide(width, height, closing_cta, brand_name, colors)
-        )
+        if not has_plan_cta:
+            slide_images.append(
+                _render_closing_slide(
+                    width, height, closing_cta, brand_name, colors,
+                    price=product.display_price or "",
+                    product_name=product.name or "",
+                )
+            )
 
         for order, img in enumerate(slide_images):
             img = apply_logo_watermark(img, profile)

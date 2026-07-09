@@ -20,6 +20,7 @@ FEED_MARKERS = (
     "promo_frame",
 )
 STORY_MARKERS = ("channel_story_uncrop", "channel_story")
+PORTRAIT_FEED_MARKERS = ("channel_feed_portrait",)
 MARKETPLACE_MARKERS = ("channel_marketplace_",)
 ORIGINAL_MARKERS = ("product_images/",)
 
@@ -40,6 +41,8 @@ def _classify_url(url: str) -> str:
         return "marketplace"
     if any(m in u for m in STORY_MARKERS):
         return "story"
+    if any(m in u for m in PORTRAIT_FEED_MARKERS):
+        return "feed"
     if "preflight_" in u or "channel_banner" in u:
         return "other"
     if any(m in u for m in ORIGINAL_MARKERS) and "studio_polish" not in u:
@@ -75,7 +78,7 @@ def build_asset_pack(product) -> list[AssetPackGroup]:
         AssetPackGroup(
             id="feed",
             label="Feed",
-            hint="Square 1080×1080 — Instagram & Facebook carousels",
+            hint="Square 1080×1080 or portrait 1080×1350 — Instagram & Facebook carousels",
             urls=buckets["feed"],
         ),
         AssetPackGroup(

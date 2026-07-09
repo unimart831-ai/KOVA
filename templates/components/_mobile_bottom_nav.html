@@ -1,8 +1,8 @@
 {# Mobile bottom nav — 4 daily tabs + More sheet (matches simplified sidebar IA) #}
 {% load nav_tags %}
 {% nav_active request.path '/content/studio' '/content/queue' '/content/calendar' '/content/edit/' as create_active %}
-{% nav_active request.path '/analytics/revenue' '/analytics/attribution' '/analytics/' '!/analytics/pixel' '!/analytics/competitors' '!/analytics/screenshot-compete' '!/analytics/content' as results_active %}
-{% nav_active request.path '/products/' '/leads/' '/links/' '/qr/' '/walkin/' '/bookings/' '/platforms/' '/accounts/settings' '/teams/' '/billing/' '/agents/' '/help/' as more_active %}
+{% nav_active request.path '/analytics/revenue' '/analytics/attribution' '/analytics/' as results_active %}
+{% nav_active request.path '/products/' '/leads/' '/links/' '/bookings/' '/platforms/' '/accounts/settings' '/billing/' as more_active %}
 
 <div x-data="{ moreOpen: false }" class="lg:hidden">
   {# Backdrop #}

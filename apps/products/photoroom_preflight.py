@@ -354,12 +354,15 @@ def _local_channel_export(hero_url: str, product, variant_id: str) -> str | None
 
 
 def channel_export_budget(plan_tier: str) -> int:
-    """Story + banner slots (Growth+ only)."""
+    """Story + portrait feed + banner slots (Growth+ only)."""
     if not getattr(settings, "PHOTOROOM_CHANNEL_EXPORTS_ENABLED", True):
         return 0
     if (plan_tier or "starter").lower() not in GROWTH_PLUS_TIERS:
         return 0
-    return 2
+    slots = 2  # story + banner
+    if getattr(settings, "PHOTOROOM_FEED_PORTRAIT_ENABLED", True):
+        slots += 1
+    return slots
 
 
 def marketplace_export_enabled() -> bool:
@@ -387,10 +390,13 @@ def select_marketplace_variant_ids() -> list[str]:
 
 
 def select_channel_variant_ids(aspect_ratio: float) -> list[str]:
-    """Story export may use uncrop for portrait heroes."""
-    if aspect_ratio < 0.75:
-        return ["channel_story_uncrop", "channel_banner"]
-    return ["channel_story", "channel_banner"]
+    """Story + portrait feed + banner — priority order for channel exports."""
+    story = "channel_story_uncrop" if aspect_ratio < 0.75 else "channel_story"
+    variants = [story]
+    if getattr(settings, "PHOTOROOM_FEED_PORTRAIT_ENABLED", True):
+        variants.append("channel_feed_portrait")
+    variants.append("channel_banner")
+    return variants
 
 
 def run_channel_exports(

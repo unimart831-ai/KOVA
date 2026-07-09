@@ -420,6 +420,12 @@ def _show_product_detail(conversation, social_account, provider, token, to,
         "out_of_stock": "❌ Out of Stock",
     }
     lines.append(f"📦 {stock_labels.get(product.stock_status, product.stock_status)}")
+    if (
+        product.stock_status == "low_stock"
+        and product.quantity is not None
+        and product.quantity > 0
+    ):
+        lines.append(f"🔥 Only {product.quantity} left — order soon!")
 
     body = "\n".join(lines)
 
@@ -431,10 +437,11 @@ def _show_product_detail(conversation, social_account, provider, token, to,
     else:
         _send_text(provider, token, to, body)
 
-    # Send action buttons
-    buttons = [{"id": "buy_now", "title": "Buy Now 💳"}]
+    # Send action buttons — no Buy Now on out-of-stock items
+    buttons = []
     if product.stock_status != "out_of_stock":
-        buttons.append({"id": "ask_question", "title": "Ask a Question"})
+        buttons.append({"id": "buy_now", "title": "Buy Now 💳"})
+    buttons.append({"id": "ask_question", "title": "Ask a Question"})
     buttons.append({"id": "browse_more", "title": "Browse More"})
 
     provider.send_interactive_buttons(

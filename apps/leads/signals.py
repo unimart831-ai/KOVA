@@ -82,6 +82,41 @@ def create_lead_from_submission(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender="leads.Lead")
+def notify_owner_of_new_lead(sender, instance, created, **kwargs):
+    """WhatsApp-first: ping the owner when a new lead arrives.
+
+    Commerce-purchase leads are skipped — the payment alert already covers
+    those. Sends are best-effort and never block lead creation.
+    """
+    if not created:
+        return
+    from apps.leads.models import Lead
+
+    # Only alert for genuine inbound leads. Purchases are covered by the
+    # payment alert; imports/API/manual are owner-initiated (no surprise).
+    inbound_sources = {
+        Lead.Source.FORM_SUBMISSION,
+        Lead.Source.SOCIAL_DM,
+        Lead.Source.SOCIAL_COMMENT,
+        Lead.Source.BOOKING,
+        Lead.Source.QR_SCAN,
+        Lead.Source.WALK_IN,
+    }
+    if instance.source_type not in inbound_sources:
+        return
+
+    try:
+        from apps.briefs.owner_alerts import notify_owner_new_lead
+
+        notify_owner_new_lead(instance)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception(
+            "Owner WhatsApp alert failed for new lead %s", instance.pk
+        )
+
+
+@receiver(post_save, sender="leads.Lead")
 def enroll_new_lead_in_sequences(sender, instance, created, **kwargs):
     """Auto-enroll newly created leads into matching nurture sequences."""
     if not created:

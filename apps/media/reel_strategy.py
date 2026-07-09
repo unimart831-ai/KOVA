@@ -56,13 +56,41 @@ class ReelStrategy:
             cta_label=data.get("cta_label", "Shop now"),
         )
 
-    def hook_texts_for_compose(self) -> list[str]:
-        """Overlay text per scene for FFmpeg burn-in."""
-        texts = [self.hook] if self.hook else []
-        for scene in self.scenes:
-            if scene.text and scene.text not in texts:
-                texts.append(scene.text)
-        return texts
+    def hook_texts_for_compose(self, slide_roles: list[str] | None = None) -> list[str]:
+        """
+        Overlay text aligned to slide roles — text only on hook/cta beats.
+
+        When slide_roles is provided, returns a same-length list with copy
+        only on hook and cta indices (product hero slides stay clean).
+        """
+        roles = list(slide_roles or self.slide_roles() or [])
+        if not roles:
+            texts = [self.hook] if self.hook else []
+            for scene in self.scenes:
+                if scene.text and scene.text not in texts:
+                    texts.append(scene.text)
+            return texts
+
+        out = [""] * len(roles)
+        # Prefer strategy hook on first hook-like role
+        hook_text = (self.hook or "").strip()
+        cta_text = (self.cta_label or "").strip()
+
+        for idx, role in enumerate(roles):
+            role_l = (role or "").lower()
+            if role_l in ("hook", "problem", "insight", "reveal") and not out[idx]:
+                # Prefer scene text for this role, else campaign hook
+                scene_text = ""
+                if idx < len(self.scenes) and self.scenes[idx].text:
+                    scene_text = self.scenes[idx].text.strip()
+                out[idx] = scene_text or hook_text
+            elif role_l in ("cta", "offer") and not out[idx]:
+                scene_text = ""
+                if idx < len(self.scenes) and self.scenes[idx].text:
+                    scene_text = self.scenes[idx].text.strip()
+                out[idx] = scene_text or cta_text
+            # feature/benefit/hero/staging → leave blank (product-first)
+        return out
 
     def slide_roles(self) -> list[str]:
         return [s.type for s in self.scenes]

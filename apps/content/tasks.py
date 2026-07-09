@@ -1117,22 +1117,58 @@ def compose_reel_video(post_id: str):
     if meta.get("reel_template") == "carousel_to_video" or post.carousel_slides:
         hook_texts = [""] * len(image_sources)
     elif meta.get("reel_strategy"):
+        from apps.content.reel_studio import sanitize_hooks_for_roles
         from apps.media.reel_strategy import ReelStrategy
 
         rs = ReelStrategy.from_dict(meta.get("reel_strategy"))
         if rs:
-            hook_texts = rs.hook_texts_for_compose()
-            while len(hook_texts) < len(image_sources):
-                hook_texts.append("")
+            roles = (
+                list(reel_plan.slide_roles)
+                if reel_plan and reel_plan.slide_roles
+                else rs.slide_roles()
+            )
+            while len(roles) < len(image_sources):
+                roles.append("")
+            strategy_hooks = rs.hook_texts_for_compose(roles[: len(image_sources)])
+            while len(strategy_hooks) < len(image_sources):
+                strategy_hooks.append("")
+            hook_texts = sanitize_hooks_for_roles(
+                strategy_hooks[: len(image_sources)],
+                roles[: len(image_sources)],
+            )
+            if reel_plan:
+                from apps.content.reel_director import ReelComposePlan
+
+                reel_plan = ReelComposePlan(
+                    recipe_id=reel_plan.recipe_id,
+                    template=reel_plan.template,
+                    image_urls=reel_plan.image_urls,
+                    slide_roles=reel_plan.slide_roles,
+                    hook_texts=hook_texts,
+                    music_mood=reel_plan.music_mood,
+                    transitions=reel_plan.transitions,
+                    ken_burns_variants=reel_plan.ken_burns_variants,
+                    cta_audio_boost=reel_plan.cta_audio_boost,
+                    transition_sec=reel_plan.transition_sec,
+                    slide_durations=reel_plan.slide_durations,
+                )
 
     from apps.media.text_overlay import TextOverlayPass, apply_overlay_report_to_metadata
 
-    slide_dur = 3.5 if len(image_sources) == 1 else 3.0
+    if reel_plan and reel_plan.slide_durations:
+        slide_dur = sum(reel_plan.slide_durations) / max(len(reel_plan.slide_durations), 1)
+    else:
+        slide_dur = 3.5 if len(image_sources) == 1 else 3.0
+    transition_sec = (
+        reel_plan.transition_sec
+        if reel_plan and reel_plan.transition_sec is not None
+        else 0.5
+    )
     overlay_pass = TextOverlayPass()
     hook_texts, overlay_report = overlay_pass.prepare_for_compose(
         hook_texts,
         slide_duration=slide_dur,
-        transition_sec=0.5,
+        transition_sec=transition_sec,
     )
     meta = apply_overlay_report_to_metadata(meta, overlay_report)
     post.visual_metadata = meta

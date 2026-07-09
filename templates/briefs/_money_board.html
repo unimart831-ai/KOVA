@@ -17,9 +17,9 @@
   <div class="p-4 rounded-xl border border-dashed border-growth-300 dark:border-growth-900/60 bg-growth-50/50 dark:bg-growth-950/10">
     <p class="text-[10px] font-bold uppercase tracking-wider text-growth-700 dark:text-growth-400">Money proof</p>
     <p class="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">This is where you'll see which posts brought paying customers.</p>
-    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ kova_money_subtitle }}. Add a QR at your counter or share a tracked link.</p>
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ kova_money_subtitle }}. Share your shop link or tracked links to start measuring revenue.</p>
     <div class="mt-3 flex flex-wrap gap-2">
-      <a href="{% url 'qr_attribution:create' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-growth-600 text-white text-xs font-semibold hover:bg-growth-700 transition-colors">Create a QR code</a>
+      <a href="{% url 'products:list' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-growth-600 text-white text-xs font-semibold hover:bg-growth-700 transition-colors">Set up your shop</a>
       <a href="{% url 'links:list' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-growth-800 dark:text-growth-300 text-xs font-semibold border border-growth-200 dark:border-growth-800 hover:bg-growth-50 dark:hover:bg-growth-950/40 transition-colors">Share a tracked link</a>
     </div>
   </div>

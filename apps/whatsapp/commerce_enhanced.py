@@ -355,6 +355,23 @@ def _handle_payment_confirm(user, conversation, text: str) -> dict:
             _update_commerce_state(conversation, CommerceState.IDLE)
             return {"type": "text", "body": "Unable to process this order. Please contact us directly."}
 
+        # Re-check stock at the moment of purchase — it may have sold out
+        # while the customer was deciding.
+        if product_id:
+            from apps.products.models import Product
+
+            product = Product.objects.filter(pk=product_id, user=user).first()
+            if product and product.stock_status == "out_of_stock":
+                _update_commerce_state(conversation, CommerceState.IDLE)
+                return {
+                    "type": "text",
+                    "body": (
+                        f"Sorry, *{product.name}* just sold out. 😔\n\n"
+                        "Type 'menu' to browse other products — we'll let you "
+                        "know when it's back in stock!"
+                    ),
+                }
+
         payment = _initiate_whatsapp_payment(user, product_id, buyer_phone, price)
 
         if payment:

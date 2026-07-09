@@ -235,19 +235,25 @@ def notify_seller_whatsapp_order_intent(
     _try_whatsapp_owner_alert(seller_user, message)
 
 
-def notify_seller_mpesa_order(commerce_payment) -> None:
-    """Alert seller when a buyer completes M-Pesa on a commerce page."""
+def notify_seller_payment_received(commerce_payment) -> None:
+    """Alert seller (in-app + WhatsApp) when a commerce payment completes.
+
+    Fired via the CommercePayment post-save signal, so every completion path
+    (M-Pesa webhook, card checkout, WhatsApp bot) triggers exactly one alert.
+    """
     seller = commerce_payment.user
     product = commerce_payment.product
     name = product.name if product else "an order"
     amount = commerce_payment.amount
     currency = commerce_payment.currency or "KES"
     receipt = commerce_payment.receipt_number or ""
+    phone = (commerce_payment.phone_number or "").strip()
+    buyer = f"...{phone[-4:]}" if len(phone) >= 4 else "a customer"
 
     message = (
-        f"M-Pesa payment received: {currency} {amount:,.0f} for {name}."
+        f"💰 Payment received: {currency} {amount:,.0f} for {name} from {buyer}."
         f"{f' Receipt {receipt}.' if receipt else ''} "
-        f"Follow up on WhatsApp to confirm delivery."
+        f"Follow up on WhatsApp to confirm delivery. Reply MONEY for this week's total."
     )
 
     try:
@@ -255,28 +261,45 @@ def notify_seller_mpesa_order(commerce_payment) -> None:
 
         Notification.create_for_user(seller, "system", message)
     except Exception:
-        logger.exception("in-app M-Pesa seller notification failed for %s", commerce_payment.pk)
+        logger.exception("in-app seller payment notification failed for %s", commerce_payment.pk)
 
     _try_whatsapp_owner_alert(seller, message)
 
 
+# Backwards-compatible alias (older callers)
+notify_seller_mpesa_order = notify_seller_payment_received
+
+
 def _try_whatsapp_owner_alert(seller_user, body: str) -> None:
-    """Best-effort WhatsApp ping to the owner's phone when WA Business is connected."""
+    """Best-effort WhatsApp ping to the owner's phone.
+
+    Tries the seller's own WhatsApp Business account first, then falls back
+    to Kova's master number (same channel as the Daily Brief) so owners
+    without a connected WA Business number still get operational alerts.
+    """
     profile = getattr(seller_user, "profile", None)
     owner_phone = (getattr(seller_user, "phone_number", "") or "").strip()
     if not owner_phone and profile:
         owner_phone = (profile.mpesa_phone or profile.cta_whatsapp or "").strip()
-    if not owner_phone:
-        return
 
-    from apps.whatsapp.services import WhatsAppSendError, send_text_message
+    if owner_phone:
+        from apps.whatsapp.services import WhatsAppSendError, send_text_message
 
+        try:
+            send_text_message(to=owner_phone, body=body, user=seller_user)
+            return
+        except WhatsAppSendError:
+            pass
+        except Exception:
+            logger.exception("owner WA alert failed for user %s", seller_user.pk)
+
+    # Fallback — Kova master number (Daily Brief channel), queued async
     try:
-        send_text_message(to=owner_phone, body=body, user=seller_user)
-    except WhatsAppSendError:
-        pass
+        from apps.briefs.owner_alerts import queue_owner_alert
+
+        queue_owner_alert(seller_user, body)
     except Exception:
-        logger.exception("owner WA alert failed for user %s", seller_user.pk)
+        logger.exception("master-number owner alert failed for user %s", seller_user.pk)
 
 
 def resolve_whatsapp_order_redirect(request, token: str) -> HttpResponseRedirect:

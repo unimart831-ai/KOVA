@@ -96,7 +96,7 @@ def curate_carousel_images(urls: list[str], *, max_images: int | None = None) ->
 
 
 def assign_images_to_plan(plan: list[dict], curated_urls: list[str]) -> list[dict]:
-    """Bind a unique curated URL to each slide spec."""
+    """Bind a unique curated URL to each slide spec — never reuse until pool exhausted."""
     if not curated_urls:
         return plan
 
@@ -112,26 +112,27 @@ def assign_images_to_plan(plan: list[dict], curated_urls: list[str]) -> list[dic
             if url in used:
                 continue
             if product_only and "studio" not in url.lower() and "composition" not in url.lower():
+                # Prefer studio, but accept any unused if none left
                 continue
             return url
+        # Exhausted unique pool — allow reuse of least-used preferred, then any
         for url in curated_urls:
             if url not in used:
                 return url
-        return curated_urls[0]
+        return curated_urls[preferred_index % len(curated_urls)]
 
-    showcase_idx = 0
-    for spec in plan:
+    for idx, spec in enumerate(plan):
         spec = dict(spec)
         layout = spec.get("layout", "")
-        preferred = int(spec.get("image_index", 0))
+        role = (spec.get("role") or "").lower()
+        preferred = int(spec.get("image_index", idx))
         product_only = layout in PRODUCT_ONLY_LAYOUTS or layout == "minimal_caption"
 
-        if layout in ("minimal_caption", "showcase"):
-            url = _pick(showcase_idx, product_only=True)
-            showcase_idx += 1
-        else:
-            url = _pick(preferred)
+        # Price / CTA slides: prefer a different hero than the opening hook
+        if role in ("price", "cta") and len(curated_urls) > 1:
+            preferred = max(1, preferred)
 
+        url = _pick(preferred, product_only=product_only)
         used.add(url)
         spec["image_url"] = url
         assigned.append(spec)
@@ -147,7 +148,8 @@ def build_professional_carousel_plan(
     image_count: int = 1,
 ) -> list[dict]:
     """
-    Commerce carousel arc — hook bar → product shot → benefit → product shot → price bar.
+    Commerce carousel arc — hook → showcase → benefit → showcase → price → CTA.
+    Product-first layouts only; text never covers the product hero.
     """
     from apps.products.product_copy import (
         clean_description_sentence,
@@ -168,12 +170,16 @@ def build_professional_carousel_plan(
     hook = angle[:90] if angle else ""
     if not hook and sentences:
         hook = sentences[0][:90]
+    if not hook and features:
+        hook = features[0][:90]
     if not hook:
         hook = "Crafted for everyday quality you can see."
 
     name = (product.name or "Our pick").strip()
     price = (product.display_price or "").strip()
-    max_slides = int(getattr(settings, "CAROUSEL_MAX_SLIDES", 5))
+    # Reserve room for CTA as final slide when price exists
+    max_slides = int(getattr(settings, "CAROUSEL_MAX_SLIDES", 6))
+    max_slides = max(4, max_slides)
 
     plan: list[dict] = []
 
@@ -221,13 +227,24 @@ def build_professional_carousel_plan(
         })
 
     if price:
+        # Prefer a distinct image from the opening hook (index 1+)
+        price_idx = 1 if image_count > 1 else 0
         plan.append({
             "layout": "price_bar",
             "headline": price,
-            "body": sentences[-1][:120] if sentences else "Tap the link in bio to order.",
+            "body": sentences[-1][:120] if sentences else "Order on WhatsApp — tap the link.",
             "subtext": name,
-            "image_index": min(1, max(image_count - 1, 0)),
+            "image_index": price_idx,
             "role": "price",
+        })
+        # Explicit CTA slide — brand + action, no product overlay
+        plan.append({
+            "layout": "closing_cta",
+            "headline": "Order on WhatsApp",
+            "body": price,
+            "subtext": name,
+            "image_index": 0,
+            "role": "cta",
         })
 
     return plan[:max_slides]

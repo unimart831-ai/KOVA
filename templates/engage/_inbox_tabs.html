@@ -1,0 +1,20 @@
+{# Shared inbox navigation — one consistent tab bar for all inbox surfaces.
+   Usage: {% include "engage/_inbox_tabs.html" with active_tab="needs_reply" %} #}
+<div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 overflow-x-auto overscroll-x-contain">
+  <a href="{% url 'engage:unified_inbox' %}"
+     class="whitespace-nowrap px-4 py-2 text-sm font-medium {% if active_tab == 'needs_reply' %}rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400{% else %}text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300{% endif %}">
+    Needs reply
+  </a>
+  <a href="{% url 'engage:inbox' %}"
+     class="whitespace-nowrap px-4 py-2 text-sm font-medium {% if active_tab == 'comments' %}rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400{% else %}text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300{% endif %}">
+    Comments &amp; Mentions
+  </a>
+  <a href="{% url 'engage:dm_inbox' %}"
+     class="whitespace-nowrap px-4 py-2 text-sm font-medium {% if active_tab == 'messages' %}rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400{% else %}text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300{% endif %}">
+    Messages
+  </a>
+  <a href="{% url 'engage:auto_sent_list' %}"
+     class="whitespace-nowrap px-4 py-2 text-sm font-medium {% if active_tab == 'auto_sent' %}rounded-t-lg border-b-2 border-kova-600 text-kova-700 dark:text-kova-400{% else %}text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300{% endif %}">
+    Auto-sent
+  </a>
+</div>

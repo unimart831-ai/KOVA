@@ -62,21 +62,19 @@ CATEGORY_VARIANT_BOOSTS: dict[str, tuple[str, ...]] = {
         "ai_scene_shelf",
         "relight",
         "background_blur",
-        "virtual_model_hold",
     ),
     "wholesale_retail": (
         "ai_scene_retail",
         "ai_creative_podium",
         "ai_scene_shelf",
-        "virtual_model_hold",
     ),
-    "apparel": ("flat_lay", "ghost_mannequin", "virtual_model"),
-    "apparel_mitumba": ("flat_lay", "ghost_mannequin", "virtual_model"),
-    "food": ("beautify_nocutout", "flat_lay", "food_surface_marble", "food_surface_rustic", "beautify", "virtual_model_hold"),
-    "beauty": ("beautify_nocutout", "flat_lay", "ai_creative_marble", "beautify", "virtual_model_adorn"),
-    "jewelry": ("studio_dark", "ai_creative_marble", "relight_nocutout", "virtual_model_adorn"),
-    "home": ("ai_scene_shelf", "ai_scene_wall", "ai_scene_table", "virtual_model_hold"),
-    "general": ("virtual_model_hold",),
+    "apparel": ("flat_lay", "ghost_mannequin"),
+    "apparel_mitumba": ("flat_lay", "ghost_mannequin"),
+    "food": ("beautify_nocutout", "flat_lay", "food_surface_marble", "food_surface_rustic", "beautify"),
+    "beauty": ("beautify_nocutout", "flat_lay", "ai_creative_marble", "beautify"),
+    "jewelry": ("studio_dark", "ai_creative_marble", "relight_nocutout"),
+    "home": ("ai_scene_shelf", "ai_scene_wall", "ai_scene_table"),
+    "general": (),
 }
 
 VARIANT_TO_SCENE_ROLE: dict[str, str] = {}
@@ -129,15 +127,16 @@ def variant_ids_from_brief(
                 _add(vid)
 
     if offering == "product" and getattr(settings, "PHOTOROOM_VIRTUAL_MODEL_ENABLED", False):
-        from apps.products.photoroom_virtual_models import (
-            catalog_variant_for_strategy,
-            resolve_virtual_model_strategy,
-        )
+        if getattr(settings, "PHOTOROOM_VIRTUAL_MODEL_AUTO_PACK", False):
+            from apps.products.photoroom_virtual_models import (
+                catalog_variant_for_strategy,
+                resolve_virtual_model_strategy,
+            )
 
-        strat_category = category
-        if biz in ("fashion_beauty",) and category == "general":
-            strat_category = "apparel"
-        _add(catalog_variant_for_strategy(resolve_virtual_model_strategy(strat_category)))
+            strat_category = category
+            if biz in ("fashion_beauty",) and category == "general":
+                strat_category = "apparel"
+            _add(catalog_variant_for_strategy(resolve_virtual_model_strategy(strat_category)))
 
     if getattr(settings, "PHOTOROOM_EDIT_WITH_AI_ENABLED", True):
         _add("edit_ai_staging")

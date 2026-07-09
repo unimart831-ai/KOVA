@@ -79,3 +79,16 @@ def on_commerce_payment_completed(sender, instance, **kwargs):
         logger.exception(
             "Post-purchase loop failed for commerce payment %s", instance.pk,
         )
+
+    # WhatsApp-first: alert the owner (in-app + WhatsApp) after commit,
+    # for every completion path (M-Pesa webhook, card, manual).
+    try:
+        from django.db import transaction
+
+        from apps.products.commerce_wa_orders import notify_seller_payment_received
+
+        transaction.on_commit(lambda: notify_seller_payment_received(instance))
+    except Exception:
+        logger.exception(
+            "Owner payment alert failed for commerce payment %s", instance.pk,
+        )

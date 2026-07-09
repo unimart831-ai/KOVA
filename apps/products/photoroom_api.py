@@ -32,11 +32,61 @@ LEGACY_SHADOW_MODE_ALIASES = {
     "ai.hard": "ai.preset-hard",
 }
 
+# ── New AI Shadows model (2026-04-15) ────────────────────────────────────────
+# Per docs.photoroom.com/image-editing-api-plus-plan/ai-shadows the new model
+# requires shadow.mode=ai.auto-with-overrides alongside the version header.
+# Partial overrides pin the *look* (softness/intensity) while the model still
+# auto-determines direction/spread/pose per image — realistic AND consistent.
+NEW_SHADOW_MODEL_HEADER = "pr-ai-shadows-model-version"
+SHADOW_AUTO_OVERRIDES_MODE = "ai.auto-with-overrides"
+
+# preset/legacy mode -> (softnessOverride, intensityOverride)
+NEW_MODEL_SHADOW_PRESETS: dict[str, tuple[str, str]] = {
+    "ai.soft": ("0.65", "0.6"),
+    "ai.preset-soft": ("0.65", "0.6"),
+    "ai.hard": ("0.2", "0.85"),
+    "ai.preset-hard": ("0.2", "0.85"),
+}
+
 
 def normalize_shadow_mode(mode: str) -> str:
     """Map deprecated shadow.mode values to current Photoroom preset names."""
     cleaned = (mode or "").strip()
     return LEGACY_SHADOW_MODE_ALIASES.get(cleaned, cleaned)
+
+
+def apply_new_shadow_model(
+    params: dict[str, str],
+    headers: dict[str, str] | None,
+) -> tuple[dict[str, str], dict[str, str] | None]:
+    """
+    Activate the 2026-04-15 AI Shadows model correctly.
+
+    When the version header is present:
+      - soft/hard presets become ai.auto-with-overrides + softness/intensity
+        overrides (caller-supplied overrides are preserved)
+      - unsupported modes (e.g. ai.floating) keep the legacy model by
+        dropping the version header
+    """
+    if not headers or NEW_SHADOW_MODEL_HEADER not in headers:
+        return params, headers
+
+    mode = (params.get("shadow.mode") or "").strip()
+    if mode == SHADOW_AUTO_OVERRIDES_MODE:
+        return params, headers
+
+    preset = NEW_MODEL_SHADOW_PRESETS.get(mode)
+    if not preset:
+        # No shadow requested, or a mode the new model doesn't support.
+        headers = {k: v for k, v in headers.items() if k != NEW_SHADOW_MODEL_HEADER}
+        return params, headers
+
+    out = dict(params)
+    out["shadow.mode"] = SHADOW_AUTO_OVERRIDES_MODE
+    softness, intensity = preset
+    out.setdefault("shadow.softnessOverride", softness)
+    out.setdefault("shadow.intensityOverride", intensity)
+    return out, headers
 
 
 def normalize_photoroom_edit_params(params: dict[str, str]) -> dict[str, str]:

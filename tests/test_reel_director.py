@@ -32,8 +32,13 @@ def test_hook_texts_staggered_on_early_slides():
         product_name="Amaya Speaker",
         price_label="KES 1,200",
         brand_name="Amaya",
+        key_feature="Crystal-clear sound",
+        category="electronics",
     )
-    assert texts[0] == "Amaya Speaker"
+    # Benefit-led hook, not bare product name
+    assert texts[0]
+    assert texts[0] != "Amaya Speaker"
+    assert "Crystal" in texts[0] or "sound" in texts[0].lower() or texts[0]
     assert texts[1] == ""
     assert texts[2] == ""
     assert texts[3] == ""
@@ -63,7 +68,8 @@ def test_lifestyle_story_orders_edit_ai_slides():
     assert "channel_story" in plan.image_urls[0]
     assert any("edit_ai_staging" in u for u in plan.image_urls)
     assert plan.hook_texts[0]  # opening hook on channel_story beat
-    assert plan.template == "story_arc"
+    assert plan.template == "lifestyle_story"
+    assert plan.transition_sec == 0.55
 
 
 def test_flash_drop_uses_flash_template_and_boost():
@@ -80,12 +86,14 @@ def test_flash_drop_uses_flash_template_and_boost():
         recipe_id="flash_drop",
         product_name="Speaker",
         price_label="KES 500",
+        key_feature="Bass that hits",
     )
     assert plan.recipe_id == "flash_drop"
     assert plan.template == "flash_commerce"
     assert plan.cta_audio_boost is True
     assert plan.transition_sec == 0.35
-    assert plan.hook_texts[0] == "Speaker"
+    assert plan.hook_texts[0]  # scroll-stopping hook
+    assert plan.hook_texts[0] != "Speaker" or "Bass" in plan.hook_texts[0]
     assert "KES 500" in plan.hook_texts[-1]
     assert plan.slide_roles[-1] == "cta"
 
@@ -103,13 +111,38 @@ def test_build_reel_plan_assigns_role_aware_hooks():
         seed="prod-hooks",
         product_name="Glow Serum",
         price_label="KES 800",
+        category="beauty",
+        key_feature="Vitamin C glow",
     )
     assert plan is not None
-    assert plan.hook_texts[0] == "Glow Serum"
+    assert plan.hook_texts[0]
+    assert plan.hook_texts[0] != "Glow Serum" or "Vitamin" in plan.hook_texts[0]
     assert plan.hook_texts[1] == ""
     assert "KES 800" in plan.hook_texts[-1]
     assert plan.slide_durations
     assert len(plan.slide_durations) == len(plan.image_urls)
+
+
+def test_craft_scroll_stopping_hook_prefers_feature():
+    from apps.content.reel_director import craft_scroll_stopping_hook
+
+    hook = craft_scroll_stopping_hook(
+        product_name="Amaya Speaker",
+        category="electronics",
+        key_feature="Crystal-clear bass",
+    )
+    assert "Crystal" in hook or "bass" in hook.lower()
+    assert hook != "Amaya Speaker"
+
+
+def test_craft_scroll_stopping_hook_override_wins():
+    from apps.content.reel_director import craft_scroll_stopping_hook
+
+    hook = craft_scroll_stopping_hook(
+        product_name="Amaya Speaker",
+        hook_override="Stop scrolling — this changes everything",
+    )
+    assert "Stop scrolling" in hook
 
 
 def test_baked_carousel_urls_skip_hook_overlay():

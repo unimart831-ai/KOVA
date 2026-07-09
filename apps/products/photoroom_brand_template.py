@@ -72,6 +72,11 @@ class PhotoroomBrandTemplate:
     studio_color_hex: str
     style_suffix: str
     source: str = "auto"  # auto | profile_override
+    # New AI Shadows model (2026-04-15) overrides — empty = model decides.
+    # Locking these gives one consistent shadow signature across the catalog.
+    shadow_softness: str = ""
+    shadow_intensity: str = ""
+    shadow_direction: str = ""
 
     def as_log_dict(self) -> dict:
         return {
@@ -81,6 +86,9 @@ class PhotoroomBrandTemplate:
             "outline_color": self.outline_color_hex,
             "studio_color": self.studio_color_hex,
             "source": self.source,
+            "shadow_softness": self.shadow_softness,
+            "shadow_intensity": self.shadow_intensity,
+            "shadow_direction": self.shadow_direction,
         }
 
 
@@ -226,7 +234,20 @@ def apply_brand_template(
     if "padding" in out:
         out["padding"] = template.padding
     if "shadow.mode" in out:
-        out["shadow.mode"] = template.shadow_mode
+        # Map legacy industry presets to the 2026 shadows model when enabled.
+        if getattr(settings, "PHOTOROOM_AI_SHADOWS_MODEL_ENABLED", True):
+            out["shadow.mode"] = "ai.auto-with-overrides"
+        else:
+            out["shadow.mode"] = template.shadow_mode
+        if template.shadow_softness:
+            out["shadow.softnessOverride"] = template.shadow_softness
+        if template.shadow_intensity:
+            out["shadow.intensityOverride"] = template.shadow_intensity
+        if template.shadow_direction:
+            out["shadow.directionOverride"] = template.shadow_direction
+        if template.shadow_softness or template.shadow_intensity or template.shadow_direction:
+            out.setdefault("shadow.spreadOverride", "medium")
+            out.setdefault("shadow.subjectPoseOverride", "upright")
     if "background.seed" in out:
         out["background.seed"] = str(template.ai_background_seed)
     if "outline.color" in out:
