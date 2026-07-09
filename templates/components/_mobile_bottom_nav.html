@@ -1,6 +1,6 @@
 {# Mobile bottom nav — 4 daily tabs + More sheet (matches simplified sidebar IA) #}
 {% load nav_tags %}
-{% nav_active request.path '/content/studio' '/content/queue' '/content/calendar' '/content/edit/' as create_active %}
+{% nav_active request.path '/content/studio' '/content/queue' '/content/calendar' '/content/archive' '/content/studio/shares' '/content/studio/share' '/content/edit/' as create_active %}
 {% nav_active request.path '/analytics/revenue' '/analytics/attribution' '/analytics/' as results_active %}
 {% nav_active request.path '/products/' '/leads/' '/links/' '/bookings/' '/platforms/' '/accounts/settings' '/billing/' as more_active %}
 

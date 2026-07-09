@@ -1,21 +1,21 @@
 {# Top-level Create section tabs — Studio / Quick Shares / Queue / Archive #}
 <div class="subnav-tabs mb-4">
   <a href="{% url 'content:studio' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if active_tab == 'studio' or not active_tab and '/content/studio' in request.path and '/content/studio/shares' not in request.path and '/content/studio/share' not in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
+     class="px-3 py-2.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition-colors {% if active_tab == 'studio' or not active_tab and '/content/studio' in request.path and '/content/studio/shares' not in request.path and '/content/studio/share' not in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
     Studio
   </a>
   <a href="{% url 'content:share_list' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if active_tab == 'shares' or '/content/studio/shares' in request.path or '/content/studio/share/' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
-    Quick Shares
+     class="px-3 py-2.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition-colors {% if active_tab == 'shares' or '/content/studio/shares' in request.path or '/content/studio/share/' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
+    <span class="sm:hidden">Shares</span><span class="hidden sm:inline">Quick Shares</span>
     {% if nav_badge_shares %}<span class="ml-1 inline-flex items-center justify-center min-w-[1.1rem] h-4 px-1 text-[9px] font-bold text-white bg-kova-500 rounded-full">{{ nav_badge_shares }}</span>{% endif %}
   </a>
   <a href="{% url 'content:queue' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if active_tab == 'queue' or '/content/queue' in request.path or '/content/calendar' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
+     class="px-3 py-2.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition-colors {% if active_tab == 'queue' or '/content/queue' in request.path or '/content/calendar' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
     Queue
     {% if nav_badge_queue %}<span class="ml-1 inline-flex items-center justify-center min-w-[1.1rem] h-4 px-1 text-[9px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_queue }}</span>{% endif %}
   </a>
   <a href="{% url 'content:archive' %}"
-     class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {% if active_tab == 'archive' or '/content/archive' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
+     class="px-3 py-2.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition-colors {% if active_tab == 'archive' or '/content/archive' in request.path %}border-kova-600 text-kova-600 dark:border-kova-400 dark:text-kova-400{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600{% endif %}">
     Archive
   </a>
 </div>

@@ -1,6 +1,6 @@
 {# Campaign group header — replaces seed-centric header in Studio #}
-<div class="px-5 py-4 bg-gradient-to-br from-kova-50 via-white to-growth-50/40 dark:from-kova-950/50 dark:via-gray-900 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
-  <div class="flex items-start justify-between gap-3 flex-wrap">
+<div class="campaign-group-header bg-gradient-to-br from-kova-50 via-white to-growth-50/40 dark:from-kova-950/50 dark:via-gray-900 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2 flex-wrap mb-2">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-kova-100 dark:bg-kova-950/60 text-[10px] font-bold uppercase tracking-wider text-kova-700 dark:text-kova-300">
@@ -106,7 +106,7 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+    <div class="campaign-group-actions">
       {% if group.campaign_url %}
       <a href="{{ group.campaign_url }}" target="_blank" rel="noopener"
          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-kova-700 dark:text-kova-300 bg-white dark:bg-gray-800 border border-kova-200 dark:border-kova-800 hover:bg-kova-50 dark:hover:bg-kova-950/40 transition-colors">

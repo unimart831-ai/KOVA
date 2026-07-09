@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-5" id="share-detail">
+<div class="create-section-narrow" id="share-detail">
 
   {% include "content/_create_tabs.html" %}
 
@@ -20,14 +20,17 @@
       </a>
       <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ title }}</h1>
       <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ summary_line }}</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-        {{ media_count }} {{ share_kind }}{{ media_count|pluralize }}
-        · {{ post_count }} posts across {{ platform_count }} platform{{ platform_count|pluralize }}
-        · {{ schedule_mode|capfirst }} schedule
-        · {{ created_at|date:"M j, g:i A" }}
+      <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+        <span>{{ media_count }} {{ share_kind }}{{ media_count|pluralize }}</span>
+        <span class="hidden sm:inline">·</span>
+        <span>{{ post_count }} posts · {{ platform_count }} platform{{ platform_count|pluralize }}</span>
+        <span class="hidden sm:inline">·</span>
+        <span>{{ schedule_mode|capfirst }} schedule</span>
+        <span class="hidden sm:inline">·</span>
+        <span>{{ created_at|date:"M j, g:i A" }}</span>
       </p>
     </div>
-    <a href="{% url 'content:share_moment' %}" class="btn-secondary btn-sm shrink-0">+ New share</a>
+    <a href="{% url 'content:share_moment' %}" class="btn-secondary btn-sm shrink-0 w-full sm:w-auto justify-center">+ New share</a>
   </div>
 
   {# Status strip #}
@@ -50,9 +53,9 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-    {# Left: edit bundle + actions #}
-    <div class="lg:col-span-1 space-y-4">
+  <div class="share-detail-layout">
+    {# Sidebar: edit bundle + actions — below timeline on mobile #}
+    <div class="share-detail-sidebar">
       <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Bundle details</h2>
         <form method="post" action="{% url 'content:share_update_context' seed_id=seed.id %}" class="space-y-3">
@@ -108,9 +111,9 @@
       {% endif %}
     </div>
 
-    {# Right: publish timeline + post cards #}
-    <div class="lg:col-span-2 space-y-4">
-      <div class="flex items-center justify-between">
+    {# Timeline — first on mobile so users see their posts immediately #}
+    <div class="share-detail-timeline">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Publish timeline</h2>
         <p class="text-[11px] text-gray-500 dark:text-gray-400">Ordered by sequence → platform</p>
       </div>
@@ -118,7 +121,7 @@
       <div class="space-y-3">
         {% for item in timeline %}
         <div id="share-post-row-{{ item.post.id }}" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-          <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+          <div class="share-timeline-header">
             {% if share_kind == 'reel' and media_count > 1 %}
             <span class="font-semibold text-kova-600 dark:text-kova-400">Reel {{ item.media_order }}</span>
             {% elif share_kind == 'photo' and media_count > 1 and item.post.post_format != 'carousel' %}
@@ -131,7 +134,7 @@
             {% elif item.post.published_at %}
             <span>· Published {{ item.post.published_at|date:"M j, g:i A" }}</span>
             {% endif %}
-            <a href="{% url 'content:edit' post_id=item.post.id %}" class="ml-auto text-kova-600 dark:text-kova-400 hover:underline">Edit post</a>
+            <a href="{% url 'content:edit' post_id=item.post.id %}" class="sm:ml-auto text-kova-600 dark:text-kova-400 hover:underline shrink-0">Edit post</a>
           </div>
           <div class="p-3">
             {% include "components/post_card.html" with post=item.post compact_card=True share_context=True %}

@@ -1,88 +1,90 @@
-{# Quick Share timeline actions — direct HTMX, no broken re-render #}
+{# Quick Share timeline actions — mobile-friendly stacked buttons #}
 {% url 'content:republish' post.id as republish_url %}
 {% url 'content:delete_post' post.id as delete_url %}
 
 {% if post.status == 'pending_approval' or post.status == 'draft' %}
   {% url 'content:approve' post.id as approve_url %}
-  <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700"
-       x-data="{ showSchedule: false }">
-    <button @click="showSchedule = true" type="button"
-            class="inline-flex items-center gap-1.5 min-h-[36px] px-3 text-xs font-medium rounded-lg text-white bg-kova-600 hover:bg-kova-700 shadow-sm">
-      Approve &amp; schedule
-    </button>
-    <a href="{% url 'content:edit' post.id %}?next={{ request.get_full_path|urlencode }}"
-       class="min-h-[36px] px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors inline-flex items-center">
-      Edit &amp; preview
-    </a>
-    <button type="button"
-            hx-post="{{ delete_url }}"
-            hx-target="#share-post-row-{{ post.id }}"
-            hx-swap="delete"
-            hx-confirm="Remove this post from the bundle?"
-            hx-indicator="#post-{{ post.id }}-busy"
-            class="inline-flex items-center gap-1.5 min-h-[36px] px-3 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
-      Remove
-    </button>
-    {% include "components/_card_schedule_modal.html" with schedule_mode="approve" schedule_url=approve_url %}
-  </div>
-
-{% elif post.status == 'published' %}
-  <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
-    <a href="{% url 'content:post_detail' post.id %}"
-       class="inline-flex items-center gap-1 min-h-[36px] px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-      View live post
-    </a>
-  </div>
-
-{% elif post.status == 'failed' or post.publish_needs_retry %}
-  <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700"
-       x-data="{ showSchedule: false }">
-    <a href="{% url 'content:edit' post.id %}?next={{ request.get_full_path|urlencode }}"
-       class="inline-flex items-center gap-1 min-h-[36px] px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-      Edit &amp; preview
-    </a>
-    {% include "components/_htmx_action_btn.html" with url=republish_url label="Publish now" label_busy="Publishing…" tone="orange" hx_vals='{"schedule_intent": "post_now"}' %}
-    <button @click="showSchedule = true" type="button"
-            class="inline-flex items-center justify-center min-h-[36px] px-3 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-      Reschedule…
-    </button>
-    <button type="button"
-            hx-post="{{ delete_url }}"
-            hx-target="#share-post-row-{{ post.id }}"
-            hx-swap="delete"
-            hx-confirm="Remove this failed post?"
-            hx-indicator="#post-{{ post.id }}-busy"
-            class="inline-flex items-center gap-1.5 min-h-[36px] px-3 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
-      Remove
-    </button>
-    {% include "components/_card_schedule_modal.html" with schedule_mode="republish" schedule_url=republish_url %}
-  </div>
-
-{% elif post.status == 'scheduled' or post.status == 'approved' or post.status == 'publishing' %}
-  <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700"
-       x-data="{ showSchedule: false }">
-    <a href="{% url 'content:edit' post.id %}?next={{ request.get_full_path|urlencode }}"
-       class="inline-flex items-center gap-1 min-h-[36px] px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-      Edit &amp; preview
-    </a>
-
-    {% if post.status != 'publishing' %}
-      {% include "components/_htmx_action_btn.html" with url=republish_url label="Publish now" label_busy="Publishing…" tone="primary" hx_vals='{"schedule_intent": "post_now"}' %}
+  <div class="card-actions-share" x-data="{ showSchedule: false }">
+    <div class="card-actions-share-row">
       <button @click="showSchedule = true" type="button"
-              class="inline-flex items-center justify-center min-h-[36px] px-3 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-        {% if post.status == 'scheduled' %}Reschedule{% else %}Schedule…{% endif %}
+              class="inline-flex items-center gap-1.5 px-3 text-xs font-medium rounded-lg text-white bg-kova-600 hover:bg-kova-700 shadow-sm w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]">
+        Approve &amp; schedule
       </button>
+      <a href="{% url 'content:edit' post.id %}?next={{ request.get_full_path|urlencode }}"
+         class="px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors inline-flex items-center justify-center w-full sm:w-auto min-h-[44px] sm:min-h-[36px]">
+        Edit &amp; preview
+      </a>
       <button type="button"
               hx-post="{{ delete_url }}"
               hx-target="#share-post-row-{{ post.id }}"
               hx-swap="delete"
               hx-confirm="Remove this post from the bundle?"
               hx-indicator="#post-{{ post.id }}-busy"
-              class="inline-flex items-center gap-1.5 min-h-[36px] px-3 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
+              class="inline-flex items-center gap-1.5 px-3 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]">
         Remove
       </button>
-    {% endif %}
+    </div>
+    {% include "components/_card_schedule_modal.html" with schedule_mode="approve" schedule_url=approve_url %}
+  </div>
 
+{% elif post.status == 'published' %}
+  <div class="card-actions-share">
+    <a href="{% url 'content:post_detail' post.id %}"
+       class="inline-flex items-center gap-1 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]">
+      View live post
+    </a>
+  </div>
+
+{% elif post.status == 'failed' or post.publish_needs_retry %}
+  <div class="card-actions-share" x-data="{ showSchedule: false }">
+    <div class="card-actions-share-row">
+      <a href="{% url 'content:edit' post.id %}?next={{ request.get_full_path|urlencode }}"
+         class="inline-flex items-center gap-1 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]">
+        Edit &amp; preview
+      </a>
+      {% include "components/_htmx_action_btn.html" with url=republish_url label="Publish now" label_busy="Publishing…" tone="orange" hx_vals='{"schedule_intent": "post_now"}' extra_class="w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]" %}
+      <button @click="showSchedule = true" type="button"
+              class="inline-flex items-center justify-center px-3 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors w-full sm:w-auto min-h-[44px] sm:min-h-[36px]">
+        Reschedule…
+      </button>
+      <button type="button"
+              hx-post="{{ delete_url }}"
+              hx-target="#share-post-row-{{ post.id }}"
+              hx-swap="delete"
+              hx-confirm="Remove this failed post?"
+              hx-indicator="#post-{{ post.id }}-busy"
+              class="inline-flex items-center gap-1.5 px-3 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]">
+        Remove
+      </button>
+    </div>
+    {% include "components/_card_schedule_modal.html" with schedule_mode="republish" schedule_url=republish_url %}
+  </div>
+
+{% elif post.status == 'scheduled' or post.status == 'approved' or post.status == 'publishing' %}
+  <div class="card-actions-share" x-data="{ showSchedule: false }">
+    <div class="card-actions-share-row">
+      <a href="{% url 'content:edit' post.id %}?next={{ request.get_full_path|urlencode }}"
+         class="inline-flex items-center gap-1 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]">
+        Edit &amp; preview
+      </a>
+
+      {% if post.status != 'publishing' %}
+        {% include "components/_htmx_action_btn.html" with url=republish_url label="Publish now" label_busy="Publishing…" tone="primary" hx_vals='{"schedule_intent": "post_now"}' extra_class="w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]" %}
+        <button @click="showSchedule = true" type="button"
+                class="inline-flex items-center justify-center px-3 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors w-full sm:w-auto min-h-[44px] sm:min-h-[36px]">
+          {% if post.status == 'scheduled' %}Reschedule{% else %}Schedule…{% endif %}
+        </button>
+        <button type="button"
+                hx-post="{{ delete_url }}"
+                hx-target="#share-post-row-{{ post.id }}"
+                hx-swap="delete"
+                hx-confirm="Remove this post from the bundle?"
+                hx-indicator="#post-{{ post.id }}-busy"
+                class="inline-flex items-center gap-1.5 px-3 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors w-full sm:w-auto justify-center min-h-[44px] sm:min-h-[36px]">
+          Remove
+        </button>
+      {% endif %}
+    </div>
     {% include "components/_card_schedule_modal.html" with schedule_mode="republish" schedule_url=republish_url %}
   </div>
 {% endif %}

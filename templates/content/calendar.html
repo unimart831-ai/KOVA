@@ -7,18 +7,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-4">
+<div class="create-section">
   {% include "content/_create_tabs.html" %}
 
   <div class="page-toolbar">
-    <nav class="subnav-pills mb-0 pb-0" aria-label="Queue view">
+    <nav class="subnav-pills mb-0 pb-0 w-full" aria-label="Queue view">
       <a href="{% url 'content:queue' %}"
-         class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+         class="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg transition-colors min-h-[44px] sm:min-h-0 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
         Pipeline
       </a>
       <a href="{% url 'content:calendar' %}"
-         class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors bg-kova-600 text-white">
+         class="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg transition-colors min-h-[44px] sm:min-h-0 bg-kova-600 text-white">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Calendar
       </a>

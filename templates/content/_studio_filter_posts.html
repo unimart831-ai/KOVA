@@ -1,16 +1,16 @@
 {# Filter bar + posts-to-review — shared by approve-first and default Studio layouts #}
-<div class="flex flex-wrap items-center gap-3 px-1">
-  <form method="get" action="{% url 'content:studio' %}" class="flex flex-wrap items-center gap-2 w-full sm:w-auto" id="studio-filter-form">
+<div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 px-0 sm:px-1">
+  <form method="get" action="{% url 'content:studio' %}" class="studio-filter-grid w-full sm:w-auto" id="studio-filter-form">
     <input type="hidden" name="source" value="{{ current_source }}">
-    <div class="relative flex-1 sm:flex-initial sm:w-56">
-      <input type="text" name="q" value="{{ current_search }}" placeholder="Search posts…"
-             class="input text-xs pl-8 h-8 w-full"
-             hx-get="{% url 'content:studio_posts' %}" hx-trigger="keyup changed delay:300ms"
+    <div class="relative studio-filter-search">
+      <input type="search" name="q" value="{{ current_search }}" placeholder="Search posts…"
+             class="input pl-8 w-full touch-target sm:touch-target-none"
+             hx-get="{% url 'content:studio_posts' %}" hx-trigger="keyup changed delay:300ms, search"
              hx-target="#studio-posts-section" hx-swap="innerHTML"
              hx-include="#studio-filter-form">
-      <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     </div>
-    <select name="status" class="input text-xs h-8 w-auto"
+    <select name="status" class="input"
             hx-get="{% url 'content:studio_posts' %}" hx-trigger="change"
             hx-target="#studio-posts-section" hx-swap="innerHTML"
             hx-include="#studio-filter-form">
@@ -23,7 +23,7 @@
       <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
       <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Failed</option>
     </select>
-    <select name="platform" class="input text-xs h-8 w-auto"
+    <select name="platform" class="input"
             hx-get="{% url 'content:studio_posts' %}" hx-trigger="change"
             hx-target="#studio-posts-section" hx-swap="innerHTML"
             hx-include="#studio-filter-form">
@@ -34,7 +34,7 @@
       <option value="linkedin" {% if current_platform == 'linkedin' %}selected{% endif %}>LinkedIn</option>
       <option value="whatsapp" {% if current_platform == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
     </select>
-    <select name="post_format" class="input text-xs h-8 w-auto"
+    <select name="post_format" class="input"
             hx-get="{% url 'content:studio_posts' %}" hx-trigger="change"
             hx-target="#studio-posts-section" hx-swap="innerHTML"
             hx-include="#studio-filter-form">
@@ -50,7 +50,7 @@
 
   {% if not is_starter_plan %}
   <a href="{% if current_source == 'holiday' %}{% url 'content:studio' %}{% else %}{% url 'content:studio' %}?source=holiday{% endif %}"
-     class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md border transition-colors
+     class="inline-flex items-center justify-center gap-1.5 min-h-[44px] sm:h-8 px-3 text-xs font-medium rounded-md border transition-colors w-full sm:w-auto
        {% if current_source == 'holiday' %}
          bg-kova-600 text-white border-kova-600 hover:bg-kova-700
        {% else %}
