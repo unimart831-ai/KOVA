@@ -96,3 +96,41 @@ def test_adapt_caption_keeps_line_breaks():
     out = _adapt_caption(text, "instagram", 2200)
     assert "\n\n" in out
     assert "Line one" in out and "Line three" in out
+
+
+def test_polish_splits_dense_paragraph_after_short_blocks():
+    """Hook + short para + wall-of-text should become scannable paragraphs."""
+    raw = (
+        "The most annoying part of modern tech is the nightly charging ritual.\n\n"
+        "You've got your phone, your earbuds, your smartwatch... and a tangle of "
+        "three different cables you have to find, plug in, and hope they all work. "
+        "It's a hassle that feels completely out of sync with the convenience the "
+        "tech itself promises.\n\n"
+        "That's why we were so impressed by the magnetic wireless ecosystem. With the "
+        "oraimo 10000mAh Magnetic Wireless Power Bank, you can charge your phone, "
+        "earbuds, and watch without ever plugging in a single cable. It just snaps on. "
+        "It solves the 'dozen things to plug in' problem by turning your charging "
+        "station into a simple, clean dock. It's not just a gadget; it's a system "
+        "upgrade. You're eliminating cable clutter, reducing wear and tear on your "
+        "ports, and streamlining your entire daily routine. We're running a flash sale "
+        "on it for the next 48 hours. Genuine product, full warranty. What's your "
+        "biggest tech frustration at home?"
+    )
+    out = polish_post_caption(raw, "facebook")
+    blocks = [b.strip() for b in out.split("\n\n") if b.strip()]
+    assert len(blocks) >= 5
+    assert blocks[0].startswith("The most annoying part")
+    assert "oraimo" in out
+    assert out.endswith("?")
+
+
+def test_polish_splits_single_wall_of_text():
+    blob = (
+        "Hook sentence here. Second sentence sets context. Third adds detail. "
+        "Fourth keeps going. Fifth sentence too. Sixth wraps benefits. "
+        "Seventh mentions the offer. What's your take?"
+    )
+    out = polish_post_caption(blob, "facebook")
+    assert out.count("\n\n") >= 3
+    assert out.startswith("Hook sentence here.")
+    assert "What's your take?" in out

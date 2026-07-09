@@ -83,6 +83,16 @@ def edit_post(request, post_id):
             old_content = post.content_text
             post = form.save(commit=False)
 
+            from apps.content.post_copy import polish_post_caption
+
+            platform = post.social_account.platform if post.social_account else ""
+            post_format = getattr(post, "post_format", "text") or "text"
+            post.content_text = polish_post_caption(
+                post.content_text or "",
+                platform,
+                post_format=post_format,
+            )
+
             content_changed = post.content_text != old_content
             if content_changed and post.status in (
                 Post.Status.PENDING_APPROVAL,

@@ -145,6 +145,47 @@ def _group_sentences(sentences: list[str], *, per_paragraph: int) -> list[str]:
     return paragraphs
 
 
+def _expand_dense_block(
+    block: str,
+    *,
+    per_paragraph: int,
+    char_threshold: int = 180,
+) -> list[str]:
+    """Split a paragraph that packs too many sentences into readable chunks."""
+    block = block.strip()
+    if not block:
+        return []
+    sentences = split_description_sentences(block)
+    if len(sentences) <= 1:
+        return [block]
+    if len(sentences) <= per_paragraph and len(block) < char_threshold:
+        return [block]
+    return _group_sentences(sentences, per_paragraph=per_paragraph)
+
+
+def _split_caption_blocks(text: str) -> tuple[list[str], str]:
+    """Parse caption into body blocks and an optional trailing hashtag line."""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not normalized:
+        return [], ""
+
+    # Single newlines only — treat each line as its own paragraph.
+    if "\n\n" not in normalized and normalized.count("\n") >= 2:
+        lines = [ln.strip() for ln in normalized.split("\n") if ln.strip()]
+        normalized = "\n\n".join(lines)
+
+    if "\n\n" in normalized:
+        blocks = [b.strip() for b in normalized.split("\n\n") if b.strip()]
+    else:
+        lines = [ln.strip() for ln in normalized.split("\n") if ln.strip()]
+        blocks = [" ".join(lines)] if lines else []
+
+    hashtags = ""
+    if blocks and _is_hashtag_line(blocks[-1]):
+        hashtags = blocks.pop()
+    return blocks, hashtags
+
+
 def _enforce_social_structure(
     text: str,
     platform: str = "",
@@ -159,45 +200,45 @@ def _enforce_social_structure(
         return ""
 
     plat = (platform or "").lower()
-    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    blocks, hashtags = _split_caption_blocks(text)
+    if not blocks:
+        return hashtags
 
-    # Single newlines only — upgrade to paragraph breaks before deeper splitting.
-    if "\n\n" not in normalized and normalized.count("\n") >= 2:
-        lines = [ln.strip() for ln in normalized.split("\n") if ln.strip()]
-        normalized = "\n\n".join(lines)
+    per_para = _max_sentences_per_paragraph(plat)
+    expanded: list[str] = []
+    for block in blocks:
+        expanded.extend(_expand_dense_block(block, per_paragraph=per_para))
 
-    if "\n\n" in normalized:
-        blocks = [b.strip() for b in normalized.split("\n\n") if b.strip()]
-        if len(blocks) >= 2:
-            return normalized
-
-    lines = [ln.strip() for ln in normalized.split("\n") if ln.strip()]
-    hashtags = ""
-    if lines and _is_hashtag_line(lines[-1]):
-        hashtags = lines[-1]
-        lines = lines[:-1]
-
-    blob = " ".join(lines)
+    blob = " ".join(expanded)
     if len(blob) < 100:
+        sections = expanded[:]
         if hashtags:
-            return f"{blob}\n\n{hashtags}".strip()
-        return blob
+            sections.append(hashtags)
+        return "\n\n".join(s for s in sections if s)
 
     sentences = split_description_sentences(blob)
     if len(sentences) < 3:
+        sections = expanded[:]
         if hashtags:
-            return f"{blob}\n\n{hashtags}".strip()
-        return blob
+            sections.append(hashtags)
+        return "\n\n".join(s for s in sections if s)
 
-    hook = sentences[0]
-    body_sents = sentences[1:]
+    hook = expanded[0]
+    body_blocks = list(expanded[1:])
+
     cta_sents: list[str] = []
-    while body_sents and _looks_like_cta(body_sents[-1]):
-        cta_sents.insert(0, body_sents.pop())
+    if body_blocks:
+        last_sents = split_description_sentences(body_blocks[-1])
+        while last_sents and _looks_like_cta(last_sents[-1]):
+            cta_sents.insert(0, last_sents.pop())
+        if last_sents:
+            body_blocks[-1] = " ".join(last_sents)
+        elif cta_sents:
+            body_blocks.pop()
 
-    per_para = _max_sentences_per_paragraph(plat)
     if post_format == "reel" and plat in _REEL_SHORT_PLATFORMS:
         sections = [hook]
+        body_sents = split_description_sentences(" ".join(body_blocks)) if body_blocks else []
         if body_sents:
             sections.append(" ".join(body_sents[:2]))
         if cta_sents:
@@ -206,17 +247,13 @@ def _enforce_social_structure(
             sections.append(hashtags)
         return "\n\n".join(s for s in sections if s)
 
-    body_paras = _group_sentences(body_sents, per_paragraph=per_para)
-
     sections: list[str] = [hook]
-    if plat == "linkedin" and body_paras:
-        # Above-the-fold: keep opening tight with single breaks, then wider spacing.
-        lead = body_paras[0]
-        sections.append(lead)
-        if len(body_paras) > 1:
-            sections.append("\n\n".join(body_paras[1:]))
-    elif body_paras:
-        sections.extend(body_paras)
+    if plat == "linkedin" and body_blocks:
+        sections.append(body_blocks[0])
+        if len(body_blocks) > 1:
+            sections.append("\n\n".join(body_blocks[1:]))
+    elif body_blocks:
+        sections.extend(body_blocks)
 
     if cta_sents:
         sections.append(" ".join(cta_sents))

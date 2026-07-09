@@ -451,14 +451,27 @@ def approve_post(request, post_id):
     else:
         post.scheduled_at = get_next_best_slot(request.user, platform)
 
+    from apps.content.post_copy import polish_post_caption
+
+    platform = post.social_account.platform if post.social_account else ""
+    post_format = getattr(post, "post_format", "text") or "text"
+    polished = polish_post_caption(
+        post.content_text or "",
+        platform,
+        post_format=post_format,
+    )
+    save_fields = ["status", "scheduled_at", "updated_at"]
+    if polished != (post.content_text or ""):
+        post.content_text = polished
+        save_fields.append("content_text")
+
     post.status = Post.Status.APPROVED
     from apps.accounts.autopilot_helpers import mark_user_scheduled_publish
 
     if intent != "post_now":
         mark_user_scheduled_publish(post)
-        post.save(update_fields=["status", "scheduled_at", "visual_metadata", "updated_at"])
-    else:
-        post.save(update_fields=["status", "scheduled_at", "updated_at"])
+        save_fields.append("visual_metadata")
+    post.save(update_fields=save_fields)
 
     if post.seed_id:
         from apps.content.campaign_approval import sync_campaign_after_approval

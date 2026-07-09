@@ -101,9 +101,22 @@ def approve_post_for_user(
     scheduled_at, publish_now = _resolve_scheduled_at(
         user, post, schedule_intent, exact_datetime,
     )
+    from apps.content.post_copy import polish_post_caption
+
+    platform = post.social_account.platform if post.social_account else ""
+    post_format = getattr(post, "post_format", "text") or "text"
+    polished = polish_post_caption(
+        post.content_text or "",
+        platform,
+        post_format=post_format,
+    )
+    update_fields = ["status", "scheduled_at", "updated_at"]
+    if polished != (post.content_text or ""):
+        post.content_text = polished
+        update_fields.append("content_text")
     post.scheduled_at = scheduled_at
     post.status = Post.Status.APPROVED
-    post.save(update_fields=["status", "scheduled_at", "updated_at"])
+    post.save(update_fields=update_fields)
 
     if publish_now:
         from apps.content.tasks import publish_post
