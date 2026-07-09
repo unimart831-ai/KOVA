@@ -90,10 +90,13 @@ textarea {
     --kova-light-border-subtle: #F1F5F9;
 
     --app-canvas: #F8FAFC;
-    --app-sidebar: #FFFFFF;
+    --app-sidebar: #F8FAFC;
     --app-header: #FFFFFF;
     --app-surface: #FFFFFF;
     --app-border: #E2E8F0;
+
+    /* Marketing — warm off-white canvas (Buffer-style) */
+    --marketing-canvas: #FAFAF9;
     --kova-accent: var(--brand-primary);
     --kova-accent-hover: var(--brand-primary-hover);
     --kova-accent-subtle: var(--brand-primary-subtle);
@@ -166,7 +169,7 @@ textarea {
   .app-surface {
     background-color: var(--app-surface);
     border: 1px solid var(--app-border);
-    @apply rounded-xl shadow-kova dark:shadow-none;
+    @apply rounded-xl shadow-sm dark:shadow-none;
   }
   .stream-item {
     @apply flex items-start gap-3 p-3 rounded-xl transition-colors;
@@ -195,7 +198,10 @@ textarea {
     }
   }
   .btn-primary {
-    @apply btn bg-kova-700 text-white hover:bg-kova-800 focus:ring-kova-600 shadow-sm;
+    @apply btn bg-kova-500 text-white hover:bg-kova-600 focus:ring-kova-500 shadow-sm;
+  }
+  .btn-primary-pill {
+    @apply btn-primary rounded-full px-6 font-semibold;
   }
   .btn-secondary {
     @apply btn bg-white text-kova-700 border border-kova-700 hover:bg-kova-50 focus:ring-kova-600 dark:bg-gray-800 dark:text-kova-300 dark:border-kova-600 dark:hover:bg-kova-950/30;
@@ -269,7 +275,7 @@ textarea {
   .card {
     background-color: var(--app-surface);
     border: 1px solid var(--app-border);
-    @apply rounded-xl shadow-kova dark:bg-gray-800 dark:border-gray-700 dark:shadow-none;
+    @apply rounded-xl shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:shadow-none;
   }
   .card-body {
     @apply p-4 sm:p-5;
@@ -306,14 +312,14 @@ textarea {
     @apply bg-gray-800;
   }
   .nav-link-active {
-    @apply flex items-center pl-[9px] pr-3 py-2 text-sm font-semibold rounded-lg shadow-sm;
-    background-color: var(--app-surface);
+    @apply flex items-center px-3 py-2 text-sm font-semibold rounded-lg;
+    background-color: #FFFFFF;
     color: var(--brand-primary);
     border: 1px solid var(--app-border);
-    border-left: 3px solid var(--brand-primary);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .dark .nav-link-active {
-    @apply bg-kova-950/40 text-kova-300 border-kova-800 border-l-kova-500 shadow-none;
+    @apply bg-gray-800 text-kova-300 border-gray-700 shadow-none;
   }
 
   /* Section divider for sidebar grouping */
@@ -342,12 +348,122 @@ textarea {
     @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm;
   }
 
-  /* Marketing / auth hero — pure white light, flat professional dark */
+  /* Marketing / auth hero — warm off-white, spacious */
   .brand-atmosphere {
-    @apply relative overflow-hidden bg-white dark:bg-gray-900;
+    background-color: var(--marketing-canvas);
+    @apply relative overflow-hidden dark:bg-gray-900;
   }
   .brand-atmosphere .orb {
     @apply hidden;
+  }
+
+  .marketing-eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.14em] text-kova-600 dark:text-kova-400 mb-4;
+  }
+
+  .marketing-hero-grid {
+    @apply grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28;
+  }
+
+  .marketing-hero-copy h1 {
+    @apply text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold text-gray-900 dark:text-gray-50 tracking-tight leading-[1.08];
+  }
+
+  .marketing-hero-copy .hero-lead {
+    @apply mt-6 text-lg sm:text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-xl;
+  }
+
+  .marketing-hero-copy .hero-body {
+    @apply mt-4 text-base text-gray-500 dark:text-gray-400 leading-relaxed max-w-xl;
+  }
+
+  .marketing-hero-actions {
+    @apply mt-8 flex flex-col sm:flex-row sm:items-center gap-4;
+  }
+
+  .marketing-hero-note {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+
+  /* Floating product preview — Buffer-style app mock */
+  .product-preview {
+    @apply relative mx-auto w-full max-w-[540px];
+  }
+  .product-preview-frame {
+    @apply rounded-2xl border border-gray-200/80 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+  }
+  .product-preview-chrome {
+    @apply flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900;
+  }
+  .product-preview-dots {
+    @apply flex gap-1.5;
+  }
+  .product-preview-dot {
+    @apply w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600;
+  }
+  .product-preview-layout {
+    @apply flex min-h-[320px];
+  }
+  .product-preview-sidebar {
+    @apply w-14 shrink-0 border-r border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80 py-4 flex flex-col items-center gap-3;
+  }
+  .product-preview-nav-icon {
+    @apply w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-500;
+  }
+  .product-preview-nav-icon--active {
+    @apply bg-kova-50 text-kova-600 dark:bg-kova-950/50 dark:text-kova-400;
+  }
+  .product-preview-main {
+    @apply flex-1 p-4 sm:p-5 bg-white dark:bg-gray-900;
+  }
+  .product-preview-header {
+    @apply flex items-center justify-between gap-3 mb-4;
+  }
+  .product-preview-title {
+    @apply text-sm font-bold text-gray-900 dark:text-white;
+  }
+  .product-preview-sub {
+    @apply text-xs text-gray-500 dark:text-gray-400;
+  }
+  .product-preview-pill {
+    @apply inline-flex items-center rounded-full bg-kova-50 dark:bg-kova-950/40 text-kova-700 dark:text-kova-300 text-[10px] font-semibold px-2.5 py-1;
+  }
+  .product-preview-slot {
+    @apply rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 mb-3;
+  }
+  .product-preview-slot-head {
+    @apply flex items-start justify-between gap-2 mb-2;
+  }
+  .product-preview-slot-title {
+    @apply text-xs font-semibold text-gray-900 dark:text-white leading-snug;
+  }
+  .product-preview-slot-meta {
+    @apply text-[10px] text-gray-500 dark:text-gray-400;
+  }
+  .product-preview-thumb {
+    @apply w-full h-16 rounded-lg bg-gradient-to-br from-kova-50 to-gray-100 dark:from-kova-950/30 dark:to-gray-800 mb-2;
+  }
+  .product-preview-actions {
+    @apply flex gap-2;
+  }
+  .product-preview-btn {
+    @apply inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] font-semibold;
+  }
+  .product-preview-btn--primary {
+    @apply bg-kova-500 text-white;
+  }
+  .product-preview-btn--ghost {
+    @apply border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300;
+  }
+  .product-preview-float {
+    @apply absolute -bottom-4 -left-4 sm:-left-8 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg px-3 py-2.5 max-w-[180px];
+  }
+  .product-preview-float-label {
+    @apply text-[10px] font-semibold text-gray-900 dark:text-white;
+  }
+  .product-preview-float-sub {
+    @apply text-[10px] text-gray-500 dark:text-gray-400 mt-0.5;
   }
 
   /* Marketing pages — shared section patterns */
@@ -355,13 +471,15 @@ textarea {
     @apply text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold text-gray-500 dark:text-gray-400 mt-2 block;
   }
   .marketing-stats-strip {
-    @apply py-12 border-y border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900;
+    @apply py-12 border-y border-gray-200/80 dark:border-gray-800;
+    background-color: var(--marketing-canvas);
   }
   .marketing-section-muted {
-    @apply bg-gray-50 dark:bg-gray-900;
+    @apply bg-gray-50/80 dark:bg-gray-900;
   }
   .marketing-section-default {
-    @apply bg-white dark:bg-gray-900;
+    background-color: var(--marketing-canvas);
+    @apply dark:bg-gray-900;
   }
   .marketing-card {
     @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
@@ -381,7 +499,7 @@ textarea {
     @apply flex-1 min-w-0 px-4 py-3.5 sm:py-3 text-base text-gray-900 dark:text-white bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500;
   }
   .hero-prompt-btn {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-xl bg-growth-500 hover:bg-growth-600 text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-growth-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shrink-0;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-full bg-kova-500 hover:bg-kova-600 text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-kova-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shrink-0;
   }
 
   /* Agent loop badge — landing hero pill */

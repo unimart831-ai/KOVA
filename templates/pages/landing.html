@@ -10,24 +10,37 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="brand-atmosphere relative overflow-hidden">
-  {% include "components/brand/_atmosphere_orbs.html" %}
+<section class="brand-atmosphere relative overflow-hidden" id="how-it-works">
+  <div class="marketing-hero-grid">
+    <div class="marketing-hero-copy text-left">
+      {% include "components/brand/_agent_loop_badge.html" %}
 
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-28 text-center">
-    {% include "components/brand/_agent_loop_badge.html" %}
+      <h1 class="reveal reveal-delay-1">
+        {% include "components/brand/_north_star_tagline.html" %}
+      </h1>
+      <p class="hero-lead reveal reveal-delay-2">{{ marketing_hero_subhead }}</p>
+      <p class="hero-body reveal reveal-delay-2">{{ marketing_hero_body }}</p>
 
-    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-gray-50 tracking-tight leading-[1.1] reveal reveal-delay-1">
-      {% include "components/brand/_north_star_tagline.html" %}
-    </h1>
-    <p class="mt-6 max-w-2xl mx-auto text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 leading-snug reveal reveal-delay-2">
-      {{ marketing_hero_subhead }}
-    </p>
-    <p class="mt-4 max-w-2xl mx-auto text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed reveal reveal-delay-2">
-      {{ marketing_hero_body }}
-    </p>
+      <div class="marketing-hero-actions reveal reveal-delay-3">
+        <a href="{% url 'account_signup' %}" class="btn-primary-pill btn-lg inline-flex items-center gap-2">
+          Start free trial
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+        </a>
+        <span class="marketing-hero-note">No credit card · 7-day trial · KSh {{ kova_plan.price_kes }}/mo</span>
+      </div>
 
-    {% include "components/brand/_landing_hero_strip.html" %}
-    {% include "components/brand/_hero_prompt.html" %}
+      {% include "components/brand/_landing_hero_strip.html" %}
+    </div>
+
+    <div class="hidden lg:block">
+      {% include "components/brand/_landing_product_preview.html" %}
+    </div>
+  </div>
+
+  <div class="lg:hidden px-4 pb-12 max-w-xl mx-auto">
+    {% include "components/brand/_landing_product_preview.html" %}
   </div>
 </section>
 
