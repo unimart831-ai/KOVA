@@ -476,6 +476,75 @@ def _collect_reel_image_sources(post) -> list[str]:
     return attachment_urls
 
 
+def _reel_compose_queued_at(post):
+    """When reel MP4 composition was last queued (not conflated with publish retries)."""
+    from django.utils.dateparse import parse_datetime
+
+    raw = (post.visual_metadata or {}).get("video_compose_queued_at")
+    if not raw:
+        return None
+    dt = parse_datetime(str(raw))
+    if not dt:
+        return None
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return dt
+
+
+def _reel_compose_stuck_seconds(post, *, threshold_sec: int = 180) -> bool:
+    """True when compose is pending longer than threshold without a video."""
+    if _post_has_reel_video(post):
+        return False
+    meta = post.visual_metadata or {}
+    if meta.get("video_compose_status") != "pending":
+        return False
+    queued_at = _reel_compose_queued_at(post)
+    if not queued_at:
+        return True
+    age = (timezone.now() - queued_at).total_seconds()
+    return age >= threshold_sec
+
+
+def _ensure_reel_compose_before_publish(post) -> None:
+    """
+    Guarantee compose_reel_video is queued before publish_post waits on MP4.
+
+    publish_post may run before image generation finishes queuing compose, or
+    after a worker crash left video_compose_status=pending with no running task.
+    """
+    from apps.utils import fire_task
+
+    if _post_has_reel_video(post):
+        return
+
+    meta = dict(post.visual_metadata or {})
+    compose_status = meta.get("video_compose_status")
+
+    if compose_status == "failed":
+        return
+
+    if compose_status in (None, ""):
+        logger.info(
+            "publish_post: queuing reel compose for post %s (was never started)",
+            post.pk,
+        )
+        _queue_reel_compose(str(post.pk))
+        return
+
+    if compose_status == "pending" and _reel_compose_stuck_seconds(post):
+        retries = int(meta.get("video_compose_retries") or 0)
+        meta["video_compose_retries"] = retries + 1
+        meta["video_compose_queued_at"] = timezone.now().isoformat()
+        post.visual_metadata = meta
+        post.save(update_fields=["visual_metadata"])
+        logger.warning(
+            "publish_post: re-queuing stuck reel compose for post %s (retry %d)",
+            post.pk,
+            retries + 1,
+        )
+        fire_task(compose_reel_video, str(post.pk))
+
+
 def _queue_reel_compose(post_id: str) -> None:
     from apps.content.models import Post
     from apps.utils import fire_task
@@ -484,6 +553,8 @@ def _queue_reel_compose(post_id: str) -> None:
         post = Post.objects.get(pk=post_id)
         meta = dict(post.visual_metadata or {})
         meta["video_compose_status"] = "pending"
+        meta["video_compose_queued_at"] = timezone.now().isoformat()
+        meta.pop("video_compose_error", None)
         post.visual_metadata = meta
         post.save(update_fields=["visual_metadata", "updated_at"])
     except Post.DoesNotExist:
@@ -1084,6 +1155,8 @@ def compose_reel_video(post_id: str):
 
     meta = dict(post.visual_metadata or {})
     meta["video_compose_status"] = "pending"
+    if not meta.get("video_compose_queued_at"):
+        meta["video_compose_queued_at"] = timezone.now().isoformat()
     post.visual_metadata = meta
     post.save(update_fields=["visual_metadata", "updated_at"])
 
@@ -1529,7 +1602,20 @@ def publish_post(self, post_id: str):
     if _post_format_early == Post.PostFormat.REEL:
         compose_status = (post.visual_metadata or {}).get("video_compose_status")
         if not _post_has_reel_video(post):
-            if compose_status in (None, "pending"):
+            if compose_status == "failed":
+                err = (post.visual_metadata or {}).get("video_compose_error") or "Reel composition failed"
+                _fail_post(post, err[:500])
+                Notification.create_for_user(
+                    post.user, "publish_failed",
+                    "Your Reel video could not be composed. Open the post in Studio and tap Retry.",
+                    related_post=post,
+                )
+                from apps.briefs.publish_notifications import notify_publish_failure
+
+                notify_publish_failure(post, reason=err[:200])
+                return {"error": "reel_compose_failed"}
+            if compose_status in (None, "pending", ""):
+                _ensure_reel_compose_before_publish(post)
                 logger.info(
                     "publish_post: reel video not ready for post %s — retrying in 90s",
                     post_id,
@@ -2369,9 +2455,9 @@ def recover_stuck_reel_compose():
 
         meta = dict(post.visual_metadata or {})
         retries = int(meta.get("video_compose_retries") or 0)
-        updated = post.updated_at
+        queued_at = _reel_compose_queued_at(post) or post.updated_at
 
-        if updated < fail_cutoff and retries >= 2:
+        if queued_at < fail_cutoff and retries >= 2:
             meta["video_compose_status"] = "failed"
             meta["video_compose_error"] = (
                 "Reel video composition timed out — open the post in Studio and retry."
@@ -2388,10 +2474,11 @@ def recover_stuck_reel_compose():
             failed += 1
             continue
 
-        if updated < retry_cutoff:
+        if queued_at < retry_cutoff:
             meta["video_compose_retries"] = retries + 1
+            meta["video_compose_queued_at"] = timezone.now().isoformat()
             post.visual_metadata = meta
-            post.save(update_fields=["visual_metadata", "updated_at"])
+            post.save(update_fields=["visual_metadata"])
             fire_task(compose_reel_video, str(post.pk))
             requeued += 1
 

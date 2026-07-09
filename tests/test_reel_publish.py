@@ -7,10 +7,12 @@ import pytest
 
 from apps.content.models import Post
 from apps.content.tasks import (
+    _ensure_reel_compose_before_publish,
     _fail_post,
     _is_unreachable_platform_url,
     _platform_media_url,
     _public_url_for_file,
+    _queue_reel_compose,
     _resolve_reel_publish_video_url,
     _reel_video_url,
     _resolve_tiktok_privacy,
@@ -170,6 +172,25 @@ class TestFacebookReelPublish:
             )
             mock_reel.assert_called_once()
 
+    def test_publish_post_reels_with_video_url_kwarg(self):
+        """Regression: video_url must not be passed twice to publish_reel."""
+        provider = FacebookProvider()
+        with patch.object(provider, "publish_reel") as mock_reel:
+            mock_reel.return_value = PublishResult(success=True, platform_post_id="1")
+            provider.publish_post(
+                "token",
+                "caption",
+                media_urls=["https://cdn.example.com/reel.mp4"],
+                page_id="page1",
+                page_access_token="page_token",
+                media_type="REELS",
+                video_url="https://cdn.example.com/reel.mp4",
+            )
+            mock_reel.assert_called_once()
+            args, kwargs = mock_reel.call_args
+            assert args[1] == "https://cdn.example.com/reel.mp4"
+            assert "video_url" not in kwargs
+
 
 class TestInstagramReelPublish:
     def test_publish_post_uses_page_access_token(self):
@@ -205,3 +226,65 @@ class TestInstagramReelPublish:
             )
             mock_reels.assert_called_once()
             assert mock_reels.call_args[0][4] == "https://cdn.example.com/reel.mp4"
+
+
+@pytest.mark.django_db
+class TestReelComposeOrchestration:
+    def test_ensure_reel_compose_queues_when_never_started(self, user, monkeypatch):
+        from apps.platforms.models import SocialAccount
+
+        queued = []
+
+        def _fake_queue(post_id):
+            queued.append(post_id)
+
+        monkeypatch.setattr("apps.content.tasks._queue_reel_compose", _fake_queue)
+
+        account = SocialAccount.objects.create(
+            user=user,
+            platform="instagram",
+            username="test_ig",
+            access_token="token",
+            is_active=True,
+        )
+        post = Post.objects.create(
+            user=user,
+            social_account=account,
+            platform="instagram",
+            content_text="Reel",
+            post_format=Post.PostFormat.REEL,
+            media_urls=["https://cdn.example.com/frame.jpg"],
+            visual_metadata={},
+        )
+        _ensure_reel_compose_before_publish(post)
+        assert queued == [str(post.pk)]
+
+    def test_queue_reel_compose_sets_queued_at(self, user, monkeypatch):
+        from apps.platforms.models import SocialAccount
+
+        fired = []
+        monkeypatch.setattr(
+            "apps.utils.fire_task",
+            lambda task, *args, **kwargs: fired.append(args[0] if args else None),
+        )
+
+        account = SocialAccount.objects.create(
+            user=user,
+            platform="instagram",
+            username="test_ig",
+            access_token="token",
+            is_active=True,
+        )
+        post = Post.objects.create(
+            user=user,
+            social_account=account,
+            platform="instagram",
+            content_text="Reel",
+            post_format=Post.PostFormat.REEL,
+            media_urls=["https://cdn.example.com/frame.jpg"],
+        )
+        _queue_reel_compose(str(post.pk))
+        post.refresh_from_db()
+        assert post.visual_metadata.get("video_compose_status") == "pending"
+        assert post.visual_metadata.get("video_compose_queued_at")
+        assert fired == [str(post.pk)]

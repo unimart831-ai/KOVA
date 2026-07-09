@@ -401,26 +401,32 @@ class FacebookProvider(BaseProvider):
 
         media_type = (kwargs.get("media_type") or "").upper()
         if media_type == "REELS":
-            video_url = kwargs.get("video_url") or (media_urls[0] if media_urls else "")
+            reel_kwargs = dict(kwargs)
+            video_url = reel_kwargs.pop("video_url", None) or (
+                media_urls[0] if media_urls else ""
+            )
             if not video_url:
                 return PublishResult(success=False, error="video_url is required for Facebook Reels")
             return self.publish_reel(
-                access_token, video_url, description=content, **kwargs,
+                access_token, video_url, description=content, **reel_kwargs,
             )
         if media_type == "STORIES":
+            story_kwargs = dict(kwargs)
+            story_video_url = story_kwargs.pop("video_url", None)
             return self.publish_story(
                 access_token,
                 media_urls=media_urls,
                 media_files=media_files,
-                video_url=kwargs.get("video_url"),
-                **kwargs,
+                video_url=story_video_url,
+                **story_kwargs,
             )
         if media_type == "VIDEO" or (
             media_urls and len(media_urls) == 1 and _is_video_media_url(media_urls[0])
         ):
-            video_url = kwargs.get("video_url") or media_urls[0]
+            video_kwargs = dict(kwargs)
+            video_url = video_kwargs.pop("video_url", None) or media_urls[0]
             return self.publish_video(
-                access_token, video_url, description=content, **kwargs,
+                access_token, video_url, description=content, **video_kwargs,
             )
 
         payload = {"message": content, "access_token": page_token}
