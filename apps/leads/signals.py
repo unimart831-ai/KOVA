@@ -106,9 +106,12 @@ def notify_owner_of_new_lead(sender, instance, created, **kwargs):
         return
 
     try:
-        from apps.briefs.owner_alerts import notify_owner_new_lead
+        from apps.briefs.owner_alerts import notify_owner_hot_lead, notify_owner_new_lead
 
-        notify_owner_new_lead(instance)
+        if getattr(instance, "temperature", "") == "hot":
+            notify_owner_hot_lead(instance)
+        else:
+            notify_owner_new_lead(instance)
     except Exception:
         import logging
         logging.getLogger(__name__).exception(

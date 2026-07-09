@@ -30,6 +30,19 @@
                 {% if scene.is_original and scene.primary_hidden %}opacity-40{% endif %}">
       <img src="{{ scene.url }}" alt="{{ scene.label }}" class="w-full aspect-square object-cover">
 
+      {% if scene.show_compare and scene.original_url %}
+      <div class="grid grid-cols-2 gap-0.5 border-t border-white/20">
+        <div class="relative">
+          <img src="{{ scene.original_url }}" alt="Original" class="w-full aspect-square object-cover opacity-90">
+          <span class="absolute bottom-0 inset-x-0 text-[8px] font-bold text-center text-white bg-black/60 py-0.5">Before</span>
+        </div>
+        <div class="relative">
+          <img src="{{ scene.url }}" alt="Polished" class="w-full aspect-square object-cover">
+          <span class="absolute bottom-0 inset-x-0 text-[8px] font-bold text-center text-white bg-kova-600/80 py-0.5">After</span>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="absolute inset-x-0 top-0 flex flex-wrap gap-1 p-1.5">
         {% if scene.is_hero %}
         <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-kova-600 text-white">Hero</span>

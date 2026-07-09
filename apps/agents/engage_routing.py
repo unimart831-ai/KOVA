@@ -103,12 +103,17 @@ def safety_check(ctx: SafetyContext) -> list[str]:
 # ── The core routing decision ───────────────────────────────────────────────
 
 
+_FAQ_AUTO_INTENTS = frozenset({"hours", "location", "praise", "booking"})
+_FAQ_AUTO_SEND_MIN = 0.72
+
+
 def route_reply(
     *,
     autonomy_level: str,
     confidence: float,
     safety_flags: Iterable[str] = (),
     suggested_action: str = "reply",
+    intent: str = "",
 ) -> RoutingAction:
     """Decide where an Engage Agent reply goes.
 
@@ -144,6 +149,14 @@ def route_reply(
 
     level = (autonomy_level or "suggest").lower()
     auto_send_min, draft_min = _THRESHOLDS.get(level, _THRESHOLDS["suggest"])
+
+    intent_key = (intent or "").lower()
+    if (
+        level in ("graduated", "aggressive")
+        and intent_key in _FAQ_AUTO_INTENTS
+        and not flags
+    ):
+        auto_send_min = min(auto_send_min, _FAQ_AUTO_SEND_MIN)
 
     if c >= auto_send_min:
         return RoutingAction.AUTO_SEND

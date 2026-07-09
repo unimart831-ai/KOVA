@@ -462,6 +462,10 @@ def check_post_publish_gate(post, user) -> tuple[bool, str, int]:
     if blocking:
         return False, blocking, ps.overall
 
+    stock_block = _stock_publish_block(post)
+    if stock_block:
+        return False, stock_block, ps.overall
+
     qa_enabled = bool(getattr(settings, "CAMPAIGN_PUBLISH_QA_ENABLED", False))
     if not qa_enabled:
         return True, "", ps.overall
@@ -474,6 +478,33 @@ def check_post_publish_gate(post, user) -> tuple[bool, str, int]:
         return False, reason, ps.overall
 
     return True, "", ps.overall
+
+
+def _stock_publish_block(post) -> str | None:
+    """Block publishing promos for out-of-stock products."""
+    product = getattr(post, "product", None)
+    if not product:
+        return None
+    from apps.products.models import Product
+
+    if product.stock_status == Product.StockStatus.OUT_OF_STOCK:
+        return f"{product.name} is out of stock — update STOCK or hide before publishing."
+    return None
+
+
+def brand_consistency_hint(post, user) -> str | None:
+    """Lightweight brand consistency note for QA display (not a hard block)."""
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return None
+    voice = (getattr(profile, "brand_voice", "") or "").lower()
+    text = (post.content_text or "").lower()
+    if not voice or len(text) < 20:
+        return None
+    tone_words = [w.strip() for w in (getattr(profile, "tone_attributes", "") or "").split(",") if w.strip()]
+    if tone_words and not any(w.lower() in text for w in tone_words[:3]):
+        return "Caption may not match your tone — quick review suggested."
+    return None
 
 
 def qa_display_for_studio(report: CampaignQAReport) -> dict[str, Any]:

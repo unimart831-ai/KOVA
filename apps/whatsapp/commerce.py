@@ -27,10 +27,12 @@ BOOKING_TRIGGERS = {"book", "appointment", "schedule", "booking", "reserve"}
 PAYMENT_TRIGGERS = {"pay", "buy", "order", "nunua", "lipa"}
 
 COMMERCE_STATES = {
-    "idle", "browsing", "product_detail",
+    "idle", "browsing", "product_detail", "cart_review",
     "booking_select", "booking_time", "booking_confirm",
     "payment_pending",
 }
+
+CART_TRIGGERS = {"cart", "my cart", "checkout", "view cart", "basket"}
 
 
 def handle_commerce_message(conversation, message, social_account):
@@ -68,6 +70,12 @@ def handle_commerce_message(conversation, message, social_account):
     handled = False
 
     if state == "idle":
+        if _matches_any(text_lower, CART_TRIGGERS):
+            return _show_cart(
+                conversation, social_account, provider,
+                social_account.access_token, conversation.contact_wa_id,
+                ctx, user,
+            )
         handled = _handle_idle(
             conversation, message, social_account, provider,
             text_lower, is_interactive, reply_id, ctx, user,
@@ -79,6 +87,11 @@ def handle_commerce_message(conversation, message, social_account):
         )
     elif state == "product_detail":
         handled = _handle_product_detail(
+            conversation, message, social_account, provider,
+            text_lower, is_interactive, reply_id, ctx, user,
+        )
+    elif state == "cart_review":
+        handled = _handle_cart_review(
             conversation, message, social_account, provider,
             text_lower, is_interactive, reply_id, ctx, user,
         )
@@ -174,6 +187,14 @@ def _handle_product_detail(conversation, message, social_account, provider,
             return _initiate_product_payment(
                 conversation, social_account, provider, token, to, ctx, user, product_id,
             )
+
+    if is_interactive and reply_id == "add_cart":
+        product_id = ctx.get("current_product_id")
+        if product_id:
+            return _add_to_cart(conversation, social_account, provider, token, to, ctx, user, product_id)
+
+    if is_interactive and reply_id == "view_cart":
+        return _show_cart(conversation, social_account, provider, token, to, ctx, user)
 
     if is_interactive and reply_id == "ask_question":
         _set_state(conversation, ctx, "idle")
@@ -441,6 +462,7 @@ def _show_product_detail(conversation, social_account, provider, token, to,
     buttons = []
     if product.stock_status != "out_of_stock":
         buttons.append({"id": "buy_now", "title": "Buy Now 💳"})
+        buttons.append({"id": "add_cart", "title": "Add to Cart 🛒"})
     buttons.append({"id": "ask_question", "title": "Ask a Question"})
     buttons.append({"id": "browse_more", "title": "Browse More"})
 
@@ -449,6 +471,12 @@ def _show_product_detail(conversation, social_account, provider, token, to,
         body="What would you like to do?",
         buttons=buttons[:3],
     )
+    if len(buttons) > 3:
+        provider.send_interactive_buttons(
+            access_token=token, to=to,
+            body="More options:",
+            buttons=buttons[3:6][:3],
+        )
 
     ctx["current_product_id"] = str(product.pk)
     _set_state(conversation, ctx, "product_detail")
@@ -880,6 +908,128 @@ def _trigger_stk_push(conversation, social_account, provider, token, to,
                    "or contact us directly.")
         _reset_state(conversation, ctx)
         return True
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CART (multi-item checkout)
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+def _cart_items(ctx) -> list[dict]:
+    items = ctx.get("cart_items")
+    return list(items) if isinstance(items, list) else []
+
+
+def _save_cart(ctx, items: list[dict]) -> None:
+    ctx["cart_items"] = items
+
+
+def _add_to_cart(conversation, social_account, provider, token, to, ctx, user, product_id):
+    from apps.products.models import Product
+
+    try:
+        product = Product.objects.get(pk=product_id, user=user, is_active=True)
+    except Product.DoesNotExist:
+        _send_text(provider, token, to, "Product not found.")
+        return True
+
+    if product.stock_status == "out_of_stock" or not product.price:
+        _send_text(provider, token, to, f"*{product.name}* isn't available to add right now.")
+        return True
+
+    items = _cart_items(ctx)
+    for row in items:
+        if row.get("product_id") == str(product.pk):
+            row["qty"] = int(row.get("qty") or 1) + 1
+            break
+    else:
+        items.append({
+            "product_id": str(product.pk),
+            "name": product.name[:80],
+            "price": str(product.price),
+            "qty": 1,
+        })
+    _save_cart(ctx, items)
+    _set_state(conversation, ctx, "cart_review")
+    _send_text(
+        provider, token, to,
+        f"Added *{product.name}* to cart ({len(items)} item type{'s' if len(items) != 1 else ''}).\n"
+        "Reply *checkout* to pay · *cart* to review.",
+    )
+    return True
+
+
+def _show_cart(conversation, social_account, provider, token, to, ctx, user):
+    items = _cart_items(ctx)
+    if not items:
+        _send_text(provider, token, to, "Your cart is empty. Reply *shop* to browse products.")
+        _set_state(conversation, ctx, "idle")
+        return True
+
+    lines = ["🛒 *Your cart*"]
+    total = Decimal("0")
+    for row in items:
+        qty = int(row.get("qty") or 1)
+        price = Decimal(row.get("price") or "0")
+        sub = price * qty
+        total += sub
+        lines.append(f"• {row.get('name', 'Item')} ×{qty} — KES {sub:,.0f}")
+
+    lines.append(f"\n*Total: KES {total:,.0f}*")
+    _send_text(provider, token, to, "\n".join(lines))
+
+    provider.send_interactive_buttons(
+        access_token=token, to=to,
+        body="Ready to checkout?",
+        buttons=[
+            {"id": "checkout_cart", "title": "Checkout 💳"},
+            {"id": "browse_more", "title": "Add More"},
+            {"id": "clear_cart", "title": "Clear Cart"},
+        ],
+    )
+    _set_state(conversation, ctx, "cart_review")
+    return True
+
+
+def _handle_cart_review(conversation, message, social_account, provider,
+                        text_lower, is_interactive, reply_id, ctx, user):
+    token = social_account.access_token
+    to = conversation.contact_wa_id
+
+    if is_interactive and reply_id == "clear_cart":
+        _save_cart(ctx, [])
+        _reset_state(conversation, ctx)
+        _send_text(provider, token, to, "Cart cleared.")
+        return True
+
+    if is_interactive and reply_id == "browse_more":
+        return _show_categories(conversation, social_account, provider, token, to, ctx, user)
+
+    if is_interactive and reply_id == "checkout_cart" or text_lower in {"checkout", "pay"}:
+        items = _cart_items(ctx)
+        if not items:
+            return _show_cart(conversation, social_account, provider, token, to, ctx, user)
+        total = Decimal("0")
+        names = []
+        for row in items:
+            qty = int(row.get("qty") or 1)
+            price = Decimal(row.get("price") or "0")
+            total += price * qty
+            names.append(f"{row.get('name', 'Item')} ×{qty}")
+        ctx["payment_amount"] = str(total)
+        ctx["payment_description"] = "Cart: " + ", ".join(names)[:200]
+        ctx["payment_cart"] = items
+        _set_state(conversation, ctx, "payment_pending")
+        _send_text(
+            provider, token, to,
+            f"💳 *Checkout*\nTotal: KES {total:,.0f}\n\nSend your M-Pesa number to pay.",
+        )
+        return True
+
+    if _matches_any(text_lower, CART_TRIGGERS):
+        return _show_cart(conversation, social_account, provider, token, to, ctx, user)
+
+    return False
 
 
 # ═════════════════════════════════════════════════════════════════════════════

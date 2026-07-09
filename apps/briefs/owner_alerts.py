@@ -82,6 +82,40 @@ def queue_owner_alert(user, body: str) -> None:
         send_owner_alert(user, body)
 
 
+def notify_owner_hot_lead(lead) -> None:
+    """Stronger alert for HOT leads."""
+    if getattr(lead, "temperature", "") != "hot":
+        notify_owner_new_lead(lead)
+        return
+    who = lead.name or lead.phone or lead.email or "Someone"
+    body = (
+        f"🔥 *Hot lead needs you*\n\n"
+        f"{who}"
+        f"{chr(10) + '📞 ' + lead.phone if lead.phone else ''}\n\n"
+        f"Reply LEADS · or open inbox to respond."
+    )
+    queue_owner_alert(lead.user, body)
+
+
+def notify_owner_complaint(user, *, platform: str, preview: str) -> None:
+    body = (
+        f"⚠️ *Complaint on {platform}*\n"
+        f"\"{preview[:160]}{'…' if len(preview) > 160 else ''}\"\n\n"
+        f"Reply REPLIES to review AI draft · APPROVE REPLY to send."
+    )
+    queue_owner_alert(user, body)
+
+
+def notify_owner_unanswered_dms(user, count: int) -> None:
+    if count <= 0:
+        return
+    body = (
+        f"💬 *{count} conversation{'s' if count != 1 else ''} waiting*\n"
+        f"Reply REPLIES to review AI drafts."
+    )
+    queue_owner_alert(user, body)
+
+
 def notify_owner_new_lead(lead) -> None:
     """Alert the owner on their personal WhatsApp when a new lead is captured."""
     source_labels = {

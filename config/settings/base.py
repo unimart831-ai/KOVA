@@ -347,6 +347,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "emails.send_weekly_reports_all",
         "schedule": 7 * 24 * 3600.0,  # weekly — performance summary emails
     },
+    "send-weekly-smm-whatsapp": {
+        "task": "briefs.send_weekly_smm_whatsapp",
+        "schedule": 7 * 24 * 3600.0,  # weekly — owner WhatsApp scorecard
+    },
     "process-email-sequences": {
         "task": "emails.process_email_sequences",
         "schedule": 30 * 60.0,  # every 30 min — advance sequence enrollments

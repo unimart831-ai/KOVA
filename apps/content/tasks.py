@@ -289,6 +289,57 @@ def _post_has_reel_video(post) -> bool:
     return post.attachments.filter(file_type="video").exists()
 
 
+def _try_reel_carousel_fallback(post) -> bool:
+    """When reel MP4 fails, draft a carousel from product images on same platform."""
+    from apps.content.models import Post
+
+    if getattr(post, "post_format", "") != Post.PostFormat.REEL:
+        return False
+    product = getattr(post, "product", None)
+    if not product:
+        return False
+    urls = list(getattr(product, "all_image_urls", None) or [])
+    if len(urls) < 2:
+        urls = [u for u in urls if u]
+    if not urls:
+        return False
+
+    carousel = Post.objects.create(
+        user=post.user,
+        product=product,
+        social_account=post.social_account,
+        platform=post.platform,
+        content_text=(post.content_text or "")[:2200],
+        content_type="repurposed",
+        status=Post.Status.PENDING_APPROVAL,
+        post_format=Post.PostFormat.CAROUSEL,
+        aspect_ratio=Post.AspectRatio.PORTRAIT,
+        visual_strategy="carousel",
+        media_urls=urls[:6],
+        media_status=Post.MediaStatus.GENERATED,
+        generated_by_agent="create",
+        visual_metadata={
+            "reel_fallback_from": str(post.pk),
+            "carousel_backend": "product_images",
+        },
+        cta_url=post.cta_url,
+        cta_type=post.cta_type,
+        cta_text=post.cta_text,
+    )
+    logger.info("Reel fallback: created carousel post %s from failed reel %s", carousel.pk, post.pk)
+    try:
+        from apps.briefs.owner_alerts import queue_owner_alert
+
+        queue_owner_alert(
+            post.user,
+            f"Reel couldn't render — drafted a *carousel* instead on {post.platform}.\n"
+            f"Reply APPROVE to publish the carousel.",
+        )
+    except Exception:
+        pass
+    return True
+
+
 def _resolve_absolute_media_urls(post, *, is_carousel_post: bool = False) -> list[str]:
     """
     Build ordered HTTPS URLs for platform APIs (Instagram Container, etc.).
@@ -1429,11 +1480,13 @@ def publish_post(self, post_id: str):
         post.ai_reasoning = note
         post.save(update_fields=["status", "publish_error", "ai_reasoning", "updated_at"])
         Notification.create_for_user(
-            post.user,
-            "publish_failed",
+            post.user, "publish_failed",
             f"Publish blocked — quality {qa_score}/100. {qa_reason[:120]}",
             related_post=post,
         )
+        from apps.briefs.publish_notifications import notify_publish_failure
+
+        notify_publish_failure(post, reason=qa_reason)
         logger.info("QA GATE blocked publish for post %s: %s", post_id, qa_reason)
         return {"error": qa_reason, "qa_score": qa_score}
 
@@ -1491,6 +1544,13 @@ def publish_post(self, post_id: str):
                         post.user, "publish_failed",
                         "Your Reel video could not be composed in time. Open the post in Studio and retry.",
                         related_post=post,
+                    )
+                    _try_reel_carousel_fallback(post)
+                    from apps.briefs.publish_notifications import notify_publish_failure
+
+                    notify_publish_failure(
+                        post,
+                        reason="Reel video timed out — carousel fallback queued if possible.",
                     )
                     return {"error": "reel_compose_timeout"}
             _fail_post(post, "Reel video is not ready — composition failed or was not started.")
@@ -2174,6 +2234,9 @@ def publish_post(self, post_id: str):
             f"Published to {account.get_platform_display()}: {post.content_text[:80]}...",
             related_post=post,
         )
+        from apps.briefs.publish_notifications import notify_publish_success
+
+        notify_publish_success(post)
         # Schedule metrics fetch in 1 hour
         fetch_post_metrics.apply_async(args=[str(post.id)], countdown=3600)
         logger.info("Post %s published successfully to %s", post_id, account.platform)
@@ -2185,6 +2248,9 @@ def publish_post(self, post_id: str):
             f"Failed to publish to {account.get_platform_display()}: {result.error[:100]}",
             related_post=post,
         )
+        from apps.briefs.publish_notifications import notify_publish_failure
+
+        notify_publish_failure(post, reason=result.error)
         return {"error": result.error}
 
 

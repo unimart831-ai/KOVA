@@ -197,6 +197,12 @@ def warn_expiring_tokens():
                 notification_type=Notification.NotificationType.SYSTEM,
                 message=msg,
             )
+            try:
+                from apps.briefs.publish_notifications import notify_token_expiry_whatsapp
+
+                notify_token_expiry_whatsapp(account.user, msg)
+            except Exception:
+                pass
             _push_token_warning_ws(account.user_id, msg, level="error")
             warned_expired += 1
 
@@ -212,6 +218,12 @@ def warn_expiring_tokens():
                 notification_type=Notification.NotificationType.SYSTEM,
                 message=msg,
             )
+            try:
+                from apps.briefs.publish_notifications import notify_token_expiry_whatsapp
+
+                notify_token_expiry_whatsapp(account.user, msg)
+            except Exception:
+                pass
             _push_token_warning_ws(account.user_id, msg, level="error")
             warned_1day += 1
 

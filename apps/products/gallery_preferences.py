@@ -131,6 +131,12 @@ def build_gallery_scenes(product: Product) -> list[dict]:
     excluded = excluded_urls(product)
     hero_override = hero_image_url_override(product)
     pid = str(product.pk)
+    original_url = ""
+    if product.image:
+        try:
+            original_url = _coerce_url(product.image.url)
+        except Exception:
+            original_url = ""
     scenes: list[dict] = []
 
     if product.image:
@@ -177,6 +183,8 @@ def build_gallery_scenes(product: Product) -> list[dict]:
             "review_status": review_status,
             "review_reason": meta.get("review_reason") or "",
             "action_id": meta.get("_action_id") or "",
+            "original_url": original_url if original_url and original_url != url else "",
+            "show_compare": bool(original_url and original_url != url and needs_review),
         })
 
     if not hero_override:

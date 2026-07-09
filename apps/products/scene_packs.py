@@ -47,6 +47,25 @@ SCENE_PACK_OPTIONS: tuple[dict[str, str], ...] = (
 )
 
 
+def auto_apply_scene_pack_from_analysis(product, analysis: dict | None = None) -> str | None:
+    """Pick a named scene pack from vision category when merchant left Auto."""
+    if normalize_scene_pack(get_product_scene_pack(product)) != SCENE_PACK_AUTO:
+        return None
+    vertical = resolve_scene_vertical(product, analysis)
+    mapping = {
+        "food": SCENE_PACK_FOOD_DELIVERY,
+        "apparel": SCENE_PACK_FASHION_FLAT,
+        "apparel_mitumba": SCENE_PACK_FASHION_FLAT,
+        "beauty": SCENE_PACK_BRAND_STUDIO,
+        "jewelry": SCENE_PACK_BRAND_STUDIO,
+    }
+    pack = mapping.get(vertical)
+    if pack:
+        store_product_scene_pack(product, pack)
+        return pack
+    return None
+
+
 def normalize_scene_pack(value: str | None) -> str:
     pack = (value or SCENE_PACK_AUTO).strip().lower()
     return pack if pack in VALID_SCENE_PACKS else SCENE_PACK_AUTO

@@ -999,6 +999,7 @@ def auto_respond(user):
             autonomy_level=effective_level,
             confidence=confidence,
             safety_flags=safety_flags,
+            intent=interaction.ai_intent or "",
         )
 
         # When the global flag is off, AUTO_SEND decisions soft-fall through
@@ -1060,6 +1061,21 @@ def auto_respond(user):
             interaction.status = Interaction.Status.FLAGGED
             interaction.save(update_fields=["status"])
             counts["drafted"] += 1
+            if (interaction.ai_intent or "") == "complaint":
+                try:
+                    from apps.briefs.owner_alerts import notify_owner_complaint
+
+                    plat = (
+                        interaction.social_account.get_platform_display()
+                        if interaction.social_account else "social"
+                    )
+                    notify_owner_complaint(
+                        user,
+                        platform=plat,
+                        preview=interaction.content_text or interaction.ai_suggested_reply or "",
+                    )
+                except Exception:
+                    pass
 
         elif action == RoutingAction.ESCALATE:
             interaction.status = Interaction.Status.FLAGGED

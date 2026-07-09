@@ -1,23 +1,16 @@
 """
-Enhanced WhatsApp Conversational Commerce — full shopping experience in chat.
+Experimental WhatsApp commerce handler (NOT wired to production webhook).
 
-Extends the existing commerce.py state machine with:
+Production customer commerce uses ``apps.whatsapp.commerce`` — including
+multi-item cart + M-Pesa checkout. This module is a prototype state machine
+kept for reference; do not import from ``whatsapp/tasks.py`` until merged.
+
+Planned enhancements here (partial):
 - Catalog browsing with search and category filtering
 - Product details with images via WhatsApp media messages
-- Cart builder using WhatsApp list messages
 - In-chat M-Pesa payment initiation + status tracking
 - Post-purchase flow (receipt, review request, cross-sell)
 - Lead enrichment on every commerce interaction
-
-The flow:
-  1. Buyer sends greeting or product inquiry
-  2. Bot shows category menu (WhatsApp list message)
-  3. Buyer selects category → bot shows products (interactive buttons)
-  4. Buyer selects product → bot shows details + price + "Buy" button
-  5. Buyer clicks Buy → bot asks for confirmation + phone
-  6. M-Pesa STK push sent → bot polls status
-  7. Payment confirmed → receipt + lead update + nurture enrollment
-  8. Follow-up: review request after 24h, cross-sell after 3 days
 """
 from __future__ import annotations
 

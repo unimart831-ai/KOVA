@@ -60,6 +60,13 @@ HELP_TEXT = (
     "• REPLIES — AI reply drafts waiting for approval\n"
     "• APPROVE REPLY — send the latest AI draft\n"
     "• REJECT REPLY — discard the latest AI draft\n"
+    "• POST <caption> — quick draft posts\n"
+    "• SCHEDULE 1 tomorrow 6pm — reschedule a post\n"
+    "• ADD <name> <price> — product without photo\n"
+    "• PLAN — 7-day content plan · WEEKLY — scorecard\n"
+    "• RETRY — republish failed · POST AGAIN — recycle winner\n"
+    "• PROMO launch · SALE … — campaign presets · QUIET WEEK\n"
+    "• Voice note — transcribed as campaign idea\n"
     "• HELP — this list"
 )
 
@@ -82,6 +89,14 @@ def handle_owner_whatsapp_message(msg_data: dict, contacts: dict | None = None) 
         response, command_key, success, metadata = handle_owner_snap_image(user, msg_data)
         _send_owner_reply(wa_id, response, user=user, brief=_get_today_brief(user))
         _log_command(user, wa_id, "[image]", command_key, response, success=success, metadata=metadata)
+        return True
+
+    if msg_type == "audio":
+        from apps.briefs.smm_commands import handle_owner_voice_note
+
+        response, command_key, success, metadata = handle_owner_voice_note(user, msg_data)
+        _send_owner_reply(wa_id, response, user=user, brief=_get_today_brief(user))
+        _log_command(user, wa_id, "[audio]", command_key, response, success=success, metadata=metadata)
         return True
 
     if msg_type not in ("text", "interactive"):
@@ -211,9 +226,19 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
             return "No brief yet today — check back after your brief time.", "score", True, metadata
         delta = brief.kova_score_delta or 0
         delta_txt = f" ({'+' if delta > 0 else ''}{delta})" if delta else ""
+        insight = ""
+        try:
+            from apps.analytics.revenue import get_revenue_headline_insight
+
+            hl = get_revenue_headline_insight(user, days=7)
+            if hl and hl.get("headline"):
+                insight = f"\n{hl['headline']}"
+        except Exception:
+            pass
         return (
             f"Kova Score: {brief.kova_score or 0}/100{delta_txt}. "
-            f"{brief.posts_pending or 0} post(s) waiting for approval.",
+            f"{brief.posts_pending or 0} post(s) waiting for approval.{insight}\n\n"
+            "Reply WEEKLY for full scorecard · PLAN for this week.",
             "score",
             True,
             {"kova_score": brief.kova_score},
@@ -309,6 +334,12 @@ def _dispatch_command(user, raw_text: str) -> tuple[str, str, bool, dict]:
 
     if text == "stock" or text.startswith("stock "):
         return _handle_stock(user, text)
+
+    from apps.briefs.smm_commands import dispatch_smm_command
+
+    smm_result = dispatch_smm_command(user, raw_text)
+    if smm_result is not None:
+        return smm_result
 
     return (
         f"Didn't recognize \"{raw_text[:40]}\".\n\n{HELP_TEXT}",

@@ -594,8 +594,19 @@ def _gather_brief_data(user):
         "failed_posts": failed_posts,
     }
 
-    # Holiday awareness removed — focus on money-chase wedge
-    holiday_context = {"upcoming": [], "drafts_ready": 0}
+    # Calendar / cultural moments for brief + PLAN command
+    try:
+        from apps.briefs.calendar_hints import upcoming_moments
+
+        profile = getattr(user, "profile", None)
+        country = getattr(profile, "country", "KE") or "KE"
+        holiday_context = {
+            "upcoming": upcoming_moments(country=country, within_days=14),
+            "drafts_ready": 0,
+        }
+    except Exception as e:
+        logger.warning("Calendar hints for brief failed: %s", e)
+        holiday_context = {"upcoming": [], "drafts_ready": 0}
 
     data = {
         "today": today.isoformat(),

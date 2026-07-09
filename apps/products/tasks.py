@@ -1328,6 +1328,10 @@ def expand_product_photo_set(
             product_id=str(product.pk),
             source=commerce_source or "manual",
         )
+    if analysis:
+        from apps.products.scene_packs import auto_apply_scene_pack_from_analysis
+
+        auto_apply_scene_pack_from_analysis(product, analysis)
     result = expand_product_photos(
         product,
         analysis=analysis,
