@@ -155,7 +155,7 @@
           {% if product.image %}
           <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Refreshing your studio photos…">
             {% csrf_token %}
-            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">Refresh studio photos</button>
+            <button type="submit" class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800" title="Rebuild balanced pack: studio hero, AI backgrounds, category polish">Refresh studio pack</button>
           </form>
           <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}" data-kova-busy="instant" data-kova-busy-message="Drafting a quick post from your product…">
             {% csrf_token %}

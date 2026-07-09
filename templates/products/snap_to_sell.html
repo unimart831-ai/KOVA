@@ -193,7 +193,7 @@
             </label>
           </div>
           <p class="text-[11px] text-gray-500 dark:text-gray-400" x-show="visualMode === 'enhance_lighting'">
-            PhotoFix only — better lighting and color, no AI backgrounds or scene expansion.
+            PhotoFix only — better lighting and color, no AI backgrounds or balanced studio pack.
           </p>
           <div class="grid grid-cols-2 gap-2" x-show="visualMode === 'pro_scene'" x-cloak>
             <label class="flex cursor-pointer rounded-lg border-2 p-2.5 text-xs"
@@ -208,10 +208,11 @@
             </label>
           </div>
           <p class="text-[11px] text-gray-500 dark:text-gray-400" x-show="visualMode === 'pro_scene' && polishMode === 'studio'">
-            Studio polish exports square + portrait feed (4:5) and story (9:16) when enabled — matched to each platform.
+            Balanced pack: studio hero, varied AI backgrounds, and one category polish (flat lay, beautify, or relight).
+            Also exports square + portrait feed (4:5) and story (9:16) when enabled.
           </p>
           <p class="text-[11px] text-gray-500 dark:text-gray-400" x-show="visualMode === 'pro_scene' && polishMode === 'lite'">
-            Lite uses basic cutout — upgrade for full studio scenes.
+            Lite uses basic cutout — upgrade for full studio scenes and AI backgrounds.
           </p>
           {% if studio_polish_notice %}
           <p class="text-[11px] text-gold-700 dark:text-gold-300">{{ studio_polish_notice }}</p>
@@ -227,13 +228,18 @@
 
     <div class="card p-4 space-y-3" x-show="offeringType === 'product' && (autopilot || visualMode === 'pro_scene') && polishMode === 'studio'" x-cloak>
       <p class="text-sm font-semibold text-gray-900 dark:text-white">Scene pack</p>
-      <p class="text-[11px] text-gray-500 dark:text-gray-400">Choose a polish style — Auto picks the best scenes for your product.</p>
+      <p class="text-[11px] text-gray-500 dark:text-gray-400">
+        Choose a polish style. Auto balances studio + AI backgrounds + category polish; Food / Fashion packs lead with those looks.
+      </p>
       <div class="flex flex-wrap gap-2">
         {% for opt in scene_pack_options %}
         <button type="button" @click="scenePack = '{{ opt.id }}'"
-                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-left"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all text-left max-w-[11rem]"
                 :class="scenePack === '{{ opt.id }}' ? 'border-kova-500 bg-kova-50 dark:bg-kova-950/40 text-kova-700 dark:text-kova-300' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'"
-                title="{{ opt.hint }}">{{ opt.label }}</button>
+                title="{{ opt.hint }}">
+          <span class="block">{{ opt.label }}</span>
+          <span class="block text-[10px] font-normal opacity-80 mt-0.5 leading-snug">{{ opt.hint }}</span>
+        </button>
         {% endfor %}
       </div>
     </div>

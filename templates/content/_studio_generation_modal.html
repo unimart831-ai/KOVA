@@ -186,9 +186,9 @@ function studioGenerationModal(seedId) {
       if (this.status === 'completed' && this.autoApprovePosts && this.pendingCount === 0) {
         return 'Auto-approve is on — find them in Queue, not Posts to review.';
       }
-      if (this.status === 'completed') return 'Reel, carousel & posts for each platform — review and approve below.';
+      if (this.status === 'completed') return 'Selected formats ready (reels, IG/FB carousels, posts…) — review and approve below.';
       if (this.status === 'failed') return 'Fix the issue and try again or pick another angle.';
-      return 'Professional visuals + platform posts + commerce page. Nothing publishes until you approve.';
+      return 'Building the formats you selected + commerce page. Nothing publishes until you approve.';
     },
     get progressPercent() {
       const steps = ['queued', 'brand', 'platforms', 'writing', 'strategy', 'complete'];

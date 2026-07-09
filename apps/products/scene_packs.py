@@ -19,26 +19,30 @@ VALID_SCENE_PACKS = frozenset({
 })
 
 SCENE_PACK_OPTIONS: tuple[dict[str, str], ...] = (
-    {"id": SCENE_PACK_AUTO, "label": "Auto", "hint": "Best scenes for your product"},
+    {
+        "id": SCENE_PACK_AUTO,
+        "label": "Auto",
+        "hint": "Balanced pack: studio hero + AI backgrounds + category polish (beautify / flat lay)",
+    },
     {
         "id": SCENE_PACK_MARKETPLACE_WHITE,
         "label": "Marketplace white",
-        "hint": "White studio hero + Google Shopping exports",
+        "hint": "White studio hero first + Google Shopping PNG/JPEG exports",
     },
     {
         "id": SCENE_PACK_FOOD_DELIVERY,
         "label": "Food delivery",
-        "hint": "Delivery-app surfaces and food styling",
+        "hint": "Food surfaces lead + beautifier — delivery-app ready styling",
     },
     {
         "id": SCENE_PACK_FASHION_FLAT,
         "label": "Fashion flat",
-        "hint": "Flat lay and mannequin (Pro)",
+        "hint": "Flat lay leads the pack; ghost mannequin on Pro when cutout is confident",
     },
     {
         "id": SCENE_PACK_BRAND_STUDIO,
         "label": "Brand studio",
-        "hint": "Brand-color hero and dark premium scene",
+        "hint": "Brand-color hero + dark premium scene from your photo polish kit",
     },
 )
 

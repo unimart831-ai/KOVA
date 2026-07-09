@@ -85,11 +85,13 @@
       <li>Set <code class="text-[10px]">PHOTOROOM_SANDBOX=True</code> for free watermarked dev calls.</li>
       <li>Worker service must have the same <code class="text-[10px]">PHOTOROOM_*</code> vars as web.</li>
       <li>1 credit = 1 Plus API call = 1 variant in the scene pack.</li>
+      <li><strong>Pack balance (live):</strong> each expand mixes studio hero + distinct AI backgrounds + one category polish (flat lay / beautify / relight). ≤1 beautify and ≤1 flat lay per pack; high uncertainty skips flat lay / ghost.</li>
       <li>Phase 2 (live): food preset pack, Basic cutout routing, apparel review gate, 2026 AI shadows (<code class="text-[10px]">ai.auto-with-overrides</code>) — see <code class="text-[10px]">docs/KOVA_PHOTOROOM_STRATEGY.md</code>.</li>
       <li>Feed portrait: <code class="text-[10px]">PHOTOROOM_FEED_PORTRAIT_ENABLED</code> (default on) exports 1080×1350 for IG/FB carousels &amp; feed.</li>
       <li>Padding default <code class="text-[10px]">PHOTOROOM_PADDING=0.12</code>. Virtual models off by default (<code class="text-[10px]">PHOTOROOM_VIRTUAL_MODEL_*</code>).</li>
       <li>Basic routing: set <code class="text-[10px]">PHOTOROOM_BASIC_API_KEY</code> for white-bg cutouts (5 Basic ≈ 1 Plus internally).</li>
       <li>Marketplace exports: <code class="text-[10px]">PHOTOROOM_MARKETPLACE_EXPORT_ENABLED</code> (PNG + JPEG, 1000×1000 white bg).</li>
+      <li>Batch AI backgrounds API (<code class="text-[10px]">PHOTOROOM_BATCH_API_ENABLED</code>) is stubbed — expand still uses parallel <code class="text-[10px]">v2/edit</code>.</li>
     </ul>
     <p class="text-[10px] text-gray-400 mt-3">
       Spec: <code>docs/VISUAL_ENHANCEMENT_SPEC.md</code> ·
@@ -141,9 +143,36 @@
 
 {% elif tab == "variants" %}
 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-  Kova auto-selects variants per product category, offering type, and plan tier.
-  Categories detected: {{ product_categories|join:", " }}.
+  Kova auto-selects variants per product category, offering type, and plan tier, then
+  <strong class="font-medium text-gray-700 dark:text-gray-300">rebalances</strong> the pack
+  (studio · AI backgrounds · category polish). Categories: {{ product_categories|join:", " }}.
 </p>
+<div class="mb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-[10px]">
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800 px-2.5 py-2 bg-white dark:bg-gray-900">
+    <p class="font-semibold text-gray-800 dark:text-gray-200">studio</p>
+    <p class="text-gray-500 mt-0.5">Hero cutout</p>
+  </div>
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800 px-2.5 py-2 bg-white dark:bg-gray-900">
+    <p class="font-semibold text-gray-800 dark:text-gray-200">ai_background</p>
+    <p class="text-gray-500 mt-0.5">Lifestyle / scenes</p>
+  </div>
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800 px-2.5 py-2 bg-white dark:bg-gray-900">
+    <p class="font-semibold text-gray-800 dark:text-gray-200">beautify</p>
+    <p class="text-gray-500 mt-0.5">Product Beautifier</p>
+  </div>
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800 px-2.5 py-2 bg-white dark:bg-gray-900">
+    <p class="font-semibold text-gray-800 dark:text-gray-200">flat_lay</p>
+    <p class="text-gray-500 mt-0.5">Apparel polish</p>
+  </div>
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800 px-2.5 py-2 bg-white dark:bg-gray-900">
+    <p class="font-semibold text-gray-800 dark:text-gray-200">edit_ai</p>
+    <p class="text-gray-500 mt-0.5">Staging / angle</p>
+  </div>
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800 px-2.5 py-2 bg-white dark:bg-gray-900">
+    <p class="font-semibold text-gray-800 dark:text-gray-200">apparel_ai</p>
+    <p class="text-gray-500 mt-0.5">Ghost / virtual</p>
+  </div>
+</div>
 <div class="space-y-3">
   {% for v in variants %}
   <details class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm group">
@@ -151,7 +180,11 @@
       <span class="font-semibold text-gray-900 dark:text-white">{{ v.label }}</span>
       <code class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{{ v.id }}</code>
       <span class="text-[10px] text-gray-400">min {{ v.min_plan }} · priority {{ v.priority }}</span>
+      {% if v.capability %}
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{{ v.capability }}</span>
+      {% endif %}
       {% if v.uses_ai_bg %}<span class="text-[10px] px-1.5 py-0.5 rounded bg-kova-100 text-kova-700 dark:bg-kova-900/40 dark:text-kova-300">AI bg</span>{% endif %}
+      {% if v.pack_eligible == False %}<span class="text-[10px] px-1.5 py-0.5 rounded bg-gold-50 text-gold-700 dark:bg-gold-950/40 dark:text-gold-300">preflight / channel</span>{% endif %}
       <span class="text-[10px] text-gray-400 ml-auto">{{ v.param_count }} params</span>
     </summary>
     <div class="px-4 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3">

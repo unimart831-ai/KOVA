@@ -16,8 +16,8 @@
         {% if product.image %}
         <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}">
           {% csrf_token %}
-          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/20">
-            Expand Photo Set
+          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/20" title="Rebuild balanced studio pack: hero, AI backgrounds, category polish">
+            Refresh studio pack
           </button>
         </form>
         <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}">
@@ -129,9 +129,9 @@ function productAutopilot(productId, initial) {
       return this.productName || 'Agents building your campaign';
     },
     get headerSubtitle() {
-      if (this.status === 'completed') return 'Polished photos, portrait feed, carousel, story, reel & WhatsApp offer — review in Studio or auto-publish.';
+      if (this.status === 'completed') return 'Balanced studio pack, portrait feed, carousel (IG + FB), story, reel & WhatsApp — review in Studio or auto-publish.';
       if (this.status === 'failed') return 'Try Fix & Promote or Quick Post Photo below.';
-      return 'Polish → brand match → posts, carousel, reels — live below.';
+      return 'Studio polish mix → brand match → posts, carousels, reels — live below.';
     },
     init() {
       this.poll();

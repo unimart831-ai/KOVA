@@ -190,9 +190,9 @@ function batchSnapPipelineModal(productIdsCsv, sessionId) {
       return 'Opening your stall…';
     },
     get headerSubtitle() {
-      if (this.status === 'completed') return 'Shop updated · posts drafted · showcase reel queued.';
+      if (this.status === 'completed') return 'Shop updated · balanced studio packs · posts, carousels & reel drafted.';
       if (this.status === 'failed') return 'Check the catalog for items that completed.';
-      return 'AI is naming each photo and building your market-day campaign.';
+      return 'Naming each photo, polishing a balanced studio pack, then drafting your market-day campaign.';
     },
     init() {
       this.poll();

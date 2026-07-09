@@ -21,6 +21,7 @@ from apps.products.photoroom_plus import (
     PHOTOROOM_EDIT_URL,
     PLUS_VARIANT_CATALOG,
     PRODUCT_CATEGORIES,
+    capability_for_variant,
 )
 
 STUDIO_POLISH_ACTIONS = ("commerce.studio_polish", "commerce.pro_scene")
@@ -77,7 +78,7 @@ API_PARAM_GROUPS = [
     {
         "group": "beautify.*",
         "params": [
-            ("beautify.mode", "enum", "ai.auto touch-up"),
+            ("beautify.mode", "enum", "ai.auto | ai.food | ai.car — Product Beautifier"),
             ("beautify.seed", "int", "Reproducible beautify"),
         ],
     },
@@ -195,7 +196,27 @@ ENV_SETTINGS = [
     {
         "key": "PHOTOROOM_UNCERTAINTY_HIGH_THRESHOLD",
         "kind": "float",
-        "description": "Skip ghost mannequin / flat lay when cutout score ≥ this.",
+        "description": "Skip flat lay / ghost / virtual model when cutout score ≥ this.",
+    },
+    {
+        "key": "PHOTOROOM_SLIDE_ROLES_ENABLED",
+        "kind": "bool",
+        "description": "Hero → AI backgrounds → category polish ordering (pack balance).",
+    },
+    {
+        "key": "PHOTOROOM_MIN_AI_SCENES",
+        "kind": "int",
+        "description": "Minimum distinct AI background scenes in a Growth+ pack.",
+    },
+    {
+        "key": "PHOTOROOM_MAX_AI_SCENES",
+        "kind": "int",
+        "description": "Cap on AI background scenes per product expand.",
+    },
+    {
+        "key": "PHOTOROOM_BATCH_API_ENABLED",
+        "kind": "bool",
+        "description": "Async v2/batch for bulk AI backgrounds (stub — keep False until wired).",
     },
     {
         "key": "VISUAL_ENHANCE_ENABLED",
@@ -317,6 +338,8 @@ def photoroom_config(request):
                 "params": spec.params,
                 "headers": spec.headers,
                 "uses_ai_bg": "background.prompt" in spec.params,
+                "capability": capability_for_variant(spec.id),
+                "pack_eligible": getattr(spec, "pack_eligible", True),
             }
         )
 
