@@ -139,10 +139,114 @@ def infer_share_context(items: list[ShareMediaItem]) -> str:
     raw = (items[0].filename or "").rsplit(".", 1)[0]
     cleaned = re.sub(r"[_\-]+", " ", raw).strip()
     cleaned = re.sub(r"\s*\(\d+\)\s*$", "", cleaned).strip()
-    if cleaned and len(cleaned) >= 3 and not cleaned.lower().startswith(("img_", "dsc", "photo")):
+    if cleaned and not is_meaningless_share_label(cleaned):
         title = cleaned.title() if cleaned.islower() else cleaned
         return title[:120]
     return f"Shared {timezone.now().strftime('%A %b %d')}"
+
+
+def is_meaningless_share_label(text: str) -> bool:
+    """True when a title/caption hook is auto-generated noise (e.g. IMG_738389)."""
+    import re
+
+    t = (text or "").strip()
+    if not t or len(t) < 3:
+        return True
+    if re.fullmatch(r"\d+", t):
+        return True
+    lower = t.lower().replace(" ", "").replace("_", "").replace("-", "")
+    noise_prefixes = ("img", "dsc", "photo", "image", "screenshot", "vid", "mvimg", "snap")
+    if any(lower.startswith(p) and sum(c.isdigit() for c in lower) >= 3 for p in noise_prefixes):
+        return True
+    if len(t) >= 4 and sum(c.isdigit() for c in t) / len(t) > 0.75:
+        return True
+    return False
+
+
+def human_share_title(seed, posts, *, user=None) -> str:
+    """User-facing bundle title — never raw numeric filenames."""
+    blueprint = seed.blueprint or {}
+    kind = blueprint.get("share_kind", "photo")
+    media_count = blueprint.get("media_count", len(posts))
+
+    idea = (seed.idea or "").split("\n")[0].strip()
+    if idea and not is_meaningless_share_label(idea) and "·" in idea:
+        return idea[:120]
+    if idea and not is_meaningless_share_label(idea):
+        generic_prefixes = ("fresh from", "moments worth", "shared ", "highlights from", "new post")
+        if not any(idea.lower().startswith(p) for p in generic_prefixes):
+            return idea[:120]
+
+    campaign = getattr(seed, "marketing_campaign", None)
+    if campaign and (campaign.title or "").strip():
+        camp_title = campaign.title.strip()
+        if not is_meaningless_share_label(camp_title):
+            return camp_title[:120]
+
+    profile = getattr(user or getattr(seed, "user", None), "profile", None)
+    business = _profile_business_name(user or seed.user, profile)
+
+    when = seed.created_at.strftime("%b %d") if seed.created_at else "today"
+    if kind == "reel":
+        label = f"{media_count} reels" if media_count > 1 else "New reel"
+    elif media_count > 1:
+        label = f"{media_count}-photo carousel"
+    else:
+        label = "Photo share"
+
+    if business:
+        return f"{label} · {business} · {when}"
+    return f"{label} · {when}"
+
+
+def display_share_caption(seed, posts, *, user=None) -> str:
+    """Caption for the bundle editor — strips meaningless leading lines."""
+    if not posts:
+        return ""
+
+    raw = (posts[0].content_text or "").strip()
+    lines = [ln.strip() for ln in raw.split("\n") if ln.strip()]
+    while lines and is_meaningless_share_label(lines[0]):
+        lines.pop(0)
+    cleaned = "\n\n".join(lines).strip()
+
+    if cleaned and len(cleaned) >= 24:
+        return cleaned
+
+    blueprint = seed.blueprint or {}
+    return generate_share_caption(
+        user or seed.user,
+        context=seed.notes or "",
+        media_count=blueprint.get("media_count", len(posts)),
+        kind=blueprint.get("share_kind", "photo"),
+    )
+
+
+def share_bundle_summary_line(seed, posts, *, user=None) -> str:
+    """One-line explanation of what Kova did with this upload."""
+    blueprint = seed.blueprint or {}
+    kind = blueprint.get("share_kind", "photo")
+    media_count = blueprint.get("media_count", len(posts))
+    platforms = sorted({p.platform for p in posts if p.platform})
+    plat_label = ", ".join(p.title() for p in platforms) if platforms else "your platforms"
+
+    if kind == "reel":
+        media_phrase = f"{media_count} clips" if media_count > 1 else "your reel"
+        action = f"queued reel posts for {plat_label}"
+    elif media_count > 1 and any(p.post_format == "carousel" for p in posts):
+        action = f"built a {media_count}-photo carousel for {plat_label}"
+    elif media_count > 1:
+        action = f"split {media_count} photos across {plat_label}"
+    else:
+        action = f"prepared a post for {plat_label}"
+
+    mode = blueprint.get("schedule_mode", "manual")
+    if mode in ("autopilot", "stagger"):
+        schedule_phrase = "and staggered publish times"
+    else:
+        schedule_phrase = "ready for you to approve"
+
+    return f"You uploaded {media_phrase} — Kova {action} {schedule_phrase}."
 
 
 def resolve_automated_share_options(
@@ -191,6 +295,16 @@ def resolve_automated_share_options(
     }
 
 
+def _profile_business_name(user, profile=None) -> str:
+    profile = profile or getattr(user, "profile", None)
+    if profile and (profile.company_name or "").strip():
+        return profile.company_name.strip()
+    full = (user.get_full_name() or "").strip() if user else ""
+    if full:
+        return full
+    return (getattr(user, "username", "") or "").strip()
+
+
 def filter_accounts_for_share_items(accounts, items: list[ShareMediaItem]):
     """Keep only platforms that can publish this media type."""
     if not items:
@@ -211,26 +325,34 @@ def generate_share_caption(
     """Lightweight caption when user leaves the field blank."""
     from apps.content.post_copy import polish_post_caption
 
-    profile = getattr(user, "profile", None)
-    business = ""
-    if profile:
-        business = (profile.company_name or profile.display_name or "").strip()
+    business = _profile_business_name(user)
     ctx = (context or "").strip()
-    if ctx:
+    if ctx and not is_meaningless_share_label(ctx):
         hook = ctx
     elif business:
-        hook = f"Highlights from {business} ✨"
+        hook = f"Fresh from {business}"
     else:
-        hook = "Moments worth sharing ✨"
+        hook = "Moments worth sharing"
 
     if kind == "reel" and media_count > 1:
-        body = f"{media_count} clips from the field — swipe through if you're on feed, or catch each reel as they go live."
+        body = (
+            f"{media_count} clips from today — watch each reel as it goes live, "
+            "or catch the full set on your feed."
+        )
     elif kind == "reel":
-        body = "Fresh from today — tap through and let us know what you think."
+        body = "New reel — tap through and tell us what you think."
+    elif media_count >= 6:
+        body = (
+            f"{media_count} looks from today's session. "
+            "Swipe the carousel and save your favourites."
+        )
     elif media_count > 1:
-        body = f"{media_count} photos from today. Save the ones that resonate — more coming if you want the full set."
+        body = (
+            f"{media_count} photos from today — swipe through and "
+            "let us know which one hits."
+        )
     else:
-        body = "One shot we had to share."
+        body = "One shot we had to share with you."
 
     text = f"{hook}\n\n{body}"
     return polish_post_caption(text, "instagram", post_format="image" if kind == "photo" else "reel")
@@ -335,9 +457,19 @@ def create_share_bundle(
         )
     caption = (caption or "New post ✨").strip()
 
-    title = (context or caption).split("\n")[0][:200] or (
-        f"{media_count} {'reels' if kind == 'reel' else 'photos'} share"
-    )
+    ctx = (context or "").strip()
+    if ctx and not is_meaningless_share_label(ctx):
+        title = ctx[:200]
+    else:
+        business = _profile_business_name(user)
+        when = timezone.now().strftime("%b %d")
+        if kind == "reel":
+            label = f"{media_count} reels" if media_count > 1 else "New reel"
+        elif media_count > 1:
+            label = f"{media_count}-photo carousel"
+        else:
+            label = "Photo share"
+        title = f"{label} · {business} · {when}" if business else f"{label} · {when}"
 
     seed = ContentSeed.objects.create(
         user=user,
@@ -583,9 +715,11 @@ def summarize_share_bundle(seed, posts) -> dict:
     platforms = sorted({p.platform for p in posts if p.platform})
     counts = _share_status_counts(posts)
     attention = counts["pending"] + counts["failed"] + counts["publishing"]
+    display_title = human_share_title(seed, posts, user=getattr(seed, "user", None))
     return {
         "seed": seed,
-        "title": (seed.idea or "Quick Share").split("\n")[0][:120],
+        "title": display_title,
+        "display_title": display_title,
         "share_kind": blueprint.get("share_kind", "photo"),
         "media_count": blueprint.get("media_count", len(posts)),
         "schedule_mode": blueprint.get("schedule_mode", "manual"),
@@ -633,8 +767,10 @@ def build_share_bundle_detail(seed, posts) -> dict:
         "campaign": campaign,
         "posts": posts,
         "timeline": timeline,
-        "caption": posts[0].content_text if posts else "",
+        "title": summary["display_title"],
+        "caption": display_share_caption(seed, posts, user=seed.user),
         "context": seed.notes or "",
+        "summary_line": share_bundle_summary_line(seed, posts, user=seed.user),
         "approval": approval,
         "can_approve_all": approval.get("can_approve_campaign", False),
         "can_reschedule": any(

@@ -19,6 +19,7 @@
         All Quick Shares
       </a>
       <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ title }}</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ summary_line }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
         {{ media_count }} {{ share_kind }}{{ media_count|pluralize }}
         · {{ post_count }} posts across {{ platform_count }} platform{{ platform_count|pluralize }}
@@ -116,7 +117,7 @@
 
       <div class="space-y-3">
         {% for item in timeline %}
-        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+        <div id="share-post-row-{{ item.post.id }}" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
           <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
             {% if share_kind == 'reel' and media_count > 1 %}
             <span class="font-semibold text-kova-600 dark:text-kova-400">Reel {{ item.media_order }}</span>
@@ -133,7 +134,7 @@
             <a href="{% url 'content:edit' post_id=item.post.id %}" class="ml-auto text-kova-600 dark:text-kova-400 hover:underline">Edit post</a>
           </div>
           <div class="p-3">
-            {% include "components/post_card.html" with post=item.post compact_card=True %}
+            {% include "components/post_card.html" with post=item.post compact_card=True share_context=True %}
           </div>
         </div>
         {% empty %}

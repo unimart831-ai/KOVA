@@ -35,6 +35,10 @@ Partials: _card_header.html, _card_body.html, _card_actions.html, _card_schedule
         {% include "components/_rating_widget.html" %}
       </div>
     {% endif %}
-    {% include "components/_card_actions.html" %}
+    {% if share_context %}
+      {% include "components/_card_actions_share.html" %}
+    {% else %}
+      {% include "components/_card_actions.html" %}
+    {% endif %}
   </div>
 </div>

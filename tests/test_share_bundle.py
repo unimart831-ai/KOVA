@@ -12,6 +12,7 @@ from apps.content.share_bundle import (
     create_share_bundle,
     infer_share_context,
     is_share_bundle_seed,
+    is_meaningless_share_label,
     parse_uploaded_files,
     resolve_automated_share_options,
     summarize_share_bundle,
@@ -126,6 +127,44 @@ def test_campaign_rollout_minutes_respects_sequence():
         content_dna={"publish_sequence_index": 2, "share_bundle": True},
     )
     assert campaign_rollout_minutes_for_post(ig) < campaign_rollout_minutes_for_post(post)
+
+
+def test_infer_share_context_rejects_numeric_filename():
+    items = parse_uploaded_files([
+        SimpleUploadedFile("738389.jpg", b"img", content_type="image/jpeg"),
+    ])
+    ctx = infer_share_context(items)
+    assert "738389" not in ctx
+    assert "Shared" in ctx
+
+
+def test_is_meaningless_share_label():
+    from apps.content.share_bundle import is_meaningless_share_label
+
+    assert is_meaningless_share_label("738389") is True
+    assert is_meaningless_share_label("IMG_738389") is True
+    assert is_meaningless_share_label("Nairobi Tech Week") is False
+
+
+def test_human_share_title_from_numeric_seed(share_user, ig_account, monkeypatch):
+    from apps.content.share_bundle import human_share_title
+
+    monkeypatch.setattr(
+        "apps.content.share_bundle._schedule_share_posts",
+        lambda *a, **k: None,
+    )
+    items = parse_uploaded_files([
+        SimpleUploadedFile("738389.jpg", b"1", content_type="image/jpeg"),
+        SimpleUploadedFile("738390.jpg", b"2", content_type="image/jpeg"),
+    ])
+    result = create_share_bundle(
+        share_user, [ig_account], items, schedule_mode="manual",
+    )
+    seed = ContentSeed.objects.get(pk=result.seed_id)
+    posts = list(Post.objects.filter(seed=seed))
+    title = human_share_title(seed, posts, user=share_user)
+    assert "738389" not in title
+    assert "carousel" in title.lower() or "photo" in title.lower() or "2" in title
 
 
 def test_infer_share_context_from_filename():

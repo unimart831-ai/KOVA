@@ -11,6 +11,7 @@ from django_ratelimit.decorators import ratelimit
 from apps.content.models import ContentSeed, Post
 from apps.content.share_bundle import (
     build_share_bundle_detail,
+    is_meaningless_share_label,
     is_share_bundle_seed,
     reschedule_share_bundle,
     summarize_share_bundle,
@@ -132,6 +133,12 @@ def share_update_context(request, seed_id):
     context = (request.POST.get("context") or "").strip()
     caption = (request.POST.get("caption") or "").strip()
 
+    from apps.content.share_bundle import human_share_title
+
+    bundle_posts = list(Post.objects.filter(seed=seed, generated_by_agent="user_share"))
+    if title and is_meaningless_share_label(title):
+        title = human_share_title(seed, bundle_posts, user=seed.user)
+
     if title:
         seed.idea = title[:500]
     if context:
@@ -141,7 +148,7 @@ def share_update_context(request, seed_id):
     if caption:
         from apps.content.post_copy import polish_post_caption
 
-        posts = Post.objects.filter(
+        editable = Post.objects.filter(
             seed=seed,
             status__in=(
                 Post.Status.DRAFT,
@@ -150,7 +157,7 @@ def share_update_context(request, seed_id):
                 Post.Status.SCHEDULED,
             ),
         )
-        for post in posts:
+        for post in editable:
             polished = polish_post_caption(
                 caption,
                 post.platform or "instagram",
@@ -159,8 +166,8 @@ def share_update_context(request, seed_id):
             post.content_text = polished
             post.save(update_fields=["content_text", "updated_at"])
 
-        if seed.marketing_campaign:
-            seed.marketing_campaign.title = title[:200] or seed.marketing_campaign.title
+        if seed.marketing_campaign and title:
+            seed.marketing_campaign.title = title[:200]
             seed.marketing_campaign.save(update_fields=["title", "updated_at"])
 
     messages.success(request, "Quick Share updated.")
