@@ -440,6 +440,128 @@ def upload_reel(request):
     return redirect("content:studio")
 
 
+def _share_accounts_for_user(user):
+    from apps.platforms.models import SocialAccount
+
+    return list(
+        filter_social_accounts_for_autopilot(
+            user,
+            SocialAccount.objects.filter(user=user, is_active=True).only(
+                "id", "platform", "username", "display_name",
+            ),
+        )
+    )
+
+
+@login_required
+def share_moment(request):
+    """Quick Share — multi-reel or multi-photo event workflow."""
+    from apps.products.commerce_autopilot import should_auto_publish_commerce
+
+    accounts = _share_accounts_for_user(request.user)
+    profile = getattr(request.user, "profile", None)
+    autopilot_on = should_auto_publish_commerce(request.user)
+    return render(request, "content/share_moment.html", {
+        "share_accounts": accounts,
+        "reel_accounts": [a for a in accounts if a.platform in _REEL_UPLOAD_PLATFORMS],
+        "autopilot_on": autopilot_on,
+        "auto_approve": bool(profile and profile.auto_approve_posts),
+        "default_gap_hours": 4,
+    })
+
+
+@login_required
+@require_POST
+@ratelimit(key="user", rate="8/m", block=True)
+def share_moment_submit(request):
+    """Process Quick Share batch upload."""
+    from apps.platforms.models import SocialAccount
+
+    from apps.content.share_bundle import (
+        apply_custom_order,
+        create_share_bundle,
+        parse_uploaded_files,
+    )
+
+    uploaded = request.FILES.getlist("files")
+    if not uploaded:
+        messages.error(request, "Add at least one photo or video.")
+        return redirect("content:share_moment")
+
+    kind_hint = (request.POST.get("share_kind") or "auto").strip()
+    try:
+        items = parse_uploaded_files(uploaded, kind_hint=kind_hint)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("content:share_moment")
+
+    order_values = request.POST.getlist("file_order")
+    items = apply_custom_order(items, order_values)
+
+    account_ids = request.POST.getlist("account_ids")
+    accounts_qs = filter_social_accounts_for_autopilot(
+        request.user,
+        SocialAccount.objects.filter(user=request.user, is_active=True),
+    )
+    if account_ids:
+        accounts = list(accounts_qs.filter(pk__in=account_ids))
+    else:
+        accounts = list(accounts_qs)
+
+    if not accounts:
+        messages.error(request, "Select at least one connected platform.")
+        return redirect("content:share_moment")
+
+    kind = items[0].kind
+    if kind == "reel":
+        accounts = [a for a in accounts if a.platform in _REEL_UPLOAD_PLATFORMS]
+        if not accounts:
+            messages.error(request, "Connect Instagram, Facebook, TikTok, or LinkedIn for reels.")
+            return redirect("content:share_moment")
+
+    caption = (request.POST.get("caption") or "").strip()
+    context = (request.POST.get("context") or "").strip()
+    schedule_mode = (request.POST.get("schedule_mode") or "manual").strip()
+    if schedule_mode not in ("autopilot", "stagger", "manual"):
+        schedule_mode = "manual"
+    try:
+        gap_hours = int(request.POST.get("gap_hours") or 4)
+    except (TypeError, ValueError):
+        gap_hours = 4
+    photo_mode = (request.POST.get("photo_mode") or "auto").strip()
+    generate_caption = request.POST.get("generate_caption") == "1"
+
+    try:
+        result = create_share_bundle(
+            request.user,
+            accounts,
+            items,
+            caption=caption,
+            context=context,
+            schedule_mode=schedule_mode,
+            gap_hours=gap_hours,
+            photo_mode=photo_mode,
+            generate_caption=generate_caption and not caption,
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("content:share_moment")
+
+    kind_label = "reel" if kind == "reel" else "photo"
+    if result.autopilot_scheduled:
+        messages.success(
+            request,
+            f"Share campaign ready — {result.posts_created} posts scheduled in order. "
+            f"Check Queue to preview timing.",
+        )
+    else:
+        messages.success(
+            request,
+            f"Created {result.posts_created} {kind_label} posts — review and approve in Studio.",
+        )
+    return redirect(f"{reverse('content:studio')}#studio-posts-section")
+
+
 @login_required
 @ratelimit(key="user", rate="10/m", block=True)
 def submit_seed(request):

@@ -53,6 +53,10 @@ class CampaignApproveResult:
 def campaign_rollout_minutes(post) -> int:
     """Sort key — lower publishes earlier in the campaign rollout."""
     dna = getattr(post, "content_dna", None) or {}
+    if dna.get("share_bundle") and dna.get("publish_sequence_index") is not None:
+        from apps.content.share_bundle import campaign_rollout_minutes_for_post
+
+        return campaign_rollout_minutes_for_post(post)
     role = (dna.get("bundle_role") or "").strip()
     if role in ROLL_OUT_MINUTES:
         return ROLL_OUT_MINUTES[role]

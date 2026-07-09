@@ -74,52 +74,21 @@
   {% endif %}
 
   {% if reel_upload_accounts %}
-  <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 sm:p-5"
-       x-data="{ open: false }">
-    <button type="button" @click="open = !open"
-            class="w-full flex items-center justify-between gap-3 text-left">
-      <div class="flex items-start gap-3 min-w-0">
-        <div class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-950/40 flex items-center justify-center shrink-0">
-          <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-        </div>
-        <div class="min-w-0">
-          <p class="text-sm font-semibold text-gray-900 dark:text-white">Upload your own reel</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Kova publishes your video to the platforms you select — no AI recompose.</p>
-        </div>
+  <div class="rounded-xl border border-orange-200 dark:border-orange-900/50 bg-gradient-to-r from-orange-50/80 to-white dark:from-orange-950/20 dark:to-gray-900 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div class="flex items-start gap-3 min-w-0 flex-1">
+      <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/50 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
       </div>
-      <span class="text-xs text-gray-500 shrink-0" x-text="open ? 'Hide ↑' : 'Upload ↓'"></span>
-    </button>
-    <form x-show="open" x-cloak method="post" action="{% url 'content:upload_reel' %}"
-          enctype="multipart/form-data"
-          class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-4">
-      {% csrf_token %}
-      <div>
-        <label class="label">Video file</label>
-        <input type="file" name="file" required
-               accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
-               class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 dark:file:bg-gray-800 dark:file:text-gray-200">
-        <p class="mt-1 text-[11px] text-gray-400">MP4 or WebM · vertical 9:16 preferred · max 100MB</p>
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">Quick Share — reels &amp; event photos</p>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+          Upload multiple clips or conference photos, set publish order, pick platforms — Autopilot can schedule the whole series.
+        </p>
       </div>
-      <div>
-        <label class="label">Caption</label>
-        <textarea name="caption" rows="2" class="input text-sm"
-                  placeholder="Optional caption for all selected platforms"></textarea>
-      </div>
-      <div>
-        <p class="label mb-2">Publish to</p>
-        <div class="flex flex-wrap gap-2">
-          {% for account in reel_upload_accounts %}
-          <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm cursor-pointer hover:border-kova-400">
-            <input type="checkbox" name="account_ids" value="{{ account.id }}" checked
-                   class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
-            <span class="font-medium text-gray-800 dark:text-gray-200 capitalize">{{ account.platform }}</span>
-            {% if account.username %}<span class="text-xs text-gray-400">@{{ account.username }}</span>{% endif %}
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-      <button type="submit" class="btn-primary">Upload &amp; create posts</button>
-    </form>
+    </div>
+    <a href="{% url 'content:share_moment' %}" class="btn-primary shrink-0 whitespace-nowrap">
+      Open Quick Share →
+    </a>
   </div>
   {% endif %}
 
