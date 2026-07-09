@@ -1168,6 +1168,19 @@ def run_engage_cycle(user):
     Called by the periodic Celery task.
     Returns a summary dict.
     """
+    try:
+        user.profile
+    except user.profile.RelatedObjectDoesNotExist:
+        logger.info("Engage cycle skipped for %s: no profile", user.email)
+        return {
+            "fetched": 0,
+            "analyzed": 0,
+            "replies_generated": 0,
+            "auto_sent": 0,
+            "drafted": 0,
+            "escalated": 0,
+        }
+
     fetched = fetch_interactions(user)
 
     # Phase 5: Unified DM inbox — fetch DMs from FB/IG

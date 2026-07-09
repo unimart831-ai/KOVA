@@ -243,7 +243,10 @@ def run_engage_cycle():
         .values("id")
         .distinct()
     )
-    users_with_engage = User.objects.filter(pk__in=eligible_ids).select_related("profile")
+    users_with_engage = (
+        User.objects.filter(pk__in=eligible_ids, profile__isnull=False)
+        .select_related("profile")
+    )
 
     dispatched = 0
     for user in users_with_engage:
@@ -286,6 +289,8 @@ def _run_engage_for_user(user_id):
                 "Engage cycle for %s: no new interactions (fetched=%d, analyzed=%d)",
                 user.email, result.get("fetched", 0), result.get("analyzed", 0),
             )
+    except user.profile.RelatedObjectDoesNotExist:
+        logger.info("Engage cycle skipped for %s: no profile", user.email)
     except Exception as e:
         from apps.billing.exceptions import PlanLimitExceeded
         if isinstance(e, PlanLimitExceeded):

@@ -8,3 +8,7 @@ echo "==> [release] DATABASE_URL set: $(if [ -n "${DATABASE_URL:-}" ]; then echo
 echo "==> [release] Running pending migrations..."
 python manage.py migrate --noinput
 echo "==> [release] Migrations complete."
+
+echo "==> [release] Pruning stale beat tasks..."
+python manage.py prune_stale_beat_tasks --delete
+echo "==> [release] Beat task prune complete."
