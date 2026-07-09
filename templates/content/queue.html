@@ -2,123 +2,30 @@
 
 {% block page_title %}Queue{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Publish step of your loop — scheduled and live posts by campaign</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Scheduled and live posts — filter by status, platform, or format</p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="max-w-6xl mx-auto space-y-4">
   {% include "content/_create_tabs.html" %}
 
-  {# Queue view toggle — calendar variants stay under Queue tab #}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
+  <div class="page-toolbar">
+    <nav class="subnav-pills mb-0 pb-0" aria-label="Queue view">
       <a href="{% url 'content:queue' %}"
-         class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {% if '/content/queue' in request.path %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
-        <svg class="w-3.5 h-3.5 inline -mt-0.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+         class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors {% if '/content/queue' in request.path %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
         Pipeline
       </a>
       <a href="{% url 'content:calendar' %}"
-         class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {% if '/content/calendar' in request.path %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
-        <svg class="w-3.5 h-3.5 inline -mt-0.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+         class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors {% if '/content/calendar' in request.path %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Calendar
       </a>
-    </div>
+    </nav>
   </div>
 
-  {% include "content/_queue_stats_strip.html" %}
-
-  {# ━━━ Filters ━━━ #}
-  <div class="space-y-3">
-    <form method="get" action="{% url 'content:queue' %}" id="queue-filter-form" class="flex flex-wrap items-center gap-2">
-      <input type="hidden" name="section" id="queue-section-input" value="{{ current_section|default:'all' }}">
-
-      <div class="relative flex-1 sm:flex-initial sm:w-56">
-        <input type="text" name="q" value="{{ current_search }}" placeholder="Search posts…"
-               class="input text-xs pl-8 h-8 w-full"
-               hx-get="{% url 'content:queue_sections' %}"
-               hx-trigger="keyup changed delay:300ms"
-               hx-target="#queue-sections"
-               hx-swap="innerHTML"
-               hx-include="#queue-filter-form">
-        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      </div>
-
-      <select name="platform" class="input text-xs h-8 w-auto"
-              hx-get="{% url 'content:queue_sections' %}"
-              hx-trigger="change"
-              hx-target="#queue-sections"
-              hx-swap="innerHTML"
-              hx-include="#queue-filter-form">
-        <option value="">All platforms</option>
-        <option value="instagram" {% if current_platform == 'instagram' %}selected{% endif %}>Instagram</option>
-        <option value="facebook" {% if current_platform == 'facebook' %}selected{% endif %}>Facebook</option>
-        <option value="tiktok" {% if current_platform == 'tiktok' %}selected{% endif %}>TikTok</option>
-        <option value="linkedin" {% if current_platform == 'linkedin' %}selected{% endif %}>LinkedIn</option>
-        <option value="whatsapp" {% if current_platform == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
-      </select>
-
-      <select name="post_format" class="input text-xs h-8 w-auto"
-              hx-get="{% url 'content:queue_sections' %}"
-              hx-trigger="change"
-              hx-target="#queue-sections"
-              hx-swap="innerHTML"
-              hx-include="#queue-filter-form">
-        <option value="">All formats</option>
-        <option value="text" {% if current_format == 'text' %}selected{% endif %}>Text</option>
-        <option value="image" {% if current_format == 'image' %}selected{% endif %}>Image</option>
-        <option value="carousel" {% if current_format == 'carousel' %}selected{% endif %}>Carousel</option>
-        <option value="story" {% if current_format == 'story' %}selected{% endif %}>Story</option>
-        <option value="reel" {% if current_format == 'reel' %}selected{% endif %}>Reel</option>
-        <option value="video" {% if current_format == 'video' %}selected{% endif %}>Video</option>
-      </select>
-
-      {% if current_search or current_platform or current_format or current_section != 'all' %}
-      <a href="{% url 'content:queue' %}"
-         class="inline-flex items-center h-8 px-3 text-xs font-medium rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
-        Clear filters
-      </a>
-      {% endif %}
-    </form>
-
-    {# Section tabs — full navigation so URL + active state stay in sync #}
-    <div class="flex flex-wrap gap-2">
-      {% with section=current_section|default:"all" %}
-      <a href="{% url 'content:queue' %}?section=all{% if current_platform %}&platform={{ current_platform }}{% endif %}{% if current_search %}&q={{ current_search|urlencode }}{% endif %}"
-         class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg border transition-colors
-           {% if section == 'all' %}bg-kova-600 text-white border-kova-600{% else %}bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-kova-300{% endif %}">
-        All
-      </a>
-      <a href="{% url 'content:queue' %}?section=ready{% if current_platform %}&platform={{ current_platform }}{% endif %}{% if current_search %}&q={{ current_search|urlencode }}{% endif %}"
-         class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg border transition-colors
-           {% if section == 'ready' %}bg-kova-600 text-white border-kova-600{% else %}bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-kova-300{% endif %}">
-        Ready
-        <span class="tabular-nums opacity-80">{{ queue_stats.ready_count }}</span>
-      </a>
-      <a href="{% url 'content:queue' %}?section=scheduled{% if current_platform %}&platform={{ current_platform }}{% endif %}{% if current_search %}&q={{ current_search|urlencode }}{% endif %}"
-         class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg border transition-colors
-           {% if section == 'scheduled' %}bg-kova-600 text-white border-kova-600{% else %}bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-kova-300{% endif %}">
-        Scheduled
-        <span class="tabular-nums opacity-80">{{ queue_stats.scheduled_count }}</span>
-      </a>
-      <a href="{% url 'content:queue' %}?section=live{% if current_platform %}&platform={{ current_platform }}{% endif %}{% if current_search %}&q={{ current_search|urlencode }}{% endif %}"
-         class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg border transition-colors
-           {% if section == 'live' %}bg-kova-600 text-white border-kova-600{% else %}bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-kova-300{% endif %}">
-        Live
-        <span class="tabular-nums opacity-80">{{ queue_stats.published_count }}</span>
-      </a>
-      <a href="{% url 'content:queue' %}?section=attention{% if current_platform %}&platform={{ current_platform }}{% endif %}{% if current_search %}&q={{ current_search|urlencode }}{% endif %}"
-         class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg border transition-colors
-           {% if section == 'attention' %}bg-red-600 text-white border-red-600{% else %}bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-red-300{% endif %}">
-        Needs attention
-        <span class="tabular-nums opacity-80">{{ queue_stats.failed_count|add:queue_stats.publishing_count }}</span>
-      </a>
-      {% endwith %}
-    </div>
-  </div>
-
-  {# ━━━ Pipeline sections ━━━ #}
-  <div id="queue-sections" class="space-y-10">
-    {% include "content/_queue_sections.html" %}
+  <div id="queue-content">
+    {% include "content/_queue_content.html" %}
   </div>
 </div>
 {% endblock %}

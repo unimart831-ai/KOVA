@@ -743,6 +743,44 @@ textarea {
     @apply w-full sm:w-auto;
   }
 
+  /* Queue pipeline — scrollable section pills + compact cards */
+  .queue-section-nav {
+    @apply -mx-4 px-4 sm:mx-0 sm:px-0;
+  }
+  .queue-section-pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700
+      bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300
+      hover:border-kova-300 dark:hover:border-kova-600 transition-colors;
+  }
+  .queue-section-pill-active {
+    @apply bg-kova-600 text-white border-kova-600 hover:border-kova-600;
+  }
+  .queue-section-pill-active .queue-section-count {
+    @apply bg-white/20 text-white;
+  }
+  .queue-section-pill-attention {
+    @apply bg-red-600 text-white border-red-600 hover:border-red-600;
+  }
+  .queue-section-pill-attention .queue-section-count {
+    @apply bg-white/20 text-white;
+  }
+  .queue-section-pill-warn {
+    @apply border-red-200 dark:border-red-800 text-red-700 dark:text-red-300;
+  }
+  .queue-section-count {
+    @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[11px] font-semibold tabular-nums rounded-md
+      bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300;
+  }
+  .queue-section-pill-warn .queue-section-count {
+    @apply bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300;
+  }
+
+  @media (min-width: 640px) {
+    .sm\:touch-target-none {
+      min-height: 0;
+    }
+  }
+
   /* ── Accessibility: focus-visible ring for keyboard nav ── */
   .focus-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kova-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900;

@@ -12,11 +12,15 @@ Partials: _card_header.html, _card_body.html, _card_actions.html, _card_schedule
      hx-swap="outerHTML"
      {% endif %}>
 
-  {% include "components/_card_header.html" %}
+  {% if compact_card %}
+    {% include "components/_card_header_compact.html" %}
+  {% else %}
+    {% include "components/_card_header.html" %}
+  {% endif %}
 
-  <div class="p-4">
+  <div class="{% if compact_card %}px-4 pb-3 pt-0{% else %}p-4{% endif %}">
     {% include "components/_card_body.html" %}
-    {% if post.generated_by_agent %}
+    {% if post.generated_by_agent and not compact_card %}
       <div class="mt-2 mb-2 flex items-center gap-2">
         <span class="text-xs text-gray-400 dark:text-gray-500">Rate:</span>
         {% include "components/_rating_widget.html" %}

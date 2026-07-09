@@ -1,0 +1,48 @@
+{# Compact post card header for Queue pipeline — essential info only #}
+
+<div class="h-0.5 {% if post.social_account and post.social_account.platform == 'twitter' %}bg-sky-400{% elif post.social_account and post.social_account.platform == 'linkedin' %}bg-blue-600{% elif post.social_account and post.social_account.platform == 'instagram' %}bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400{% elif post.social_account and post.social_account.platform == 'tiktok' %}bg-gray-900{% elif post.social_account and post.social_account.platform == 'facebook' %}bg-blue-500{% elif post.social_account and post.social_account.platform == 'youtube' %}bg-red-600{% elif post.social_account and post.social_account.platform == 'whatsapp' %}bg-[#25D366]{% else %}bg-gray-300{% endif %}"></div>
+
+<div class="flex flex-wrap items-start justify-between gap-2 mb-2 px-4 pt-3">
+  <div class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
+    {% if post.social_account %}
+    <span class="flex-shrink-0 inline-flex items-center justify-center w-4 h-4" aria-hidden="true">
+      {% include "components/platform_icon.html" %}
+    </span>
+    <span class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[10rem] sm:max-w-none">
+      {{ post.social_account.get_platform_display }}
+    </span>
+    {% elif post.platform %}
+    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ post.platform|title }}</span>
+    {% endif %}
+
+    {% if post.post_format == 'reel' %}
+      <span class="text-[10px] font-medium text-gold-700 dark:text-gold-300 bg-gold-50 dark:bg-gold-950/50 px-1.5 py-0.5 rounded">Reel</span>
+      {% if post.reel_compose_pending %}
+        <span class="text-[10px] text-gold-600 dark:text-gold-400 animate-pulse">Composing…</span>
+      {% elif post.reel_compose_status == 'failed' %}
+        <span class="text-[10px] text-red-600 dark:text-red-400">Reel failed</span>
+      {% endif %}
+    {% elif post.post_format == 'carousel' or post.visual_strategy == 'carousel' %}
+      <span class="text-[10px] font-medium text-kova-700 dark:text-kova-300 bg-kova-50 dark:bg-kova-950/50 px-1.5 py-0.5 rounded">Carousel</span>
+    {% elif post.post_format == 'story' %}
+      <span class="text-[10px] font-medium text-pink-700 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/50 px-1.5 py-0.5 rounded">Story</span>
+    {% elif post.post_format == 'image' or post.post_format == 'video' %}
+      <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ post.post_format|title }}</span>
+    {% endif %}
+
+    {% if post.media_status == 'pending' %}
+      <span class="text-[10px] text-gold-600 dark:text-gold-400 animate-pulse">Generating…</span>
+    {% elif post.media_status == 'failed' %}
+      <span class="text-[10px] text-red-600 dark:text-red-400">Media failed</span>
+    {% endif %}
+  </div>
+
+  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold shrink-0
+    {% if post.status == 'published' %}bg-growth-50 text-growth-700 dark:bg-growth-950/50 dark:text-growth-300
+    {% elif post.status == 'scheduled' or post.status == 'approved' %}bg-kova-50 text-kova-700 dark:bg-kova-950/50 dark:text-kova-300
+    {% elif post.status == 'publishing' %}bg-gold-50 text-gold-700 dark:bg-gold-950/50 dark:text-gold-300
+    {% elif post.status == 'failed' or post.status == 'blocked' %}bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300
+    {% else %}bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+    {{ post.get_status_display }}
+  </span>
+</div>

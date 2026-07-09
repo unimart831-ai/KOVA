@@ -60,7 +60,7 @@ def _group_queue_by_seed(posts_list):
 
 def _get_queue_context(user, section_filter=None, platform_filter=None, format_filter=None, search_query=None):
     """Build queue sections, stats, and filter state."""
-    from django.db.models import Count, Q
+    from django.db.models import Q
 
     visible_user_ids = get_teammate_ids(user)
     base = Post.objects.filter(user_id__in=visible_user_ids).select_related(
@@ -86,48 +86,49 @@ def _get_queue_context(user, section_filter=None, platform_filter=None, format_f
         platform_filter, format_filter, search_query,
     )
     published_qs = _apply_queue_filters(
-        base.filter(status="published").order_by("-published_at")[:50],
+        base.filter(status="published").order_by("-published_at"),
         platform_filter, format_filter, search_query,
     )
 
-    stats_base = Post.objects.filter(user_id__in=visible_user_ids)
-    queue_stats = stats_base.aggregate(
-        ready_count=Count("id", filter=Q(status="approved", scheduled_at__isnull=True)),
-        scheduled_count=Count(
-            "id",
-            filter=Q(status="scheduled") | Q(status="approved", scheduled_at__isnull=False),
-        ),
-        publishing_count=Count("id", filter=Q(status="publishing")),
-        failed_count=Count("id", filter=Q(status__in=("failed", "blocked"))),
-        published_count=Count("id", filter=Q(status="published")),
-    )
+    section = section_filter if section_filter in ("ready", "scheduled", "live", "attention") else "all"
+    load_all = section == "all"
 
-    failed = list(failed_qs[:QUEUE_SECTION_CAP])
-    publishing = list(publishing_qs[:QUEUE_SECTION_CAP])
-    ready = list(ready_qs[:QUEUE_SECTION_CAP])
-    scheduled = list(scheduled_qs[:QUEUE_SECTION_CAP])
-    published = list(published_qs)
+    failed_count = failed_qs.count()
+    publishing_count = publishing_qs.count()
+    ready_count = ready_qs.count()
+    scheduled_count = scheduled_qs.count()
+    published_count = min(published_qs.count(), QUEUE_SECTION_CAP)
+
+    failed = list(failed_qs[:QUEUE_SECTION_CAP]) if load_all or section == "attention" else []
+    publishing = list(publishing_qs[:QUEUE_SECTION_CAP]) if load_all or section == "attention" else []
+    ready = list(ready_qs[:QUEUE_SECTION_CAP]) if load_all or section == "ready" else []
+    scheduled = list(scheduled_qs[:QUEUE_SECTION_CAP]) if load_all or section == "scheduled" else []
+    published = list(published_qs[:QUEUE_SECTION_CAP]) if load_all or section == "live" else []
 
     ready_batches, ready_ungrouped = _group_queue_by_seed(ready)
     scheduled_batches, scheduled_ungrouped = _group_queue_by_seed(scheduled)
     published_batches, published_ungrouped = _group_queue_by_seed(published)
 
-    section = section_filter if section_filter in ("ready", "scheduled", "live", "attention") else "all"
+    attention_count = failed_count + publishing_count
+    filtered_total = failed_count + publishing_count + ready_count + scheduled_count + published_count
 
     return {
         "section": section,
-        "queue_stats": queue_stats,
         "failed": failed,
         "publishing": publishing,
         "ready_batches": ready_batches,
         "ready_ungrouped": ready_ungrouped,
-        "ready_count": len(ready),
+        "ready_count": ready_count,
         "scheduled_batches": scheduled_batches,
         "scheduled_ungrouped": scheduled_ungrouped,
-        "scheduled_count": len(scheduled),
+        "scheduled_count": scheduled_count,
         "published_batches": published_batches,
         "published_ungrouped": published_ungrouped,
-        "published_count": len(published),
+        "published_count": published_count,
+        "failed_count": failed_count,
+        "publishing_count": publishing_count,
+        "attention_count": attention_count,
+        "filtered_total": filtered_total,
         "current_section": section,
         "current_platform": platform_filter or "",
         "current_format": format_filter or "",
@@ -159,7 +160,7 @@ def queue_sections(request):
         format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
     )
-    return render(request, "content/_queue_sections.html", ctx)
+    return render(request, "content/_queue_content.html", ctx)
 
 
 @login_required
@@ -189,9 +190,10 @@ def clear_failed_posts(request):
             request.user,
             section_filter=request.GET.get("section"),
             platform_filter=platform_filter,
+            format_filter=request.GET.get("post_format"),
             search_query=request.GET.get("q"),
         )
-        return render(request, "content/_queue_sections.html", ctx)
+        return render(request, "content/_queue_content.html", ctx)
 
     if cleared:
         messages.success(request, f"Removed {cleared} failed post{'s' if cleared != 1 else ''}.")

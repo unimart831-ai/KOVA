@@ -17,9 +17,9 @@
       </p>
     </div>
   </div>
-  <div class="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  <div class="p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
     {% for post in batch.posts %}
-      {% include "components/post_card.html" with post=post %}
+      {% include "components/post_card.html" with post=post compact_card=compact_card %}
     {% endfor %}
   </div>
 </div>
