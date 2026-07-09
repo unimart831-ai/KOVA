@@ -194,6 +194,7 @@ def product_detail(request, product_id):
     from apps.products.asset_pack import build_asset_pack
     from apps.products.gallery_preferences import build_gallery_scenes, polish_actions_for_product
     from apps.products.photoroom_review import summarize_review_state
+    from apps.products.photoroom_virtual_models import virtual_model_enabled
     from apps.products.scene_packs import marketplace_channel_image_urls
 
     from apps.media.content_types import MediaPlan
@@ -202,6 +203,7 @@ def product_detail(request, product_id):
     polish_actions = list(polish_actions_for_product(product)[:50])
     review_state = summarize_review_state(polish_actions)
     asset_pack = build_asset_pack(product)
+    show_virtual_model = virtual_model_enabled()
     media_plan = None
     asset = getattr(product, "business_asset", None)
     if asset and isinstance(asset.metadata, dict):
@@ -247,6 +249,7 @@ def product_detail(request, product_id):
         ),
         "asset_pack": asset_pack,
         "asset_pack_has_polish": any(g.id != "original" for g in asset_pack),
+        "show_virtual_model": show_virtual_model,
         "revenue_funnel": funnel,
     })
 

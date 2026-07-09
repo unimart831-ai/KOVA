@@ -4,7 +4,7 @@
     <div>
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Asset pack</h3>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-        Polished exports by channel — download or use in Studio posts.
+        Polished exports by channel — square feed, portrait 4:5, stories 9:16, and marketplace.
       </p>
     </div>
     {% if has_google_shopping_exports %}
@@ -36,10 +36,13 @@
   {% for group in asset_pack %}
   <div x-show="tab === '{{ group.id }}'" x-cloak class="space-y-3">
     <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ group.hint }}</p>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div class="grid gap-3 {% if group.id == 'story' %}grid-cols-3 sm:grid-cols-4{% else %}grid-cols-2 sm:grid-cols-3{% endif %}">
       {% for url in group.urls %}
       <a href="{{ url }}" target="_blank" rel="noopener"
-         class="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+         class="group relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900
+                {% if group.id == 'story' %}aspect-[9/16]
+                {% elif group.id == 'feed' %}aspect-[4/5]
+                {% else %}aspect-square{% endif %}">
         <img src="{{ url }}" alt="{{ group.label }} export" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
         <span class="absolute bottom-0 inset-x-0 text-[9px] font-semibold text-center text-white bg-black/55 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
           Open full size

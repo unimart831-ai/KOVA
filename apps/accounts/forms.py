@@ -439,16 +439,15 @@ class PhotoroomBrandKitForm(forms.Form):
     """Merchant-facing brand kit for Snap studio polish (P1-2)."""
 
     SHADOW_CHOICES = [
-        ("ai.soft", "Soft shadow"),
-        ("ai.hard", "Hard shadow"),
+        ("ai.soft", "Soft shadow (AI)"),
+        ("ai.hard", "Hard shadow (AI)"),
         ("ai.floating", "Floating shadow"),
     ]
     PADDING_CHOICES = [
         ("0.06", "Tight (6%)"),
-        ("0.07", "Standard (7%)"),
         ("0.08", "Balanced (8%)"),
         ("0.10", "Comfortable (10%)"),
-        ("0.12", "Generous (12%)"),
+        ("0.12", "Generous (12%) — recommended"),
     ]
     STUDIO_BG_CHOICES = [
         ("brand", "Brand primary color"),
@@ -466,11 +465,12 @@ class PhotoroomBrandKitForm(forms.Form):
         choices=SHADOW_CHOICES,
         initial="ai.soft",
         label="Shadow style",
+        help_text="Soft and hard use Photoroom’s 2026 AI Shadows model. Floating keeps the classic look.",
         widget=forms.Select(attrs={"class": "input"}),
     )
     padding = forms.ChoiceField(
         choices=PADDING_CHOICES,
-        initial="0.08",
+        initial="0.12",
         label="Product padding",
         widget=forms.Select(attrs={"class": "input"}),
     )

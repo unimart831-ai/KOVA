@@ -208,14 +208,14 @@ function snapPipelineModal(productId) {
       return 'Building your campaign';
     },
     get headerSubtitle() {
-      if (this.status === 'completed') return 'Feed posts, carousel, story, reel & WhatsApp offer — review before publishing.';
+      if (this.status === 'completed') return 'Portrait feed, carousel, story, reel & WhatsApp offer — sized per platform. Review before publishing.';
       if (this.status === 'failed') return 'Fix the issue or try Snap to Sell again.';
       return 'Watch each step live. Nothing publishes until you approve.';
     },
     get photoSummary() {
       const n = this.photoCount || 0;
       if (!n) return '';
-      return n + ' photo' + (n !== 1 ? 's' : '') + (n >= 1 ? ' — carousel + reel when Facebook/IG connected' : '');
+      return n + ' photo' + (n !== 1 ? 's' : '') + (n >= 1 ? ' — 4:5 feed + carousel + 9:16 reel when Facebook/IG connected' : '');
     },
     init() {
       this.poll();

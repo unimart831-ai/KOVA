@@ -696,7 +696,7 @@
              })">
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Photo polish kit</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Studio polish settings for Snap photos — shadow, padding, and background. Separate from brand DNA above; both apply to your campaign assets.
+            Studio polish for Snap photos — AI shadows, generous padding (12% default), and studio background. Separate from brand DNA above; both apply to your campaign assets.
           </p>
 
           <div class="grid md:grid-cols-2 gap-5">
@@ -716,6 +716,9 @@
                   <option value="{{ value }}" {% if brand_kit_form.shadow_mode.value == value %}selected{% endif %}>{{ label }}</option>
                   {% endfor %}
                 </select>
+                {% if brand_kit_form.shadow_mode.help_text %}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ brand_kit_form.shadow_mode.help_text }}</p>
+                {% endif %}
               </div>
 
               <div>
@@ -868,9 +871,12 @@
 <script>
 function brandKitPreview(initial) {
   const shadowLabels = {
-    'ai.soft': 'Soft shadow',
-    'ai.hard': 'Hard shadow',
+    'ai.soft': 'Soft shadow (AI)',
+    'ai.hard': 'Hard shadow (AI)',
     'ai.floating': 'Floating shadow',
+    'ai.auto-with-overrides': 'AI auto shadow',
+    'ai.preset-soft': 'Soft shadow (AI)',
+    'ai.preset-hard': 'Hard shadow (AI)',
   };
   const bgByPref = {
     brand: initial.bg || '#FFFFFF',

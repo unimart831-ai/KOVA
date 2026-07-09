@@ -1,5 +1,6 @@
 {# Motion Reel media preview — video player, compose status, carousel→reel context #}
 {# Usage: {% include "components/_reel_media_preview.html" with post=post reel_size="compact" %} #}
+{% load content_tags %}
 
 <div class="mb-3 {% if reel_size != 'modal' %}flex flex-col items-center{% endif %}">
   {% if post.reel_is_carousel_variant and reel_size != 'compact' %}
@@ -7,6 +8,13 @@
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
     Carousel → Motion Reel
     {% if post.reel_source_slide_urls %} · {{ post.reel_source_slide_urls|length }} slides{% endif %}
+  </p>
+  {% elif post.visual_metadata.reel_template and reel_size != 'compact' and not post.reel_is_carousel_variant %}
+  <p class="text-[10px] font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-2 text-center">
+    {{ post.visual_metadata.reel_template|reel_template_label }}
+    {% if post.visual_metadata.reel_recipe_id and post.visual_metadata.reel_recipe_id != post.visual_metadata.reel_template %}
+    · {{ post.visual_metadata.reel_recipe_id|reel_template_label }}
+    {% endif %}
   </p>
   {% endif %}
 
