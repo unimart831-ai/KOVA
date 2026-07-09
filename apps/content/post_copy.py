@@ -100,6 +100,132 @@ def _space_emoji_bullet_blocks(text: str) -> str:
     return normalize_caption_spacing("\n".join(result))
 
 
+_CTA_LINE = re.compile(
+    r"\b(message us|tap the link|link in bio|dm us|reply to|comment order|"
+    r"shop now|order today|first comment|full details|we're online|swipe for)\b",
+    re.I,
+)
+
+
+def _is_hashtag_line(line: str) -> bool:
+    words = line.split()
+    if not words:
+        return False
+    tagged = sum(1 for w in words if w.startswith("#") or w.startswith("@"))
+    return tagged >= max(1, len(words) // 2)
+
+
+def _looks_like_cta(sentence: str) -> bool:
+    s = sentence.strip()
+    if not s:
+        return False
+    if _CTA_LINE.search(s):
+        return True
+    return s.endswith("?") and len(s) < 80 and "?" in s[:40]
+
+
+def _max_sentences_per_paragraph(platform: str) -> int:
+    plat = (platform or "").lower()
+    if plat == "twitter":
+        return 2
+    if plat == "linkedin":
+        return 3
+    if plat in ("facebook", "instagram", "threads", "tiktok"):
+        return 2
+    return 3
+
+
+def _group_sentences(sentences: list[str], *, per_paragraph: int) -> list[str]:
+    paragraphs: list[str] = []
+    idx = 0
+    while idx < len(sentences):
+        chunk = sentences[idx : idx + per_paragraph]
+        paragraphs.append(" ".join(chunk))
+        idx += per_paragraph
+    return paragraphs
+
+
+def _enforce_social_structure(
+    text: str,
+    platform: str = "",
+    *,
+    post_format: str = "text",
+) -> str:
+    """
+    Break wall-of-text captions into hook / body / CTA / hashtag blocks.
+    LLMs often return one long paragraph despite prompt rules — fix at save time.
+    """
+    if not text:
+        return ""
+
+    plat = (platform or "").lower()
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    # Single newlines only — upgrade to paragraph breaks before deeper splitting.
+    if "\n\n" not in normalized and normalized.count("\n") >= 2:
+        lines = [ln.strip() for ln in normalized.split("\n") if ln.strip()]
+        normalized = "\n\n".join(lines)
+
+    if "\n\n" in normalized:
+        blocks = [b.strip() for b in normalized.split("\n\n") if b.strip()]
+        if len(blocks) >= 2:
+            return normalized
+
+    lines = [ln.strip() for ln in normalized.split("\n") if ln.strip()]
+    hashtags = ""
+    if lines and _is_hashtag_line(lines[-1]):
+        hashtags = lines[-1]
+        lines = lines[:-1]
+
+    blob = " ".join(lines)
+    if len(blob) < 100:
+        if hashtags:
+            return f"{blob}\n\n{hashtags}".strip()
+        return blob
+
+    sentences = split_description_sentences(blob)
+    if len(sentences) < 3:
+        if hashtags:
+            return f"{blob}\n\n{hashtags}".strip()
+        return blob
+
+    hook = sentences[0]
+    body_sents = sentences[1:]
+    cta_sents: list[str] = []
+    while body_sents and _looks_like_cta(body_sents[-1]):
+        cta_sents.insert(0, body_sents.pop())
+
+    per_para = _max_sentences_per_paragraph(plat)
+    if post_format == "reel" and plat in _REEL_SHORT_PLATFORMS:
+        sections = [hook]
+        if body_sents:
+            sections.append(" ".join(body_sents[:2]))
+        if cta_sents:
+            sections.append(" ".join(cta_sents))
+        if hashtags:
+            sections.append(hashtags)
+        return "\n\n".join(s for s in sections if s)
+
+    body_paras = _group_sentences(body_sents, per_paragraph=per_para)
+
+    sections: list[str] = [hook]
+    if plat == "linkedin" and body_paras:
+        # Above-the-fold: keep opening tight with single breaks, then wider spacing.
+        lead = body_paras[0]
+        sections.append(lead)
+        if len(body_paras) > 1:
+            sections.append("\n\n".join(body_paras[1:]))
+    elif body_paras:
+        sections.extend(body_paras)
+
+    if cta_sents:
+        sections.append(" ".join(cta_sents))
+    if hashtags:
+        sections.append(hashtags)
+
+    return "\n\n".join(s for s in sections if s)
+
+
 def _trim_to_limit(text: str, limit: int) -> str:
     if len(text) <= limit:
         return text
@@ -127,7 +253,12 @@ def polish_post_caption(
     """
     if not text:
         return ""
-    cleaned = normalize_caption_spacing(text.strip())
+    cleaned = _enforce_social_structure(
+        text.strip(),
+        platform,
+        post_format=post_format,
+    )
+    cleaned = normalize_caption_spacing(cleaned)
     cleaned = _space_emoji_bullet_blocks(cleaned)
 
     plat = (platform or "").lower().strip()

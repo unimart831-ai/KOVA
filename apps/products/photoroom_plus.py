@@ -197,6 +197,42 @@ STUDIO_SHADOW_HEADER_VARIANT_IDS = frozenset({
 
 PLAN_TIER_ORDER = ("starter", "kova", "growth", "pro", "agency")
 
+_AI_BACKGROUND_VARIANT_PREFIXES = (
+    "ai_lifestyle",
+    "ai_contextual",
+    "ai_scene_",
+    "ai_creative_",
+    "food_surface_",
+)
+
+
+def _is_ai_background_variant(variant_id: str) -> bool:
+    return any(
+        variant_id == prefix.rstrip("_") or variant_id.startswith(prefix)
+        for prefix in _AI_BACKGROUND_VARIANT_PREFIXES
+    )
+
+
+def _variant_diversity_family(variant_id: str) -> str:
+    """Collapse variants that render as the same flat studio look."""
+    if variant_id.startswith("studio_"):
+        return "studio_flat"
+    if variant_id.startswith("food_surface_"):
+        return "food_surface"
+    return variant_id
+
+
+def _plan_allows_variant(spec: PlusVariantSpec, plan_rank: int) -> bool:
+    required = _plan_rank(spec.min_plan)
+    if required <= plan_rank:
+        return True
+    # Kova tier gets AI lifestyle/scene backgrounds (growth-gated in catalog).
+    return (
+        required <= _plan_rank("growth")
+        and plan_rank >= _plan_rank("kova")
+        and _is_ai_background_variant(spec.id)
+    )
+
 # Phase C — carousel slide roles (variant pick order)
 SLIDE_ROLE_PRODUCT = (
     ("hero", ("studio_white", "studio_brand")),
@@ -1822,7 +1858,7 @@ def _target_ai_scene_count(
 
     available = max_count - 1  # reserve hero
     if max_count <= 4:
-        # Compact 4-variant pack: hero + angle + scene + proof/model — one AI scene
+        # Legacy 4-pack: one AI scene; 5-pack gets full scene budget below.
         target = 1
         ctx = _scene_intelligence_context(
             analysis,
@@ -1995,14 +2031,20 @@ def order_variants_by_slide_role(
         if len(picked) >= max_count:
             break
 
+    diversity_families = {_variant_diversity_family(s.id) for s in picked}
+
     if len(picked) < max_count:
         for spec in sorted(candidates, key=lambda s: -s.priority):
             if spec.id in picked_ids:
                 continue
             if skip_risky and spec.id in HIGH_UNCERTAINTY_VARIANT_IDS:
                 continue
+            family = _variant_diversity_family(spec.id)
+            if family in diversity_families and family in ("studio_flat", "food_surface"):
+                continue
             picked.append(spec)
             picked_ids.add(spec.id)
+            diversity_families.add(family)
             if len(picked) >= max_count:
                 break
 
@@ -2148,7 +2190,7 @@ def select_plus_variants(
             continue
         if offering not in spec.offering_types:
             continue
-        if _plan_rank(spec.min_plan) > plan_rank:
+        if not _plan_allows_variant(spec, plan_rank):
             continue
         if spec.categories and category not in spec.categories:
             continue

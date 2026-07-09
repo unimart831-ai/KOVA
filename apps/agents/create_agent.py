@@ -2130,6 +2130,17 @@ Respond with a JSON object. No markdown code fences.
                 else Post.Status.PENDING_APPROVAL
             )
             draft = PostDraft.from_llm_dict(pd)
+            from apps.content.post_copy import polish_post_caption
+            from apps.content.tasks import sanitize_content, strip_markdown, _PLAIN_TEXT_PLATFORMS
+
+            content_text = sanitize_content(draft.content_text)
+            if platform in _PLAIN_TEXT_PLATFORMS:
+                content_text = strip_markdown(content_text)
+            content_text = polish_post_caption(
+                content_text,
+                platform,
+                post_format=(getattr(draft, "post_format", None) or pd.get("post_format") or "text"),
+            )
             _rp_kwargs = draft.to_post_kwargs()
             post = Post.objects.create(
                 user=user,
@@ -2137,7 +2148,7 @@ Respond with a JSON object. No markdown code fences.
                 product=source_post.product,
                 social_account=account,
                 platform=account.platform,
-                content_text=draft.content_text,
+                content_text=content_text,
                 content_type="repurposed",
                 content_intent=_rp_kwargs.get("content_intent", ""),
                 post_format=_rp_kwargs.get("post_format", "text"),

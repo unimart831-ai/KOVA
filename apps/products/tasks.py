@@ -582,7 +582,7 @@ def _build_seed_idea(*, offering_type, name, display_price, features_text,
 def create_product_carousel_posts(product_id: str, seed_id: str, key_features: list, analysis: dict | None = None):
     """
     Create carousel posts for a product after Snap to Sell analysis.
-    Fires automatically when a product has 2+ images and Instagram/Facebook/LinkedIn is connected.
+    Fires automatically when the product has at least one image and Instagram/Facebook/LinkedIn is connected.
     """
     from apps.agents.carousel import generate_product_carousel
     from apps.agents.models import AgentAction
@@ -602,6 +602,7 @@ def create_product_carousel_posts(product_id: str, seed_id: str, key_features: l
         return
 
     user = product.user
+    product.refresh_from_db(fields=["additional_images", "image", "exclude_primary_image"])
 
     try:
         seed = ContentSeed.objects.get(pk=seed_id)
@@ -746,10 +747,16 @@ def create_product_reel_posts(product_id: str, seed_id: str, key_features: list)
         user=user,
         product=product,
         visual_strategy="carousel",
+        media_status="generated",
     ).order_by("-created_at")
 
-    use_carousel = carousel_posts.exists()
-    direct_images = [] if use_carousel else _product_reel_image_sources(product)
+    direct_images = _product_reel_image_sources(product)
+    polished_studio = [
+        u for u in direct_images
+        if u and ("studio_polish" in u or "/photoroom/" in u)
+    ]
+    # Prefer clean studio scenes over carousel JPEGs with baked slide text.
+    use_carousel = carousel_posts.exists() and len(polished_studio) < 3
 
     if use_carousel:
         pass
@@ -2095,27 +2102,15 @@ def snap_batch_process(session_id: str):
 
         fire_task(generate_from_seed, str(seed.id))
 
-        # Auto-create carousel + reel if product has enough images
-        num_item_images = len(product.all_image_urls)
-        _CAROUSEL_PLATFORMS = {"instagram", "facebook", "linkedin"}
-        _REEL_PLATFORMS = {"instagram", "facebook", "tiktok", "linkedin"}
         item_features = analysis.get("key_features", [])
-
-        if num_item_images >= 2 and any(p in _CAROUSEL_PLATFORMS for p in platforms):
-            fire_task(
-                create_product_carousel_posts,
-                str(product.pk),
-                str(seed.pk),
-                item_features,
-                analysis,
-            )
-        elif num_item_images >= 1 and any(p in _REEL_PLATFORMS for p in platforms):
-            fire_task(
-                create_product_reel_posts,
-                str(product.pk),
-                str(seed.pk) if seed else "",
-                item_features,
-            )
+        product.refresh_from_db(fields=["additional_images", "image", "exclude_primary_image"])
+        _fire_snap_carousel_reel_after_expand(
+            product,
+            seed_id=str(seed.pk),
+            key_features=item_features,
+            analysis=analysis,
+            fire_task=fire_task,
+        )
 
         session.items_processed = (session.items_processed or 0) + 1
         session.save(update_fields=["items_processed"])
