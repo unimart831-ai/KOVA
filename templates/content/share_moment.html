@@ -3,23 +3,15 @@
 {% block page_title %}Quick Share{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-  Drop conference photos or reel clips — one caption, every platform, in the order you choose
+  Drop photos or reels — Kova handles caption, platforms, order, and scheduling
 </p>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto space-y-6"
-     x-data="shareMoment()">
+<div class="max-w-2xl mx-auto space-y-5"
+     x-data="shareMoment({{ hands_free|yesno:'true,false' }})">
 
   {% include "content/_create_tabs.html" %}
-
-  <div class="rounded-xl border border-kova-200 dark:border-kova-800 bg-gradient-to-br from-kova-50/80 to-white dark:from-kova-950/30 dark:to-gray-900 p-5 sm:p-6">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Share a moment</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-      Upload one or many files from an event, trip, or product shoot. Kova groups them as a campaign,
-      numbers publish order, and can auto-schedule for Autopilot.
-    </p>
-  </div>
 
   {% if not share_accounts %}
   <div class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
@@ -30,194 +22,203 @@
 
   <form method="post" action="{% url 'content:share_moment_submit' %}"
         enctype="multipart/form-data"
-        class="space-y-5"
+        x-ref="shareForm"
         @submit="prepareSubmit">
+
     {% csrf_token %}
+    <input type="hidden" name="auto_mode" :value="autoMode ? '1' : '0'">
+    <input type="hidden" name="share_kind" value="auto">
 
-    {# Kind toggle #}
-    <div class="flex flex-wrap gap-2">
-      <button type="button" @click="shareKind = 'auto'"
-              :class="shareKind === 'auto' ? 'bg-kova-600 text-white border-kova-600' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'"
-              class="px-3 py-2 text-sm font-medium rounded-lg border transition-colors">
-        Auto-detect
-      </button>
-      <button type="button" @click="shareKind = 'reel'"
-              :class="shareKind === 'reel' ? 'bg-orange-600 text-white border-orange-600' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'"
-              class="px-3 py-2 text-sm font-medium rounded-lg border transition-colors">
-        Reels / video
-      </button>
-      <button type="button" @click="shareKind = 'photo'"
-              :class="shareKind === 'photo' ? 'bg-kova-600 text-white border-kova-600' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'"
-              class="px-3 py-2 text-sm font-medium rounded-lg border transition-colors">
-        Photos
-      </button>
-    </div>
-    <input type="hidden" name="share_kind" :value="shareKind">
-
-    {# Drop zone #}
-    <div class="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/40 p-6 text-center transition-colors"
-         :class="dragOver ? 'border-kova-500 bg-kova-50/50 dark:bg-kova-950/20' : ''"
-         @dragover.prevent="dragOver = true"
-         @dragleave.prevent="dragOver = false"
-         @drop.prevent="handleDrop($event)">
+    {# ── Drop & done hero ── #}
+    <div class="rounded-2xl border-2 border-dashed transition-all duration-200 p-8 sm:p-10 text-center relative overflow-hidden"
+         :class="dragOver ? 'border-kova-500 bg-kova-50/60 dark:bg-kova-950/30' : (uploading ? 'border-kova-400 bg-kova-50/40 dark:bg-kova-950/20' : 'border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/40')">
       <input type="file" name="files" multiple x-ref="fileInput" class="hidden"
              accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"
              @change="handleFiles($event.target.files)">
-      <svg class="w-10 h-10 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Drop photos or videos here</p>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Up to 10 reels or 20 photos · reorder below</p>
-      <button type="button" @click="$refs.fileInput.click()"
-              class="mt-3 text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">
-        Browse files
-      </button>
-    </div>
 
-    {# File list with order #}
-    <div x-show="files.length" x-cloak class="space-y-2">
-      <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Publish order</p>
-      <template x-for="(file, index) in files" :key="file.id">
-        <div class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <label class="sr-only">Order</label>
-          <input type="number" name="file_order" min="1" :max="files.length"
-                 x-model="file.order"
-                 class="w-12 text-center input text-sm py-1.5 tabular-nums"
-                 title="Publish order">
-          <div class="flex-1 min-w-0 text-left">
-            <p class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="file.name"></p>
-            <p class="text-[11px] text-gray-400" x-text="file.kind + ' · ' + file.sizeLabel"></p>
-          </div>
-          <div class="flex flex-col gap-0.5 shrink-0">
-            <button type="button" @click="moveFile(index, -1)" :disabled="index === 0"
-                    class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30" title="Move up">↑</button>
-            <button type="button" @click="moveFile(index, 1)" :disabled="index === files.length - 1"
-                    class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30" title="Move down">↓</button>
-          </div>
-          <button type="button" @click="removeFile(index)"
-                  class="p-1.5 text-gray-400 hover:text-red-600" title="Remove">✕</button>
+      <div x-show="!uploading && !files.length" @dragover.prevent="dragOver = true"
+           @dragleave.prevent="dragOver = false" @drop.prevent="handleDrop($event)">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-kova-100 dark:bg-kova-900/50 flex items-center justify-center mb-4">
+          <svg class="w-7 h-7 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         </div>
-      </template>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Drop &amp; done</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-sm mx-auto">
+          Upload reel(s) or photo(s). Kova picks your platforms
+          {% if platform_labels %}({{ platform_labels }}){% endif %},
+          writes a caption, sets publish order, and schedules automatically.
+        </p>
+        <button type="button" @click="$refs.fileInput.click()"
+                class="mt-5 btn-primary px-6">
+          Choose files
+        </button>
+        <p class="text-[11px] text-gray-400 mt-3">Up to 10 videos or 20 photos</p>
+      </div>
+
+      {# Files queued — auto-submit countdown #}
+      <div x-show="files.length && !uploading" x-cloak
+           @dragover.prevent="dragOver = true"
+           @dragleave.prevent="dragOver = false"
+           @drop.prevent="handleDrop($event)">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+          <span x-text="files.length"></span> file<span x-show="files.length !== 1">s</span> ready
+        </p>
+        <ul class="text-left space-y-1.5 max-w-md mx-auto mb-4">
+          <template x-for="(file, index) in files" :key="file.id">
+            <li class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 px-3 py-2 rounded-lg bg-white/80 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700">
+              <span class="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-center text-[10px] font-bold leading-5 tabular-nums" x-text="file.order"></span>
+              <span class="truncate flex-1" x-text="file.name"></span>
+              <span class="text-gray-400 capitalize shrink-0" x-text="file.kind"></span>
+              <button type="button" @click="removeFile(index)" class="text-gray-400 hover:text-red-500 shrink-0">✕</button>
+            </li>
+          </template>
+        </ul>
+
+        <div x-show="autoMode && autoCountdown > 0" class="mb-3">
+          <p class="text-sm text-kova-700 dark:text-kova-300 font-medium">
+            Sharing automatically in <span x-text="autoCountdown"></span>s…
+          </p>
+          <button type="button" @click="cancelAutoSubmit()" class="text-xs text-gray-500 hover:text-gray-700 underline mt-1">
+            Cancel — I'll customize first
+          </button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 justify-center">
+          <button type="submit" class="btn-primary px-6" @click="autoMode = true; cancelAutoSubmit()">
+            Share now
+          </button>
+          <button type="button" @click="$refs.fileInput.click()" class="btn-secondary text-sm">
+            Add more
+          </button>
+        </div>
+      </div>
+
+      {# Uploading state #}
+      <div x-show="uploading" x-cloak class="py-4">
+        <svg class="w-8 h-8 mx-auto animate-spin text-kova-600 mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Setting up your posts…</p>
+        <p class="text-xs text-gray-500 mt-1">Caption · platforms · schedule</p>
+      </div>
     </div>
 
-    {# Context + caption #}
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div class="sm:col-span-2">
-        <label class="label">What's this? <span class="text-gray-400 font-normal">(optional)</span></label>
-        <input type="text" name="context" class="input w-full"
-               placeholder="e.g. Nairobi Tech Week, Day 2 keynote">
-      </div>
-      <div class="sm:col-span-2">
-        <label class="label">Caption</label>
-        <textarea name="caption" rows="3" class="input w-full text-sm"
-                  placeholder="Leave blank and Kova writes one from your context"></textarea>
-        <label class="inline-flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
-          <input type="checkbox" name="generate_caption" value="1" checked class="rounded border-gray-300 text-kova-600">
-          Auto-write caption if empty
-        </label>
-      </div>
+    {# Hidden order fields for manual customize path #}
+    <template x-for="file in files" :key="'ord-' + file.id">
+      <input type="hidden" name="file_order" :value="file.order">
+    </template>
+
+    {# What Kova will do (auto mode summary) #}
+    <div x-show="autoMode && files.length" x-cloak
+         class="rounded-xl border border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20 px-4 py-3 text-xs text-kova-800 dark:text-kova-200 space-y-1">
+      <p class="font-semibold text-sm">Autopilot will:</p>
+      <ul class="list-disc list-inside space-y-0.5 text-kova-700 dark:text-kova-300">
+        <li>Publish to all connected platforms{% if platform_labels %} — {{ platform_labels }}{% endif %}</li>
+        <li>Write a caption from your files{% if hands_free %} and schedule in order{% endif %}</li>
+        <li>Number clips/photos in upload order with smart gaps between posts</li>
+        {% if hands_free %}
+        <li>Go live automatically when each slot is due — no approval step</li>
+        {% else %}
+        <li>Schedule in order — you can still review in Queue before they go live</li>
+        {% endif %}
+      </ul>
     </div>
 
-    {# Photo layout #}
-    <div x-show="detectedKind === 'photo' || shareKind === 'photo'" x-cloak>
-      <p class="label mb-2">Photo layout</p>
-      <div class="flex flex-wrap gap-2">
-        <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm cursor-pointer">
-          <input type="radio" name="photo_mode" value="auto" checked class="text-kova-600"> Auto (carousel on IG/FB)
-        </label>
-        <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm cursor-pointer">
-          <input type="radio" name="photo_mode" value="carousel" class="text-kova-600"> One carousel
-        </label>
-        <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm cursor-pointer">
-          <input type="radio" name="photo_mode" value="sequence" class="text-kova-600"> Numbered sequence
-        </label>
-      </div>
-    </div>
+    {# Customize (collapsed) #}
+    <details class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+             @toggle="if ($el.open) { autoMode = false; cancelAutoSubmit(); }">
+      <summary class="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+        Customize (optional)
+      </summary>
+      <div class="px-4 pb-4 pt-1 space-y-4 border-t border-gray-100 dark:border-gray-800">
 
-    {# Platforms #}
-    <div>
-      <p class="label mb-2">Publish to</p>
-      <div class="flex flex-wrap gap-2">
-        {% for account in share_accounts %}
-        <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm cursor-pointer hover:border-kova-400"
-               x-show="shareKind === 'auto' || shareKind === 'photo' || ['instagram','facebook','tiktok','linkedin'].includes('{{ account.platform }}')">
-          <input type="checkbox" name="account_ids" value="{{ account.id }}" checked
-                 class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
-          <span class="font-medium capitalize">{{ account.platform }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </div>
+        <div>
+          <label class="label">What's this?</label>
+          <input type="text" name="context" class="input w-full text-sm"
+                 placeholder="e.g. Nairobi Tech Week — Kova uses this for the caption">
+        </div>
+        <div>
+          <label class="label">Caption override</label>
+          <textarea name="caption" rows="2" class="input w-full text-sm"
+                    placeholder="Leave blank — Kova writes one"></textarea>
+        </div>
 
-    {# Schedule #}
-    <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-      <p class="text-sm font-semibold text-gray-900 dark:text-white">When to publish</p>
-      <div class="space-y-2">
-        <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-               :class="scheduleMode === 'autopilot' ? 'border-kova-500 bg-kova-50/50 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700'">
-          <input type="radio" name="schedule_mode" value="autopilot" x-model="scheduleMode" class="mt-1 text-kova-600">
-          <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Autopilot schedule</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Number posts in order with gaps — publishes automatically when due</p>
+        <div>
+          <p class="label mb-2">Platforms</p>
+          <div class="flex flex-wrap gap-2">
+            {% for account in share_accounts %}
+            <label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs cursor-pointer">
+              <input type="checkbox" name="account_ids" value="{{ account.id }}" checked
+                     class="rounded border-gray-300 text-kova-600">
+              <span class="capitalize">{{ account.platform }}</span>
+            </label>
+            {% endfor %}
           </div>
-        </label>
-        <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-               :class="scheduleMode === 'stagger' ? 'border-kova-500 bg-kova-50/50 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700'">
-          <input type="radio" name="schedule_mode" value="stagger" x-model="scheduleMode" class="mt-1 text-kova-600">
-          <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Stagger from best slot</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Starts at next best time, then waits between items</p>
-          </div>
-        </label>
-        <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-               :class="scheduleMode === 'manual' ? 'border-kova-500 bg-kova-50/50 dark:bg-kova-950/30' : 'border-gray-200 dark:border-gray-700'">
-          <input type="radio" name="schedule_mode" value="manual" x-model="scheduleMode" class="mt-1 text-kova-600">
-          <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Review first</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Send to Studio for approval before anything goes live</p>
-          </div>
-        </label>
-      </div>
-      <div x-show="scheduleMode !== 'manual'" x-cloak class="flex items-center gap-3 pt-1">
-        <label class="text-sm text-gray-600 dark:text-gray-400">Gap between items</label>
-        <select name="gap_hours" class="input text-sm w-auto">
-          <option value="1">1 hour</option>
-          <option value="2">2 hours</option>
-          <option value="4" selected>4 hours</option>
-          <option value="8">8 hours</option>
-          <option value="24">24 hours</option>
-        </select>
-      </div>
-      {% if autopilot_on %}
-      <p class="text-xs text-growth-600 dark:text-growth-400">Autopilot is on — scheduled posts publish when due.</p>
-      {% elif auto_approve %}
-      <p class="text-xs text-kova-600 dark:text-kova-400">Auto-approve is on — posts skip manual review when scheduled.</p>
-      {% endif %}
-    </div>
+        </div>
 
-    <div class="flex flex-col sm:flex-row gap-3 pt-2">
-      <button type="submit" class="btn-primary flex-1" :disabled="!files.length">
-        Create share campaign
-      </button>
-      <a href="{% url 'content:studio' %}" class="btn-secondary text-center">Cancel</a>
-    </div>
+        <div>
+          <p class="label mb-2">Photo layout</p>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+              <input type="radio" name="photo_mode" value="auto" checked> Auto
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+              <input type="radio" name="photo_mode" value="carousel"> Carousel
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+              <input type="radio" name="photo_mode" value="sequence"> Sequence
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <p class="label mb-2">Schedule</p>
+          <div class="space-y-2 text-sm">
+            <label class="flex items-center gap-2">
+              <input type="radio" name="schedule_mode" value="autopilot" {% if hands_free %}checked{% endif %}> Autopilot (publish when due)
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="radio" name="schedule_mode" value="stagger" {% if not hands_free %}checked{% endif %}> Stagger from best time
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="radio" name="schedule_mode" value="manual"> Review in Studio first
+            </label>
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <label class="text-xs text-gray-500">Gap between items</label>
+            <select name="gap_hours" class="input text-xs w-auto py-1">
+              <option value="1">1 hr</option>
+              <option value="2">2 hr</option>
+              <option value="4" selected>4 hr</option>
+              <option value="8">8 hr</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-secondary w-full sm:w-auto" @click="autoMode = false; cancelAutoSubmit()">
+          Share with these settings
+        </button>
+      </div>
+    </details>
   </form>
   {% endif %}
 </div>
 
 <script>
-function shareMoment() {
+function shareMoment(handsFree) {
   return {
-    shareKind: 'auto',
-    scheduleMode: {% if autopilot_on %}'autopilot'{% else %}'manual'{% endif %},
+    autoMode: true,
+    handsFree: handsFree,
     files: [],
     dragOver: false,
+    uploading: false,
     fileId: 0,
-    get detectedKind() {
-      if (this.shareKind !== 'auto') return this.shareKind;
-      if (!this.files.length) return 'photo';
-      return this.files[0].kind;
-    },
+    autoCountdown: 0,
+    autoTimer: null,
+    countdownTimer: null,
+
     handleFiles(fileList) {
       Array.from(fileList || []).forEach(f => this.addFile(f));
+      if (this.autoMode && this.files.length) {
+        this.scheduleAutoSubmit();
+      }
     },
     handleDrop(e) {
       this.dragOver = false;
@@ -225,33 +226,56 @@ function shareMoment() {
     },
     addFile(file) {
       const isVideo = (file.type || '').startsWith('video/') || /\.(mp4|mov|webm)$/i.test(file.name);
+      const kind = isVideo ? 'reel' : 'photo';
+      if (this.files.length && this.files[0].kind !== kind) {
+        alert('Mix reels and photos in separate batches — pick one type per share.');
+        return;
+      }
       this.files.push({
         id: ++this.fileId,
         file: file,
         name: file.name,
-        kind: isVideo ? 'reel' : 'photo',
-        sizeLabel: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+        kind: kind,
         order: this.files.length + 1,
       });
     },
     removeFile(index) {
       this.files.splice(index, 1);
-      this.renumber();
-    },
-    moveFile(index, dir) {
-      const j = index + dir;
-      if (j < 0 || j >= this.files.length) return;
-      const tmp = this.files[index];
-      this.files[index] = this.files[j];
-      this.files[j] = tmp;
-      this.renumber();
-    },
-    renumber() {
       this.files.forEach((f, i) => { f.order = i + 1; });
+      this.cancelAutoSubmit();
+      if (this.autoMode && this.files.length) {
+        this.scheduleAutoSubmit();
+      }
+    },
+    scheduleAutoSubmit() {
+      this.cancelAutoSubmit();
+      if (!this.autoMode) return;
+      this.autoCountdown = 3;
+      this.countdownTimer = setInterval(() => {
+        this.autoCountdown -= 1;
+        if (this.autoCountdown <= 0) {
+          clearInterval(this.countdownTimer);
+          this.submitNow();
+        }
+      }, 1000);
+    },
+    cancelAutoSubmit() {
+      if (this.countdownTimer) clearInterval(this.countdownTimer);
+      this.autoCountdown = 0;
+    },
+    submitNow() {
+      if (!this.files.length || this.uploading) return;
+      this.uploading = true;
+      this.cancelAutoSubmit();
+      this.prepareSubmit({ preventDefault: () => {} });
+      this.$refs.shareForm.requestSubmit();
     },
     prepareSubmit(e) {
+      if (e && e.preventDefault && !this.uploading) {
+        /* manual submit from button */
+      }
       if (!this.files.length) {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
         return;
       }
       const dt = new DataTransfer();

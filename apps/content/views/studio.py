@@ -457,15 +457,19 @@ def _share_accounts_for_user(user):
 def share_moment(request):
     """Quick Share — multi-reel or multi-photo event workflow."""
     from apps.products.commerce_autopilot import should_auto_publish_commerce
+    from apps.accounts.autopilot_helpers import should_auto_publish_approved
 
     accounts = _share_accounts_for_user(request.user)
     profile = getattr(request.user, "profile", None)
-    autopilot_on = should_auto_publish_commerce(request.user)
+    autopilot_on = should_auto_publish_commerce(request.user) or should_auto_publish_approved(request.user)
+    platform_labels = ", ".join(sorted({a.platform.title() for a in accounts})) if accounts else ""
     return render(request, "content/share_moment.html", {
         "share_accounts": accounts,
         "reel_accounts": [a for a in accounts if a.platform in _REEL_UPLOAD_PLATFORMS],
         "autopilot_on": autopilot_on,
         "auto_approve": bool(profile and profile.auto_approve_posts),
+        "hands_free": autopilot_on or bool(profile and profile.auto_approve_posts),
+        "platform_labels": platform_labels,
         "default_gap_hours": 4,
     })
 
@@ -498,38 +502,53 @@ def share_moment_submit(request):
     order_values = request.POST.getlist("file_order")
     items = apply_custom_order(items, order_values)
 
+    auto_mode = request.POST.get("auto_mode") == "1"
+    caption = (request.POST.get("caption") or "").strip()
+    context = (request.POST.get("context") or "").strip()
+
+    if auto_mode:
+        from apps.content.share_bundle import resolve_automated_share_options
+
+        auto_opts = resolve_automated_share_options(
+            request.user, items, context=context, caption=caption,
+        )
+        kind_hint = auto_opts["share_kind"]
+        schedule_mode = auto_opts["schedule_mode"]
+        gap_hours = auto_opts["gap_hours"]
+        photo_mode = auto_opts["photo_mode"]
+        generate_caption = auto_opts["generate_caption"]
+        context = auto_opts["context"]
+        caption = auto_opts["caption"]
+    else:
+        schedule_mode = (request.POST.get("schedule_mode") or "manual").strip()
+        if schedule_mode not in ("autopilot", "stagger", "manual"):
+            schedule_mode = "manual"
+        try:
+            gap_hours = int(request.POST.get("gap_hours") or 4)
+        except (TypeError, ValueError):
+            gap_hours = 4
+        photo_mode = (request.POST.get("photo_mode") or "auto").strip()
+        generate_caption = request.POST.get("generate_caption") == "1"
+
     account_ids = request.POST.getlist("account_ids")
     accounts_qs = filter_social_accounts_for_autopilot(
         request.user,
         SocialAccount.objects.filter(user=request.user, is_active=True),
     )
-    if account_ids:
+    if account_ids and not auto_mode:
         accounts = list(accounts_qs.filter(pk__in=account_ids))
     else:
         accounts = list(accounts_qs)
 
+    from apps.content.share_bundle import filter_accounts_for_share_items
+
+    accounts = filter_accounts_for_share_items(accounts, items)
+
     if not accounts:
-        messages.error(request, "Select at least one connected platform.")
+        messages.error(request, "Connect at least one platform that supports this media type.")
         return redirect("content:share_moment")
 
     kind = items[0].kind
-    if kind == "reel":
-        accounts = [a for a in accounts if a.platform in _REEL_UPLOAD_PLATFORMS]
-        if not accounts:
-            messages.error(request, "Connect Instagram, Facebook, TikTok, or LinkedIn for reels.")
-            return redirect("content:share_moment")
-
-    caption = (request.POST.get("caption") or "").strip()
-    context = (request.POST.get("context") or "").strip()
-    schedule_mode = (request.POST.get("schedule_mode") or "manual").strip()
-    if schedule_mode not in ("autopilot", "stagger", "manual"):
-        schedule_mode = "manual"
-    try:
-        gap_hours = int(request.POST.get("gap_hours") or 4)
-    except (TypeError, ValueError):
-        gap_hours = 4
-    photo_mode = (request.POST.get("photo_mode") or "auto").strip()
-    generate_caption = request.POST.get("generate_caption") == "1"
 
     try:
         result = create_share_bundle(
@@ -548,17 +567,19 @@ def share_moment_submit(request):
         return redirect("content:share_moment")
 
     kind_label = "reel" if kind == "reel" else "photo"
+    platform_count = len({a.platform for a in accounts})
     if result.autopilot_scheduled:
         messages.success(
             request,
-            f"Share campaign ready — {result.posts_created} posts scheduled in order. "
-            f"Check Queue to preview timing.",
+            f"Done — {result.posts_created} posts queued across {platform_count} platform"
+            f"{'s' if platform_count != 1 else ''}. Kova wrote the caption, set the order, "
+            f"and scheduled everything. Check Queue for timing.",
         )
-    else:
-        messages.success(
-            request,
-            f"Created {result.posts_created} {kind_label} posts — review and approve in Studio.",
-        )
+        return redirect("content:queue")
+    messages.success(
+        request,
+        f"Created {result.posts_created} {kind_label} posts — review and approve in Studio.",
+    )
     return redirect(f"{reverse('content:studio')}#studio-posts-section")
 
 

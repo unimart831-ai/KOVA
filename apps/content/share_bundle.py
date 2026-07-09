@@ -128,6 +128,79 @@ def apply_custom_order(items: list[ShareMediaItem], order_values: list[str]) -> 
     return reordered
 
 
+def infer_share_context(items: list[ShareMediaItem]) -> str:
+    """Build a human context line from upload filenames when the user adds none."""
+    import re
+    from django.utils import timezone
+
+    if not items:
+        return f"Shared {timezone.now().strftime('%A %b %d')}"
+
+    raw = (items[0].filename or "").rsplit(".", 1)[0]
+    cleaned = re.sub(r"[_\-]+", " ", raw).strip()
+    cleaned = re.sub(r"\s*\(\d+\)\s*$", "", cleaned).strip()
+    if cleaned and len(cleaned) >= 3 and not cleaned.lower().startswith(("img_", "dsc", "photo")):
+        title = cleaned.title() if cleaned.islower() else cleaned
+        return title[:120]
+    return f"Shared {timezone.now().strftime('%A %b %d')}"
+
+
+def resolve_automated_share_options(
+    user,
+    items: list[ShareMediaItem],
+    *,
+    context: str = "",
+    caption: str = "",
+) -> dict:
+    """
+    Hands-free Quick Share defaults — platforms, caption, layout, and schedule
+    without asking the user to configure anything.
+    """
+    from apps.accounts.autopilot_helpers import should_auto_publish_approved
+    from apps.products.commerce_autopilot import should_auto_publish_commerce
+
+    profile = getattr(user, "profile", None)
+    media_count = len(items)
+    kind = items[0].kind if items else "photo"
+
+    hands_free = bool(
+        should_auto_publish_commerce(user)
+        or should_auto_publish_approved(user)
+        or (profile and profile.auto_approve_posts)
+    )
+    schedule_mode = "autopilot" if hands_free else "stagger"
+
+    if media_count >= 6:
+        gap_hours = 2
+    elif media_count >= 3:
+        gap_hours = 3
+    else:
+        gap_hours = 4
+
+    inferred = infer_share_context(items)
+    ctx = (context or "").strip() or inferred
+
+    return {
+        "share_kind": "auto",
+        "schedule_mode": schedule_mode,
+        "photo_mode": "auto",
+        "gap_hours": gap_hours,
+        "generate_caption": not (caption or "").strip(),
+        "context": ctx,
+        "caption": (caption or "").strip(),
+    }
+
+
+def filter_accounts_for_share_items(accounts, items: list[ShareMediaItem]):
+    """Keep only platforms that can publish this media type."""
+    if not items:
+        return accounts
+    kind = items[0].kind
+    if kind == "reel":
+        return [a for a in accounts if a.platform in REEL_PLATFORMS]
+    return [a for a in accounts if a.platform in IMAGE_PLATFORMS]
+
+
 def generate_share_caption(
     user,
     *,

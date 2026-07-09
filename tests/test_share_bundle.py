@@ -10,7 +10,9 @@ from apps.content.share_bundle import (
     apply_custom_order,
     campaign_rollout_minutes_for_post,
     create_share_bundle,
+    infer_share_context,
     parse_uploaded_files,
+    resolve_automated_share_options,
 )
 
 
@@ -122,3 +124,25 @@ def test_campaign_rollout_minutes_respects_sequence():
         content_dna={"publish_sequence_index": 2, "share_bundle": True},
     )
     assert campaign_rollout_minutes_for_post(ig) < campaign_rollout_minutes_for_post(post)
+
+
+def test_infer_share_context_from_filename():
+    items = parse_uploaded_files([
+        SimpleUploadedFile("nairobi_tech_week.jpg", b"img", content_type="image/jpeg"),
+    ])
+    ctx = infer_share_context(items)
+    assert "Nairobi" in ctx or "nairobi" in ctx.lower()
+
+
+def test_resolve_automated_share_options_hands_free(share_user, monkeypatch):
+    monkeypatch.setattr(
+        "apps.products.commerce_autopilot.should_auto_publish_commerce",
+        lambda u: True,
+    )
+    items = parse_uploaded_files([
+        SimpleUploadedFile("clip.mp4", b"v", content_type="video/mp4"),
+    ])
+    opts = resolve_automated_share_options(share_user, items)
+    assert opts["schedule_mode"] == "autopilot"
+    assert opts["generate_caption"] is True
+    assert opts["photo_mode"] == "auto"
