@@ -218,7 +218,7 @@ python manage.py shell
 
 ```python
 from django.contrib.auth import get_user_model
-from apps.briefs.tasks import generate_daily_brief
+from apps.create.briefs.tasks import generate_daily_brief
 
 user = User.objects.get(email="your-test@email.com")
 user.phone_number = "0712345678"

@@ -12,11 +12,11 @@ from decimal import Decimal
 import pytest
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.bookings.models import Booking, BookingLink
-from apps.briefs.tasks import _build_action_summary
-from apps.qr_attribution.models import WalkInEvent
-from apps.reviews.models import ReviewRequest
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.bookings.models import Booking, BookingLink
+from apps.create.briefs.tasks import _build_action_summary
+from apps.commerce.qr_attribution.models import WalkInEvent
+from apps.commerce.reviews.models import ReviewRequest
 
 
 @pytest.fixture
@@ -99,7 +99,7 @@ class TestActionSummary:
         assert "Service was slow" in neg[0]["preview"]
 
     def test_positive_review_seeded_count(self, owner):
-        from apps.content.models import ContentSeed
+        from apps.create.content.models import ContentSeed
         seed = ContentSeed.objects.create(user=owner, idea="testimonial")
         ReviewRequest.objects.create(
             user=owner,

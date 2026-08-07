@@ -7,13 +7,13 @@ from decimal import Decimal
 import pytest
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.briefs.revenue_summary import (
+from apps.core.accounts.models import User, UserProfile
+from apps.create.briefs.revenue_summary import (
     format_money_whatsapp_message,
     get_unified_revenue_summary,
     recommend_next_revenue_action,
 )
-from apps.products.models import CommercePayment, Product
+from apps.commerce.products.models import CommercePayment, Product
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def test_money_board_stats_no_recursion(owner):
     """Regression: get_money_board_stats must not call get_unified_revenue_summary in a loop."""
     import sys
 
-    from apps.briefs.dashboard import get_money_board_stats
+    from apps.create.briefs.dashboard import get_money_board_stats
 
     old_limit = sys.getrecursionlimit()
     try:

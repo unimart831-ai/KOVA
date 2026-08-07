@@ -1,0 +1,178 @@
+"""
+Catalog showcase — one carousel + reel promoting multiple in-stock products.
+
+Each product slide uses name + price (image optional). Out-of-stock physical
+products are excluded. Weekly runs rotate which products appear when the
+catalog exceeds the Instagram carousel slide cap.
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import timedelta
+
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
+
+# Title + up to 8 product slides + closing CTA (Instagram max 10)
+MAX_PRODUCT_SLIDES = 8
+
+
+def catalog_showcase_allowed(user) -> bool:
+    profile = getattr(user, "profile", None)
+    return not (profile and profile.emergency_pause)
+
+
+def promotable_catalog_queryset(user):
+    """Active products safe to promote (excludes out-of-stock physical)."""
+    from apps.commerce.products.models import Product
+
+    return Product.objects.promotable(user).select_related("category").order_by(
+        "-is_featured", "-updated_at", "name"
+    )
+
+
+def select_products_for_showcase(user, *, limit: int = MAX_PRODUCT_SLIDES):
+    """
+    Pick up to `limit` products for this showcase. Rotates by ISO week when
+    the catalog is larger than the slide cap.
+    """
+    all_promotable = list(promotable_catalog_queryset(user))
+    if not all_promotable:
+        return []
+
+    if len(all_promotable) <= limit:
+        return all_promotable
+
+    week = timezone.now().isocalendar()[1]
+    start = week % len(all_promotable)
+    selected = []
+    for i in range(limit):
+        selected.append(all_promotable[(start + i) % len(all_promotable)])
+    return selected
+
+
+def build_catalog_showcase_caption(user, products) -> str:
+    from apps.create.content.post_copy import polish_post_caption
+
+    profile = getattr(user, "profile", None)
+    brand = (getattr(profile, "company_name", None) or "").strip() or "Our shop"
+
+    intro = f"What's in stock at {brand} this week 🛍️"
+    lines = [intro, ""]
+    for product in products:
+        line = product.name
+        if product.display_price:
+            line += f" — {product.display_price}"
+        lines.append(line)
+
+    more = promotable_catalog_queryset(user).count() - len(products)
+    lines.append("")
+    if more > 0:
+        lines.append(f"+ {more} more in our catalog. Swipe through for prices 👉")
+    else:
+        lines.append("Swipe through for prices 👉")
+
+    lines.append("")
+    lines.append("Tap the link in bio to shop 👆")
+
+    return polish_post_caption("\n".join(lines), "instagram", post_format="carousel")
+
+
+def weekly_showcase_due(profile) -> bool:
+    if not profile or not profile.catalog_showcase_weekly:
+        return False
+    last = profile.catalog_showcase_last_at
+    if not last:
+        return True
+    return timezone.now() - last >= timedelta(days=7)
+
+
+def mark_showcase_run(profile):
+    if not profile:
+        return
+    profile.catalog_showcase_last_at = timezone.now()
+    profile.save(update_fields=["catalog_showcase_last_at", "updated_at"])
+
+
+def build_catalog_showcase_status(seed, user) -> dict:
+    """
+    Live status payload for the catalog-showcase modal.
+
+    Reports the seed phase plus a card per generated carousel/reel so the user
+    can preview the visuals before publishing. ``terminal`` flips True once the
+    seed finished and every reel video has been composed (or failed).
+    """
+    from apps.create.content.models import ContentSeed, Post
+
+    posts = list(
+        Post.objects.filter(seed=seed, user=user)
+        .order_by("post_format", "platform")
+    )
+
+    items = []
+    reels_pending = 0
+    for post in posts:
+        is_reel = post.post_format == Post.PostFormat.REEL
+        thumb = ""
+        if is_reel:
+            thumb = post.reel_thumbnail_url or (post.media_urls[0] if post.media_urls else "")
+            compose = post.reel_compose_status or "pending"
+            if compose not in ("done", "failed"):
+                reels_pending += 1
+                item_status = "composing"
+            elif compose == "failed":
+                item_status = "failed"
+            else:
+                item_status = "ready"
+            video_url = post.reel_video_url
+        else:
+            thumb = post.media_urls[0] if post.media_urls else ""
+            video_url = ""
+            if post.media_status == "failed":
+                item_status = "failed"
+            elif post.media_status in ("generated", "uploaded") and post.media_urls:
+                item_status = "ready"
+            else:
+                item_status = "rendering"
+
+        items.append({
+            "post_id": str(post.pk),
+            "platform": post.platform,
+            "format": "reel" if is_reel else "carousel",
+            "status": item_status,
+            "thumbnail_url": thumb,
+            "video_url": video_url,
+            "slide_count": len(post.media_urls or []),
+        })
+
+    seed_done = seed.status in (
+        ContentSeed.SeedStatus.COMPLETED,
+        ContentSeed.SeedStatus.FAILED,
+    )
+    seed_failed = seed.status == ContentSeed.SeedStatus.FAILED
+    terminal = bool(seed_done and reels_pending == 0)
+
+    if seed_failed and not items:
+        phase = "failed"
+    elif not seed_done:
+        phase = "generating"
+    elif reels_pending:
+        phase = "composing"
+    else:
+        phase = "completed"
+
+    carousel_count = sum(1 for i in items if i["format"] == "carousel" and i["status"] == "ready")
+    reel_count = sum(1 for i in items if i["format"] == "reel")
+
+    return {
+        "status": phase,
+        "terminal": terminal,
+        "seed_id": str(seed.pk),
+        "items": items,
+        "carousel_count": carousel_count,
+        "reel_count": reel_count,
+        "reels_pending": reels_pending,
+        "error_message": seed.error_message if seed_failed else "",
+    }

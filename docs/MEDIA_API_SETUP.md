@@ -604,7 +604,7 @@ BANNERBEAR_TEMPLATE_CTA=
 | "Video generation failed" | `PHOTOROOM_VIDEO_ENABLED=False` | Enable video flag or rely on FFmpeg fallback |
 | Bannerbear slides empty | Missing template UIDs | Set all three `BANNERBEAR_TEMPLATE_*` vars |
 | Carousel uses local slides not Bannerbear | Growth plan required + key set | Check `bannerbear_carousels_enabled` in plan |
-| `ModuleNotFoundError: apps.media` | `.gitignore` ignored `apps/media/` | Ensure `.gitignore` uses `/media/` not `media/` |
+| `ModuleNotFoundError: apps.create.media` | `.gitignore` ignored `apps/media/` | Ensure `.gitignore` uses `/media/` not `media/` |
 | High uncertainty / skipped variants | Bad segmentation on jewelry/reflective goods | Expected — guard uses safe fallback (`photoroom_guard.py`) |
 | Fal timeout | Queue poll exceeded 180s | Retry; check fal.ai status; reduce concurrent jobs |
 

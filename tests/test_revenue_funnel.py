@@ -10,9 +10,9 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.products.models import CommercePayment, Product, RevenueFunnel
-from apps.products.post_purchase import build_cross_sell, run_post_purchase
-from apps.products.revenue_funnel import ensure_funnel_for_product, mark_stage, record_conversion
+from apps.commerce.products.models import CommercePayment, Product, RevenueFunnel
+from apps.commerce.products.post_purchase import build_cross_sell, run_post_purchase
+from apps.commerce.products.revenue_funnel import ensure_funnel_for_product, mark_stage, record_conversion
 
 User = get_user_model()
 

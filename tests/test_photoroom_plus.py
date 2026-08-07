@@ -1,6 +1,6 @@
 """Tests for Photoroom Plus variant selection."""
 
-from apps.products.photoroom_plus import (
+from apps.commerce.products.photoroom_plus import (
     COMMERCE_SCENE_VARIANT_IDS,
     DEPRECATED_CREATIVE_VARIANT_IDS,
     EDIT_WITH_AI_PRODUCT_STAGING_BASE,
@@ -124,15 +124,15 @@ def test_marketplace_variant_google_shopping_params():
 
 
 def test_marketplace_slide_role():
-    from apps.products.photoroom_plus import slide_role_for_variant
+    from apps.commerce.products.photoroom_plus import slide_role_for_variant
 
     assert slide_role_for_variant("channel_marketplace", "product", "general") == "marketplace"
     assert slide_role_for_variant("channel_marketplace_jpeg", "product", "beauty") == "marketplace"
 
 
 def test_brand_hero_first_when_template_enabled():
-    from apps.products.photoroom_brand_template import PhotoroomBrandTemplate
-    from apps.products.photoroom_plus import order_variants_by_slide_role
+    from apps.commerce.products.photoroom_brand_template import PhotoroomBrandTemplate
+    from apps.commerce.products.photoroom_plus import order_variants_by_slide_role
 
     template = PhotoroomBrandTemplate(
         enabled=True,
@@ -159,7 +159,7 @@ def test_brand_hero_first_when_template_enabled():
 
 
 def test_select_variants_brand_hero_with_profile_colors():
-    from apps.products.photoroom_brand_template import PhotoroomBrandTemplate
+    from apps.commerce.products.photoroom_brand_template import PhotoroomBrandTemplate
 
     p = _Product(name="Kitenge Dress", tags=["fashion"])
     template = PhotoroomBrandTemplate(
@@ -183,7 +183,7 @@ def test_select_variants_brand_hero_with_profile_colors():
 
 
 def test_relight_mode_resolved_for_products():
-    from apps.products.photoroom_plus import resolve_variant_params
+    from apps.commerce.products.photoroom_plus import resolve_variant_params
 
     p = _Product(name="USB Hub", tags=["electronics"])
     spec = PLUS_VARIANT_CATALOG["relight"]
@@ -192,7 +192,7 @@ def test_relight_mode_resolved_for_products():
 
 
 def test_relight_mode_auto_for_services():
-    from apps.products.photoroom_plus import resolve_variant_params
+    from apps.commerce.products.photoroom_plus import resolve_variant_params
 
     p = _Product(name="Home Cleaning", offering_type="service")
     spec = PLUS_VARIANT_CATALOG["relight"]
@@ -201,7 +201,7 @@ def test_relight_mode_auto_for_services():
 
 
 def test_slide_role_order_starts_with_hero():
-    from apps.products.photoroom_plus import order_variants_by_slide_role
+    from apps.commerce.products.photoroom_plus import order_variants_by_slide_role
 
     candidates = [
         PLUS_VARIANT_CATALOG["ai_lifestyle"],
@@ -220,7 +220,7 @@ def test_slide_role_order_starts_with_hero():
 
 
 def test_apparel_proof_prefers_flat_lay_then_ghost():
-    from apps.products.photoroom_plus import order_variants_by_slide_role
+    from apps.commerce.products.photoroom_plus import order_variants_by_slide_role
 
     candidates = [
         PLUS_VARIANT_CATALOG["studio_white"],
@@ -241,7 +241,7 @@ def test_apparel_proof_prefers_flat_lay_then_ghost():
 
 
 def test_capability_for_variant_taxonomy():
-    from apps.products.photoroom_plus import (
+    from apps.commerce.products.photoroom_plus import (
         CAPABILITY_AI_BACKGROUND,
         CAPABILITY_BEAUTIFY,
         CAPABILITY_FLAT_LAY,
@@ -257,7 +257,7 @@ def test_capability_for_variant_taxonomy():
 
 def test_apparel_5pack_balanced_mix():
     """Growth 5-pack: studio hero + ≥2 AI backgrounds + flat_lay polish."""
-    from apps.products.photoroom_plus import (
+    from apps.commerce.products.photoroom_plus import (
         capability_for_variant,
         CAPABILITY_AI_BACKGROUND,
         CAPABILITY_STUDIO,
@@ -292,7 +292,7 @@ def test_food_5pack_prefers_beautify_not_flat_lay_first():
 
 
 def test_high_uncertainty_skips_flat_lay_and_ghost():
-    from apps.products.photoroom_plus import order_variants_by_slide_role
+    from apps.commerce.products.photoroom_plus import order_variants_by_slide_role
 
     candidates = [
         PLUS_VARIANT_CATALOG["studio_white"],
@@ -317,7 +317,7 @@ def test_high_uncertainty_skips_flat_lay_and_ghost():
 
 
 def test_no_duplicate_beautify_family_in_pack():
-    from apps.products.photoroom_plus import (
+    from apps.commerce.products.photoroom_plus import (
         BEAUTIFY_FAMILY_IDS,
         enforce_pack_capability_balance,
     )
@@ -342,7 +342,7 @@ def test_no_duplicate_beautify_family_in_pack():
 
 
 def test_filter_carousel_urls_excludes_channel():
-    from apps.products.photoroom_plus import filter_carousel_urls
+    from apps.commerce.products.photoroom_plus import filter_carousel_urls
 
     urls = [
         "/media/studio_polish/x/studio_white_abc.jpg",
@@ -356,7 +356,7 @@ def test_filter_carousel_urls_excludes_channel():
 
 
 def test_filter_shop_gallery_urls_excludes_promo_frame():
-    from apps.products.photoroom_plus import filter_shop_gallery_urls
+    from apps.commerce.products.photoroom_plus import filter_shop_gallery_urls
 
     urls = [
         "/media/studio_polish/x/studio_white_abc.jpg",
@@ -395,7 +395,7 @@ def test_beauty_gets_multiple_ai_scenes_with_budget():
 
 
 def test_apply_variant_layout_shifts_ai_scenes():
-    from apps.products.photoroom_plus import apply_variant_layout
+    from apps.commerce.products.photoroom_plus import apply_variant_layout
 
     base = {"padding": "0.12", "background.prompt": "test"}
     a = apply_variant_layout(base, "ai_scene_table", 0)
@@ -407,7 +407,7 @@ def test_apply_variant_layout_shifts_ai_scenes():
 
 
 def test_studio_white_layout_rotates():
-    from apps.products.photoroom_plus import apply_variant_layout
+    from apps.commerce.products.photoroom_plus import apply_variant_layout
 
     base = {"padding": "0.12", "scaling": "fill"}
     out = apply_variant_layout(base, "studio_white", 2)
@@ -417,7 +417,7 @@ def test_studio_white_layout_rotates():
 
 
 def test_ai_scene_variants_use_default_prompt_expansion():
-    from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG
+    from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG
 
     for vid in ("ai_lifestyle_alt", "ai_scene_table", "ai_creative_marble"):
         params = PLUS_VARIANT_CATALOG[vid].params
@@ -450,7 +450,7 @@ def test_deprecated_splash_prompt_unchanged_for_manual_use():
 
 
 def test_commerce_slide_role_tag():
-    from apps.products.photoroom_plus import slide_role_for_variant
+    from apps.commerce.products.photoroom_plus import slide_role_for_variant
 
     assert slide_role_for_variant("ai_scene_table", "product", "apparel") == "commerce"
     assert slide_role_for_variant("ai_creative_marble", "product", "beauty") == "creative"
@@ -547,7 +547,7 @@ def test_mitumba_apparel_flat_lay_starter_no_ghost():
 
 
 def test_mitumba_apparel_pro_includes_ghost_with_review():
-    from apps.products.photoroom_review import needs_alteration_review
+    from apps.commerce.products.photoroom_review import needs_alteration_review
 
     p = _Product(name="Preloved Summer Dress", tags=["thrift", "dress"])
     specs = select_plus_variants(p, {}, plan_tier="pro", max_count=6)
@@ -559,7 +559,7 @@ def test_mitumba_apparel_pro_includes_ghost_with_review():
 
 
 def test_vision_product_category_hint_resolves_vertical():
-    from apps.products.scene_packs import resolve_scene_vertical
+    from apps.commerce.products.scene_packs import resolve_scene_vertical
 
     p = _Product(name="Item", tags=[])
     vertical = resolve_scene_vertical(
@@ -570,7 +570,7 @@ def test_vision_product_category_hint_resolves_vertical():
 
 
 def test_jewelry_locked_seed_applied_in_params():
-    from apps.products.photoroom_plus import resolve_variant_params
+    from apps.commerce.products.photoroom_plus import resolve_variant_params
 
     p = _Product(name="Silver Ring", tags=["jewelry"])
     spec = PLUS_VARIANT_CATALOG["ai_creative_marble"]
@@ -582,7 +582,7 @@ def test_jewelry_locked_seed_applied_in_params():
 
 
 def test_low_quality_photo_reduces_ai_scene_count():
-    from apps.products.photoroom_plus import _target_ai_scene_count
+    from apps.commerce.products.photoroom_plus import _target_ai_scene_count
 
     high = _target_ai_scene_count(6, analysis={}, category="beauty")
     low = _target_ai_scene_count(
@@ -594,7 +594,7 @@ def test_low_quality_photo_reduces_ai_scene_count():
 
 
 def test_multi_angles_boosts_edit_ai_angle_in_proof():
-    from apps.products.photoroom_plus import order_variants_by_slide_role
+    from apps.commerce.products.photoroom_plus import order_variants_by_slide_role
 
     candidates = [
         PLUS_VARIANT_CATALOG["studio_white"],
@@ -614,7 +614,7 @@ def test_multi_angles_boosts_edit_ai_angle_in_proof():
 
 
 def test_stall_wholesale_brief_reduces_ai_scenes():
-    from apps.products.photoroom_plus import _target_ai_scene_count
+    from apps.commerce.products.photoroom_plus import _target_ai_scene_count
 
     normal = _target_ai_scene_count(6, category="apparel")
     wholesale = _target_ai_scene_count(
@@ -639,7 +639,7 @@ def test_food_analysis_prefers_food_surfaces():
 
 
 def test_strip_conflicting_edit_params():
-    from apps.products.photoroom_plus import _strip_conflicting_edit_params
+    from apps.commerce.products.photoroom_plus import _strip_conflicting_edit_params
 
     raw = {
         "expand.mode": "ai.auto",
@@ -652,7 +652,7 @@ def test_strip_conflicting_edit_params():
 
 
 def test_normalize_photoroom_edit_params_shadow_and_expand():
-    from apps.products.photoroom_api import normalize_photoroom_edit_params
+    from apps.commerce.products.photoroom_api import normalize_photoroom_edit_params
 
     out = normalize_photoroom_edit_params({
         "shadow.mode": "ai.soft",

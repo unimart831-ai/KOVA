@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.accounts.onboarding_express import apply_business_model_defaults, record_business_model
-from apps.bookings.models import BookingLink
-from apps.bookings.service_setup import sync_product_service_to_booking
-from apps.products.business_assets import sync_asset_from_product
-from apps.products.models import Product
+from apps.core.accounts.models import User, UserProfile
+from apps.core.accounts.onboarding_express import apply_business_model_defaults, record_business_model
+from apps.commerce.bookings.models import BookingLink
+from apps.commerce.bookings.service_setup import sync_product_service_to_booking
+from apps.commerce.products.business_assets import sync_asset_from_product
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture

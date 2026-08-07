@@ -12,9 +12,9 @@ import pytest
 from django.conf import settings
 from django.core import mail
 
-from apps.accounts.models import User, UserProfile
-from apps.emails.models import EmailLog, EmailSubscriber
-from apps.emails.services import EMAIL_TEMPLATES, EmailService, email_service
+from apps.core.accounts.models import User, UserProfile
+from apps.messaging.emails.models import EmailLog, EmailSubscriber
+from apps.messaging.emails.services import EMAIL_TEMPLATES, EmailService, email_service
 
 LOCMEM = "django.core.mail.backends.locmem.EmailBackend"
 
@@ -196,7 +196,7 @@ class TestEmailServiceCore:
         assert "List-Unsubscribe" not in msg.extra_headers
 
     def test_send_failure_logs_error(self, user):
-        with patch("apps.emails.services.EmailMultiAlternatives") as mock_cls:
+        with patch("apps.messaging.emails.services.EmailMultiAlternatives") as mock_cls:
             mock_cls.return_value.send.side_effect = Exception("SMTP down")
             mock_cls.return_value.attach_alternative = MagicMock()
             mock_cls.return_value.extra_headers = {}
@@ -520,7 +520,7 @@ class TestEdgeCases:
 class TestCeleryEmailTasks:
 
     def test_send_email_task_happy_path(self, user):
-        from apps.emails.tasks import send_email_task
+        from apps.messaging.emails.tasks import send_email_task
 
         mail.outbox.clear()
         send_email_task(
@@ -534,7 +534,7 @@ class TestCeleryEmailTasks:
         assert log.status == EmailLog.Status.SENT
 
     def test_send_email_task_missing_user(self):
-        from apps.emails.tasks import send_email_task
+        from apps.messaging.emails.tasks import send_email_task
 
         mail.outbox.clear()
         fake_id = str(uuid.uuid4())
@@ -549,7 +549,7 @@ class TestCeleryEmailTasks:
         assert log.user is None
 
     def test_send_email_task_no_user_id(self):
-        from apps.emails.tasks import send_email_task
+        from apps.messaging.emails.tasks import send_email_task
 
         mail.outbox.clear()
         send_email_task(
@@ -560,7 +560,7 @@ class TestCeleryEmailTasks:
         assert len(mail.outbox) == 1
 
     def test_send_welcome_email_task(self, user):
-        from apps.emails.tasks import send_welcome_email
+        from apps.messaging.emails.tasks import send_welcome_email
 
         mail.outbox.clear()
         send_welcome_email(str(user.pk))
@@ -568,14 +568,14 @@ class TestCeleryEmailTasks:
         assert "welcome" in mail.outbox[0].subject.lower() or "Welcome" in mail.outbox[0].subject
 
     def test_send_welcome_email_task_deleted_user(self):
-        from apps.emails.tasks import send_welcome_email
+        from apps.messaging.emails.tasks import send_welcome_email
 
         mail.outbox.clear()
         send_welcome_email(str(uuid.uuid4()))
         assert len(mail.outbox) == 0
 
     def test_send_payment_confirmation_email_task(self, user):
-        from apps.emails.tasks import send_payment_confirmation_email
+        from apps.messaging.emails.tasks import send_payment_confirmation_email
 
         mail.outbox.clear()
         send_payment_confirmation_email(
@@ -584,35 +584,35 @@ class TestCeleryEmailTasks:
         assert len(mail.outbox) == 1
 
     def test_send_payment_failed_email_task(self, user):
-        from apps.emails.tasks import send_payment_failed_email
+        from apps.messaging.emails.tasks import send_payment_failed_email
 
         mail.outbox.clear()
         send_payment_failed_email(str(user.pk), plan="Growth")
         assert len(mail.outbox) == 1
 
     def test_send_plan_changed_email_task(self, user):
-        from apps.emails.tasks import send_plan_changed_email
+        from apps.messaging.emails.tasks import send_plan_changed_email
 
         mail.outbox.clear()
         send_plan_changed_email(str(user.pk), old_plan="Starter", new_plan="Growth")
         assert len(mail.outbox) == 1
 
     def test_send_subscription_canceled_email_task(self, user):
-        from apps.emails.tasks import send_subscription_canceled_email
+        from apps.messaging.emails.tasks import send_subscription_canceled_email
 
         mail.outbox.clear()
         send_subscription_canceled_email(str(user.pk))
         assert len(mail.outbox) == 1
 
     def test_send_payment_reminder_email_task(self, user):
-        from apps.emails.tasks import send_payment_reminder_email
+        from apps.messaging.emails.tasks import send_payment_reminder_email
 
         mail.outbox.clear()
         send_payment_reminder_email(str(user.pk), days_until_expiry=3)
         assert len(mail.outbox) == 1
 
     def test_send_team_invitation_email_task(self):
-        from apps.emails.tasks import send_team_invitation_email
+        from apps.messaging.emails.tasks import send_team_invitation_email
 
         mail.outbox.clear()
         send_team_invitation_email(
@@ -625,14 +625,14 @@ class TestCeleryEmailTasks:
         assert mail.outbox[0].to == ["new@example.com"]
 
     def test_send_weekly_report_email_task(self, user):
-        from apps.emails.tasks import send_weekly_report_email
+        from apps.messaging.emails.tasks import send_weekly_report_email
 
         mail.outbox.clear()
         send_weekly_report_email(str(user.pk), report_data={"posts_created": 5})
         assert len(mail.outbox) == 1
 
     def test_send_feature_announcement_email_task(self, user):
-        from apps.emails.tasks import send_feature_announcement_email
+        from apps.messaging.emails.tasks import send_feature_announcement_email
 
         mail.outbox.clear()
         send_feature_announcement_email(
@@ -641,7 +641,7 @@ class TestCeleryEmailTasks:
         assert len(mail.outbox) == 1
 
     def test_send_usage_warning_email_task(self, user):
-        from apps.emails.tasks import send_usage_warning_email
+        from apps.messaging.emails.tasks import send_usage_warning_email
 
         mail.outbox.clear()
         send_usage_warning_email(str(user.pk), resource="posts", current=90, limit=100)
@@ -650,7 +650,7 @@ class TestCeleryEmailTasks:
     # -- Partner tasks --
 
     def test_send_partner_app_received_email_task(self, user):
-        from apps.emails.tasks import send_partner_app_received_email
+        from apps.messaging.emails.tasks import send_partner_app_received_email
 
         mail.outbox.clear()
         send_partner_app_received_email(
@@ -659,7 +659,7 @@ class TestCeleryEmailTasks:
         assert len(mail.outbox) == 1
 
     def test_send_partner_app_received_email_task_no_user(self):
-        from apps.emails.tasks import send_partner_app_received_email
+        from apps.messaging.emails.tasks import send_partner_app_received_email
 
         mail.outbox.clear()
         send_partner_app_received_email(
@@ -670,14 +670,14 @@ class TestCeleryEmailTasks:
         assert len(mail.outbox) == 0
 
     def test_send_partner_app_approved_email_task(self, user):
-        from apps.emails.tasks import send_partner_app_approved_email
+        from apps.messaging.emails.tasks import send_partner_app_approved_email
 
         mail.outbox.clear()
         send_partner_app_approved_email(str(user.pk), referral_code="KOVA-ABC")
         assert len(mail.outbox) == 1
 
     def test_send_partner_app_approved_no_account_email_task(self):
-        from apps.emails.tasks import send_partner_app_approved_no_account_email
+        from apps.messaging.emails.tasks import send_partner_app_approved_no_account_email
 
         mail.outbox.clear()
         send_partner_app_approved_no_account_email(
@@ -686,7 +686,7 @@ class TestCeleryEmailTasks:
         assert len(mail.outbox) == 1
 
     def test_send_partner_app_rejected_email_task(self, user):
-        from apps.emails.tasks import send_partner_app_rejected_email
+        from apps.messaging.emails.tasks import send_partner_app_rejected_email
 
         mail.outbox.clear()
         send_partner_app_rejected_email(
@@ -695,14 +695,14 @@ class TestCeleryEmailTasks:
         assert len(mail.outbox) == 1
 
     def test_send_partner_new_referral_email_task(self, user):
-        from apps.emails.tasks import send_partner_new_referral_email
+        from apps.messaging.emails.tasks import send_partner_new_referral_email
 
         mail.outbox.clear()
         send_partner_new_referral_email(str(user.pk), "referred@example.com", total_referrals=3)
         assert len(mail.outbox) == 1
 
     def test_send_partner_milestone_email_task(self, user):
-        from apps.emails.tasks import send_partner_milestone_email
+        from apps.messaging.emails.tasks import send_partner_milestone_email
 
         mail.outbox.clear()
         send_partner_milestone_email(str(user.pk), "10 referrals", 5000)
@@ -711,13 +711,13 @@ class TestCeleryEmailTasks:
     # -- Retry logic --
 
     def test_send_email_task_has_retry_config(self):
-        from apps.emails.tasks import send_email_task
+        from apps.messaging.emails.tasks import send_email_task
 
         assert send_email_task.max_retries == 3
         assert send_email_task.default_retry_delay == 60
 
     def test_send_allauth_email_has_retry_config(self):
-        from apps.emails.tasks import send_allauth_email
+        from apps.messaging.emails.tasks import send_allauth_email
 
         assert send_allauth_email.max_retries == 3
         assert send_allauth_email.default_retry_delay == 30
@@ -732,7 +732,7 @@ class TestCeleryEmailTasks:
 class TestAllauthAdapter:
 
     def test_adapter_routes_to_celery(self, user):
-        from apps.accounts.adapter import AsyncEmailAccountAdapter
+        from apps.core.accounts.adapter import AsyncEmailAccountAdapter
 
         adapter = AsyncEmailAccountAdapter()
         mock_user = MagicMock()
@@ -743,7 +743,7 @@ class TestAllauthAdapter:
         mock_site.name = "Kova Agent"
         mock_site.domain = "kovaagent.com"
 
-        with patch("apps.emails.tasks.send_allauth_email.delay") as mock_delay:
+        with patch("apps.messaging.emails.tasks.send_allauth_email.delay") as mock_delay:
             adapter.send_mail(
                 template_prefix="account/email/email_confirmation",
                 email=user.email,
@@ -763,13 +763,13 @@ class TestAllauthAdapter:
             assert safe_ctx["key"] == "abc123"
 
     def test_adapter_serializes_only_safe_context(self, user):
-        from apps.accounts.adapter import AsyncEmailAccountAdapter
+        from apps.core.accounts.adapter import AsyncEmailAccountAdapter
 
         adapter = AsyncEmailAccountAdapter()
         complex_obj = MagicMock()
         complex_obj.__str__ = lambda self: "stringified"
 
-        with patch("apps.emails.tasks.send_allauth_email.delay") as mock_delay:
+        with patch("apps.messaging.emails.tasks.send_allauth_email.delay") as mock_delay:
             adapter.send_mail(
                 "account/email/email_confirmation",
                 user.email,
@@ -788,47 +788,47 @@ class TestAllauthAdapter:
 class TestIsMailableEmail:
 
     def test_valid_email(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("user@example.com") is True
 
     def test_empty_email(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("") is False
 
     def test_none_email(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email(None) is False
 
     def test_no_at_sign(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("invalid-email") is False
 
     def test_placeholder_domain_rejected(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("wa_254700@kova.page") is False
 
     def test_whatsapp_prefix_rejected(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("wa_254712345678@example.com") is False
 
     def test_noemail_prefix_rejected(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("noemail_customer@example.com") is False
 
     def test_noreply_prefix_rejected(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("noreply@example.com") is False
 
     def test_normal_email_with_plus(self):
-        from apps.emails.automation import is_mailable_email
+        from apps.messaging.emails.automation import is_mailable_email
 
         assert is_mailable_email("user+tag@example.com") is True
 
@@ -908,8 +908,8 @@ class TestEmailSubscriberModel:
 @pytest.mark.django_db
 class TestEmailBootstrap:
     def test_bootstrap_email_marketing_does_not_recurse(self, user):
-        from apps.emails.automation import bootstrap_email_automation
-        from apps.emails.subscriber_sync import bootstrap_email_marketing
+        from apps.messaging.emails.automation import bootstrap_email_automation
+        from apps.messaging.emails.subscriber_sync import bootstrap_email_marketing
 
         marketing = bootstrap_email_marketing(user)
         assert "synced" in marketing

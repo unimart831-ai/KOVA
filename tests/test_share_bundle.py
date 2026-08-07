@@ -5,8 +5,8 @@ from io import BytesIO
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from apps.content.models import ContentSeed, Post
-from apps.content.share_bundle import (
+from apps.create.content.models import ContentSeed, Post
+from apps.create.content.share_bundle import (
     apply_custom_order,
     campaign_rollout_minutes_for_post,
     create_share_bundle,
@@ -31,7 +31,7 @@ def share_user(db, django_user_model):
 
 @pytest.fixture
 def ig_account(share_user):
-    from apps.platforms.models import SocialAccount
+    from apps.core.platforms.models import SocialAccount
 
     return SocialAccount.objects.create(
         user=share_user,
@@ -63,7 +63,7 @@ def test_apply_custom_order_reorders_items():
 @pytest.mark.django_db
 def test_create_share_bundle_multi_reel_with_order(share_user, ig_account, monkeypatch):
     monkeypatch.setattr(
-        "apps.content.share_bundle._schedule_share_posts",
+        "apps.create.content.share_bundle._schedule_share_posts",
         lambda *a, **k: None,
     )
     items = parse_uploaded_files([
@@ -92,11 +92,11 @@ def test_create_share_bundle_multi_reel_with_order(share_user, ig_account, monke
 @pytest.mark.django_db
 def test_create_share_bundle_photo_carousel(share_user, ig_account, monkeypatch):
     monkeypatch.setattr(
-        "apps.content.share_bundle._attach_image_to_post",
+        "apps.create.content.share_bundle._attach_image_to_post",
         lambda post, item, order=0: f"https://cdn.test/{item.order}.jpg",
     )
     monkeypatch.setattr(
-        "apps.content.share_bundle._schedule_share_posts",
+        "apps.create.content.share_bundle._schedule_share_posts",
         lambda *a, **k: None,
     )
     items = parse_uploaded_files([
@@ -139,7 +139,7 @@ def test_infer_share_context_rejects_numeric_filename():
 
 
 def test_is_meaningless_share_label():
-    from apps.content.share_bundle import is_meaningless_share_label
+    from apps.create.content.share_bundle import is_meaningless_share_label
 
     assert is_meaningless_share_label("738389") is True
     assert is_meaningless_share_label("IMG_738389") is True
@@ -147,10 +147,10 @@ def test_is_meaningless_share_label():
 
 
 def test_human_share_title_from_numeric_seed(share_user, ig_account, monkeypatch):
-    from apps.content.share_bundle import human_share_title
+    from apps.create.content.share_bundle import human_share_title
 
     monkeypatch.setattr(
-        "apps.content.share_bundle._schedule_share_posts",
+        "apps.create.content.share_bundle._schedule_share_posts",
         lambda *a, **k: None,
     )
     items = parse_uploaded_files([
@@ -177,7 +177,7 @@ def test_infer_share_context_from_filename():
 
 def test_resolve_automated_share_options_hands_free(share_user, monkeypatch):
     monkeypatch.setattr(
-        "apps.products.commerce_autopilot.should_auto_publish_commerce",
+        "apps.commerce.products.commerce_autopilot.should_auto_publish_commerce",
         lambda u: True,
     )
     items = parse_uploaded_files([
@@ -190,7 +190,7 @@ def test_resolve_automated_share_options_hands_free(share_user, monkeypatch):
 
 
 def test_is_share_bundle_seed():
-    from apps.content.models import ContentSeed
+    from apps.create.content.models import ContentSeed
 
     seed = ContentSeed(blueprint={"share_bundle": True})
     assert is_share_bundle_seed(seed) is True
@@ -199,7 +199,7 @@ def test_is_share_bundle_seed():
 
 def test_summarize_share_bundle(share_user, ig_account, monkeypatch):
     monkeypatch.setattr(
-        "apps.content.share_bundle.generate_share_caption",
+        "apps.create.content.share_bundle.generate_share_caption",
         lambda *a, **k: "Caption",
     )
     items = parse_uploaded_files([

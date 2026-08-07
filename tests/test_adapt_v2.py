@@ -11,7 +11,7 @@ This file grows alongside the W3-4 implementation:
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
+from apps.core.accounts.models import User, UserProfile
 
 
 # ── Commit 1 — Schema contract ──────────────────────────────────────────────
@@ -118,7 +118,7 @@ class TestAdaptEligibility:
         """The 12h cadence throttle works on skip too — without this, a
         brand-new user would get re-tried every cycle until they posted."""
         from django.utils import timezone as tz
-        from apps.agents.adapt_agent import run_for_user
+        from apps.create.agents.adapt_agent import run_for_user
         u = User.objects.create_user(
             username="adapt_throttle", email="thr@b.com", password="P1!",
         )
@@ -130,7 +130,7 @@ class TestAdaptEligibility:
         assert u.profile.adapt_last_run_at >= before
 
     def test_skip_when_paused(self):
-        from apps.agents.adapt_agent import run_for_user
+        from apps.create.agents.adapt_agent import run_for_user
         u = User.objects.create_user(
             username="adapt_paused", email="paused@b.com", password="P1!",
         )
@@ -141,7 +141,7 @@ class TestAdaptEligibility:
         assert result["skip_reason"] == "paused"
 
     def test_skip_when_not_enough_posts(self):
-        from apps.agents.adapt_agent import run_for_user
+        from apps.create.agents.adapt_agent import run_for_user
         u = User.objects.create_user(
             username="adapt_few", email="few@b.com", password="P1!",
         )
@@ -150,7 +150,7 @@ class TestAdaptEligibility:
         assert result["skip_reason"] == "not_enough_posts"
 
     def test_handles_user_without_profile_gracefully(self):
-        from apps.agents.adapt_agent import run_for_user
+        from apps.create.agents.adapt_agent import run_for_user
 
         class _Bare:
             email = "bare@b.com"
@@ -172,9 +172,9 @@ def adapt_user_with_posts(db):
     """
     from datetime import timedelta
     from django.utils import timezone as tz
-    from apps.content.models import Post
-    from apps.platforms.models import SocialAccount
-    from apps.analytics.models import PostMetric
+    from apps.create.content.models import Post
+    from apps.core.platforms.models import SocialAccount
+    from apps.insight.analytics.models import PostMetric
     import uuid
 
     u = User.objects.create_user(
@@ -231,7 +231,7 @@ def adapt_user_with_posts(db):
 @pytest.mark.django_db
 class TestPromoteDecision:
     def test_promotes_a_winning_combo(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_promotions, _user_median_engagement, _load_window_posts,
         )
         u, _ = adapt_user_with_posts
@@ -246,7 +246,7 @@ class TestPromoteDecision:
             assert p["evidence"]["ratio"] >= 1.5
 
     def test_doesnt_re_promote_already_promoted(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_promotions, _user_median_engagement, _load_window_posts,
         )
         u, _ = adapt_user_with_posts
@@ -272,7 +272,7 @@ class TestPromoteDecision:
         )
 
     def test_never_promotes_a_user_retired_combo(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_promotions, _user_median_engagement, _load_window_posts,
         )
         u, _ = adapt_user_with_posts
@@ -295,13 +295,13 @@ class TestPromoteDecision:
 
     def test_caps_at_3_promotions(self, adapt_user_with_posts):
         """Safety: cap from spec."""
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_promotions, PROMOTE_CAP,
         )
         # Synthesise more candidates than the cap so we test it specifically
         # by injecting a higher cap... actually easier: trust the data
         # fixture has only 1 winner, just assert cap respected.
-        from apps.agents.adapt_agent import _user_median_engagement, _load_window_posts
+        from apps.create.agents.adapt_agent import _user_median_engagement, _load_window_posts
         u, _ = adapt_user_with_posts
         posts = _load_window_posts(u)
         median = _user_median_engagement(posts)
@@ -312,7 +312,7 @@ class TestPromoteDecision:
 @pytest.mark.django_db
 class TestRetireDecision:
     def test_retires_a_consistently_losing_combo(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_retirements, _user_median_engagement, _load_window_posts,
         )
         u, _ = adapt_user_with_posts
@@ -327,7 +327,7 @@ class TestRetireDecision:
             assert r["evidence"]["sample_size"] >= 5
 
     def test_doesnt_re_retire(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_retirements, _user_median_engagement, _load_window_posts,
         )
         u, _ = adapt_user_with_posts
@@ -349,7 +349,7 @@ class TestRetireDecision:
 @pytest.mark.django_db
 class TestPillarReweight:
     def test_winning_pillar_gets_boost(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_pillar_reweights, _user_median_engagement, _load_window_posts,
         )
         u, _ = adapt_user_with_posts
@@ -365,7 +365,7 @@ class TestPillarReweight:
             assert r["evidence"]["sample_size"] >= 5
 
     def test_losing_pillar_gets_penalty(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import (
+        from apps.create.agents.adapt_agent import (
             _decide_pillar_reweights, _user_median_engagement, _load_window_posts,
         )
         u, _ = adapt_user_with_posts
@@ -381,8 +381,8 @@ class TestPillarReweight:
 @pytest.mark.django_db
 class TestApplyMutations:
     def test_dry_run_writes_audit_but_not_profile(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import apply_mutations
-        from apps.agents.models import AgentAction
+        from apps.create.agents.adapt_agent import apply_mutations
+        from apps.create.agents.models import AgentAction
         u, _ = adapt_user_with_posts
 
         decisions = [{
@@ -404,8 +404,8 @@ class TestApplyMutations:
         assert action.output_data["after"] == 0.5
 
     def test_live_apply_mutates_profile_and_audits(self, adapt_user_with_posts):
-        from apps.agents.adapt_agent import apply_mutations
-        from apps.agents.models import AgentAction
+        from apps.create.agents.adapt_agent import apply_mutations
+        from apps.create.agents.models import AgentAction
         u, _ = adapt_user_with_posts
 
         decisions = [{
@@ -428,8 +428,8 @@ class TestApplyMutations:
 @pytest.mark.django_db
 class TestEndToEndCycle:
     def test_run_for_user_dry_run_by_default(self, adapt_user_with_posts, settings):
-        from apps.agents.adapt_agent import run_for_user
-        from apps.agents.models import AgentAction
+        from apps.create.agents.adapt_agent import run_for_user
+        from apps.create.agents.models import AgentAction
         u, _ = adapt_user_with_posts
         settings.ADAPT_AGENT_V2_ENABLED = False
 
@@ -445,7 +445,7 @@ class TestEndToEndCycle:
         assert "Long-form" not in (u.profile.pillar_weights or {})
 
     def test_run_for_user_live_applies_mutations(self, adapt_user_with_posts, settings):
-        from apps.agents.adapt_agent import run_for_user
+        from apps.create.agents.adapt_agent import run_for_user
         u, _ = adapt_user_with_posts
         settings.ADAPT_AGENT_V2_ENABLED = True
         # Adapt mutations are gated per-plan — the Kova plan enables adapt_v2.
@@ -483,7 +483,7 @@ class TestCreateAgentReadsAdaptPreferences:
     are invisible to content generation — the loop doesn't close."""
 
     def test_no_preferences_returns_empty_string(self):
-        from apps.agents.create_agent import _adapt_preferences_for_prompt
+        from apps.create.agents.create_agent import _adapt_preferences_for_prompt
         u = User.objects.create_user(
             username="ad_pref1", email="ad1@b.com", password="P1!",
         )
@@ -491,7 +491,7 @@ class TestCreateAgentReadsAdaptPreferences:
         assert _adapt_preferences_for_prompt(u.profile) == ""
 
     def test_promoted_pattern_surfaces_in_prompt(self):
-        from apps.agents.create_agent import _adapt_preferences_for_prompt
+        from apps.create.agents.create_agent import _adapt_preferences_for_prompt
         u = User.objects.create_user(
             username="ad_pref2", email="ad2@b.com", password="P1!",
         )
@@ -514,7 +514,7 @@ class TestCreateAgentReadsAdaptPreferences:
         assert "inspirational" in out
 
     def test_retired_pattern_surfaces_in_prompt(self):
-        from apps.agents.create_agent import _adapt_preferences_for_prompt
+        from apps.create.agents.create_agent import _adapt_preferences_for_prompt
         u = User.objects.create_user(
             username="ad_pref3", email="ad3@b.com", password="P1!",
         )
@@ -536,7 +536,7 @@ class TestCreateAgentReadsAdaptPreferences:
     def test_build_system_prompt_includes_adapt_section(self):
         """Integration: the full system prompt builder must invoke the
         Adapt preferences when they exist."""
-        from apps.agents.create_agent import build_system_prompt
+        from apps.create.agents.create_agent import build_system_prompt
         u = User.objects.create_user(
             username="ad_pref4", email="ad4@b.com", password="P1!",
         )
@@ -564,7 +564,7 @@ class TestStrategistReadsPillarWeights:
     LLM can bias its content_plan toward heavier-weighted pillars."""
 
     def test_user_context_includes_pillar_weights(self):
-        from apps.agents.strategist_agent import _gather_strategy_inputs
+        from apps.create.agents.strategist_agent import _gather_strategy_inputs
         u = User.objects.create_user(
             username="strat_w1", email="sw1@b.com", password="P1!",
         )
@@ -578,7 +578,7 @@ class TestStrategistReadsPillarWeights:
         assert "Transformations" in ctx["content_pillars"]
 
     def test_user_context_defaults_empty_weights_when_unset(self):
-        from apps.agents.strategist_agent import _gather_strategy_inputs
+        from apps.create.agents.strategist_agent import _gather_strategy_inputs
         u = User.objects.create_user(
             username="strat_w2", email="sw2@b.com", password="P1!",
         )
@@ -597,7 +597,7 @@ class TestBriefAdaptSummary:
     concrete `adapt_update` sentence."""
 
     def test_no_adapt_actions_returns_empty_summary(self):
-        from apps.briefs.tasks import _build_adapt_summary
+        from apps.create.briefs.tasks import _build_adapt_summary
         u = User.objects.create_user(
             username="brf1", email="brf1@b.com", password="P1!",
         )
@@ -607,8 +607,8 @@ class TestBriefAdaptSummary:
         assert s["retirements"] == []
 
     def test_recent_promote_appears_in_summary(self):
-        from apps.briefs.tasks import _build_adapt_summary
-        from apps.agents.models import AgentAction
+        from apps.create.briefs.tasks import _build_adapt_summary
+        from apps.create.agents.models import AgentAction
         u = User.objects.create_user(
             username="brf2", email="brf2@b.com", password="P1!",
         )
@@ -638,8 +638,8 @@ class TestBriefAdaptSummary:
         assert any("2.4" in p for p in s["promotions"])
 
     def test_recent_pillar_reweight_appears(self):
-        from apps.briefs.tasks import _build_adapt_summary
-        from apps.agents.models import AgentAction
+        from apps.create.briefs.tasks import _build_adapt_summary
+        from apps.create.agents.models import AgentAction
         u = User.objects.create_user(
             username="brf3", email="brf3@b.com", password="P1!",
         )
@@ -657,8 +657,8 @@ class TestBriefAdaptSummary:
         assert any("+0.5" in c for c in s["pillar_changes"])
 
     def test_frequency_change_appears(self):
-        from apps.briefs.tasks import _build_adapt_summary
-        from apps.agents.models import AgentAction
+        from apps.create.briefs.tasks import _build_adapt_summary
+        from apps.create.agents.models import AgentAction
         u = User.objects.create_user(
             username="brf4", email="brf4@b.com", password="P1!",
         )
@@ -677,8 +677,8 @@ class TestBriefAdaptSummary:
     def test_older_than_24h_ignored(self):  # noqa: D401
         from datetime import timedelta
         from django.utils import timezone as tz
-        from apps.briefs.tasks import _build_adapt_summary
-        from apps.agents.models import AgentAction
+        from apps.create.briefs.tasks import _build_adapt_summary
+        from apps.create.agents.models import AgentAction
         u = User.objects.create_user(
             username="brf_old", email="brfold@b.com", password="P1!",
         )
@@ -722,7 +722,7 @@ class TestAILearningPage:
         assert resp.status_code == 200
 
     def test_revert_undoes_reweight_pillar(self, client):
-        from apps.agents.models import AgentAction
+        from apps.create.agents.models import AgentAction
         u = self._make_user()
         u.profile.pillar_weights = {"Transformations": 1.5}
         u.profile.save(update_fields=["pillar_weights"])
@@ -746,7 +746,7 @@ class TestAILearningPage:
 
     def test_revert_undoes_promote_dna(self, client):
         """Promote/retire append to a list — revert removes the entry."""
-        from apps.agents.models import AgentAction
+        from apps.create.agents.models import AgentAction
         u = self._make_user()
         combo = {"pillar": "Transformations", "format": "question"}
         u.profile.dna_preferences = {
@@ -783,7 +783,7 @@ class TestAILearningPage:
         assert u.profile.adapt_paused is False
 
     def test_reset_reverts_all_outstanding_mutations(self, client):
-        from apps.agents.models import AgentAction
+        from apps.create.agents.models import AgentAction
         u = self._make_user()
         # Two pillar reweights to revert
         u.profile.pillar_weights = {"A": 1.5, "B": 0.5}
@@ -817,7 +817,7 @@ class TestAILearningPage:
 
     def test_revert_already_reverted_is_idempotent(self, client):
         """Revert button shouldn't double-fire if pressed twice fast."""
-        from apps.agents.models import AgentAction
+        from apps.create.agents.models import AgentAction
         u = self._make_user()
         u.profile.posting_frequency = 6
         u.profile.save(update_fields=["posting_frequency"])
@@ -836,8 +836,8 @@ class TestAILearningPage:
         """Only LAST-CYCLE changes should surface in today's brief."""
         from datetime import timedelta
         from django.utils import timezone as tz
-        from apps.briefs.tasks import _build_adapt_summary
-        from apps.agents.models import AgentAction
+        from apps.create.briefs.tasks import _build_adapt_summary
+        from apps.create.agents.models import AgentAction
         u = User.objects.create_user(
             username="brf5", email="brf5@b.com", password="P1!",
         )

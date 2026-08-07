@@ -8,20 +8,20 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import UserProfile
-from apps.content.models import Post
-from apps.content.tasks import check_and_publish_due_posts
-from apps.leads.defaults import WELCOME_SEQUENCE_NAME, ensure_default_nurture_sequences
-from apps.leads.models import Lead, LeadEnrollment, NurtureSequence
-from apps.platforms.models import SocialAccount
-from apps.whatsapp.autopilot import send_followup_nudges, try_faq_auto_reply
-from apps.whatsapp.models import WhatsAppConversation, WhatsAppMessage
+from apps.core.accounts.models import UserProfile
+from apps.create.content.models import Post
+from apps.create.content.tasks import check_and_publish_due_posts
+from apps.commerce.leads.defaults import WELCOME_SEQUENCE_NAME, ensure_default_nurture_sequences
+from apps.commerce.leads.models import Lead, LeadEnrollment, NurtureSequence
+from apps.core.platforms.models import SocialAccount
+from apps.messaging.whatsapp.autopilot import send_followup_nudges, try_faq_auto_reply
+from apps.messaging.whatsapp.models import WhatsAppConversation, WhatsAppMessage
 
 
 @pytest.mark.django_db
 class TestAutopilotTogglesSave:
     def test_settings_form_saves_autopilot_toggles(self, user):
-        from apps.accounts.forms import AutopilotSettingsForm
+        from apps.core.accounts.forms import AutopilotSettingsForm
 
         user.profile.plan = "pro"
         user.profile.save(update_fields=["plan"])
@@ -89,7 +89,7 @@ class TestAutoEnrollOnLeadCreate:
 @pytest.mark.django_db
 class TestAutoPublishRespectsPause:
     def test_does_not_dispatch_when_autopilot_off(self, user):
-        from apps.platforms.models import SocialAccount
+        from apps.core.platforms.models import SocialAccount
 
         account = SocialAccount.objects.create(
             user=user,
@@ -108,14 +108,14 @@ class TestAutoPublishRespectsPause:
             scheduled_at=past,
         )
 
-        with patch("apps.content.tasks.publish_post.delay") as mock_delay:
+        with patch("apps.create.content.tasks.publish_post.delay") as mock_delay:
             result = check_and_publish_due_posts()
 
         assert result["dispatched"] == 0
         mock_delay.assert_not_called()
 
     def test_dispatches_user_approved_without_autopilot(self, user):
-        from apps.platforms.models import SocialAccount
+        from apps.core.platforms.models import SocialAccount
 
         account = SocialAccount.objects.create(
             user=user,
@@ -134,14 +134,14 @@ class TestAutoPublishRespectsPause:
             scheduled_at=past,
         )
 
-        with patch("apps.content.tasks.publish_post.delay") as mock_delay:
+        with patch("apps.create.content.tasks.publish_post.delay") as mock_delay:
             result = check_and_publish_due_posts()
 
         assert result["dispatched"] == 1
         mock_delay.assert_called_once()
 
     def test_dispatches_when_enabled_not_paused(self, user):
-        from apps.platforms.models import SocialAccount
+        from apps.core.platforms.models import SocialAccount
 
         UserProfile.objects.filter(user=user).update(autopilot_auto_publish_approved=True)
         account = SocialAccount.objects.create(
@@ -161,14 +161,14 @@ class TestAutoPublishRespectsPause:
             scheduled_at=past,
         )
 
-        with patch("apps.content.tasks.publish_post.delay") as mock_delay:
+        with patch("apps.create.content.tasks.publish_post.delay") as mock_delay:
             result = check_and_publish_due_posts()
 
         assert result["dispatched"] == 1
         mock_delay.assert_called_once()
 
     def test_skips_when_user_auto_publish_paused(self, user):
-        from apps.platforms.models import SocialAccount
+        from apps.core.platforms.models import SocialAccount
 
         UserProfile.objects.filter(user=user).update(
             autopilot_auto_publish_approved=True,
@@ -191,7 +191,7 @@ class TestAutoPublishRespectsPause:
             scheduled_at=past,
         )
 
-        with patch("apps.content.tasks.publish_post.delay") as mock_delay:
+        with patch("apps.create.content.tasks.publish_post.delay") as mock_delay:
             result = check_and_publish_due_posts()
 
         assert result["dispatched"] == 0
@@ -201,7 +201,7 @@ class TestAutoPublishRespectsPause:
 @pytest.mark.django_db
 class TestFaqKeywordMatch:
     def test_match_faq_reply(self):
-        from apps.accounts.autopilot_helpers import match_faq_reply
+        from apps.core.accounts.autopilot_helpers import match_faq_reply
 
         faqs = [{"keywords": ["price", "cost"], "reply": "From KES 500"}]
         assert match_faq_reply("What is the price?", faqs) == "From KES 500"
@@ -235,7 +235,7 @@ class TestFaqKeywordMatch:
             content="What are your hours?",
         )
 
-        with patch("apps.whatsapp.services.send_text_message") as mock_send:
+        with patch("apps.messaging.whatsapp.services.send_text_message") as mock_send:
             mock_send.return_value = {"success": True, "wamid": "wamid.test"}
             assert try_faq_auto_reply(conversation, inbound) is True
 
@@ -272,7 +272,7 @@ class TestFollowUpSkipsWhenToggleOff:
             created_at=timezone.now() - timedelta(hours=30),
         )
 
-        with patch("apps.whatsapp.services.send_text_message") as mock_send:
+        with patch("apps.messaging.whatsapp.services.send_text_message") as mock_send:
             result = send_followup_nudges()
 
         assert result["sent"] == 0
@@ -305,7 +305,7 @@ class TestFollowUpSkipsWhenToggleOff:
             created_at=timezone.now() - timedelta(hours=30),
         )
 
-        with patch("apps.whatsapp.services.send_text_message") as mock_send:
+        with patch("apps.messaging.whatsapp.services.send_text_message") as mock_send:
             mock_send.return_value = {"success": True}
             result = send_followup_nudges()
 

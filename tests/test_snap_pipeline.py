@@ -3,10 +3,10 @@
 import pytest
 from django.urls import reverse
 
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
-from apps.products.models import Product
-from apps.products.snap_pipeline import _offering_copy, build_snap_pipeline_status
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.models import Product
+from apps.commerce.products.snap_pipeline import _offering_copy, build_snap_pipeline_status
 
 
 @pytest.fixture

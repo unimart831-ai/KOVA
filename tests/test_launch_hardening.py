@@ -3,9 +3,9 @@
 import pytest
 from django.test import Client, override_settings
 
-from apps.help.models import Article
-from apps.links.models import KovaPage
-from apps.utils.html_sanitize import sanitize_html, sanitize_user_css
+from apps.insight.help.models import Article
+from apps.commerce.links.models import KovaPage
+from apps.core.utils.html_sanitize import sanitize_html, sanitize_user_css
 
 
 class TestHtmlSanitize:

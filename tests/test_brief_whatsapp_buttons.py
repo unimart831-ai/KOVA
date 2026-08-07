@@ -1,15 +1,15 @@
 """Tests for daily brief WhatsApp button helpers."""
 from __future__ import annotations
 
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 
-from apps.briefs.whatsapp_buttons import (
+from apps.create.briefs.whatsapp_buttons import (
     build_daily_brief_template_components,
     map_button_inbound,
 )
 
 
-class TestMapButtonInbound:
+class TestMapButtonInbound(SimpleTestCase):
     def test_button_id(self):
         assert map_button_inbound("brief_approve", "") == "approve"
 
@@ -21,7 +21,7 @@ class TestMapButtonInbound:
 
 
 @override_settings(KOVA_DAILY_BRIEF_URL_SUFFIX="utm_source=whatsapp")
-class TestBuildTemplateComponents:
+class TestBuildTemplateComponents(SimpleTestCase):
     def test_body_and_url_button(self):
         components = build_daily_brief_template_components("Jane", "3 posts waiting", "72/100")
         assert len(components) == 2

@@ -2,8 +2,8 @@
 
 import pytest
 
-from apps.platforms.models import SocialAccount
-from apps.products.commerce_social import (
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.commerce_social import (
     get_public_social_links,
     normalize_whatsapp_number,
     platform_public_url,
@@ -70,7 +70,7 @@ class TestCommerceSocialHelpers:
             username="socialshop",
             is_active=True,
         )
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         Product.objects.create(
             user=user,

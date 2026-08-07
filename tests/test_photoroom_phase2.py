@@ -7,24 +7,22 @@ import pytest
 from django.test import override_settings
 from PIL import Image
 
-from apps.products.photoroom_basic import (
+from apps.commerce.products.photoroom_basic import (
     BASIC_ROUTE_VARIANT_IDS,
     composite_cutout_on_white,
     is_basic_routable_variant,
 )
-from apps.products.photoroom_food import (
-    FOOD_SURFACE_VARIANT_IDS,
-    build_food_surface_prompt,
-    should_boost_food_beautify,
-)
-from apps.products.photoroom_plus import (
+from apps.commerce.products.photoroom_plus import (
     AI_SHADOWS_MODEL_HEADER,
+    FOOD_SURFACE_VARIANT_IDS,
     PLUS_VARIANT_CATALOG,
     _shadow_model_headers,
     _studio_variant_headers,
+    build_food_surface_prompt,
     select_plus_variants,
+    should_boost_food_beautify,
 )
-from apps.products.photoroom_review import (
+from apps.commerce.products.photoroom_review import (
     needs_alteration_review,
     review_flags_for_output,
 )
@@ -126,7 +124,7 @@ def test_composite_cutout_on_white():
 
 @override_settings(PHOTOROOM_BASIC_API_KEY="basic-key", PHOTOROOM_BASIC_ROUTING_ENABLED=True)
 def test_run_plus_variant_uses_basic_when_configured():
-    from apps.products.photoroom_plus import run_plus_variant
+    from apps.commerce.products.photoroom_plus import run_plus_variant
 
     p = _Product(name="Snack", tags=["food"])
     spec = PLUS_VARIANT_CATALOG["studio_white"]
@@ -134,7 +132,7 @@ def test_run_plus_variant_uses_basic_when_configured():
     Image.new("RGBA", (50, 50), (0, 255, 0, 255)).save(fake_png, format="PNG")
 
     with patch(
-        "apps.products.photoroom_basic.photoroom_basic_segment",
+        "apps.commerce.products.photoroom_basic.photoroom_basic_segment",
         return_value=fake_png.getvalue(),
     ):
         result = run_plus_variant("/media/x.jpg", spec, p, {}, {})
@@ -145,8 +143,8 @@ def test_run_plus_variant_uses_basic_when_configured():
 @override_settings(PHOTOROOM_BASIC_API_KEY="basic-key")
 @pytest.mark.django_db
 def test_platform_usage_tracks_basic_provider(user):
-    from apps.agents.models import AgentAction
-    from apps.billing.visual_credits import get_platform_photoroom_usage
+    from apps.create.agents.models import AgentAction
+    from apps.core.billing.visual_credits import get_platform_photoroom_usage
     from django.utils import timezone
 
     AgentAction.objects.create(

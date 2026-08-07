@@ -11,10 +11,10 @@ import json
 
 import pytest
 
-from apps.agents.create_agent import run_create_agent
-from apps.agents.llm import LLMResponse
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
+from apps.create.agents.create_agent import run_create_agent
+from apps.create.agents.llm import LLMResponse
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
 
 
 def _fake_llm(response_dict):
@@ -71,7 +71,7 @@ class TestCreateAgentPipeline:
             }],
         }
         monkeypatch.setattr(
-            "apps.agents.create_agent.generate",
+            "apps.create.agents.create_agent.generate",
             _fake_llm(llm_output),
         )
 
@@ -109,7 +109,7 @@ class TestCreateAgentPipeline:
             }],
         }
         monkeypatch.setattr(
-            "apps.agents.create_agent.generate",
+            "apps.create.agents.create_agent.generate",
             _fake_llm(llm_output),
         )
 
@@ -131,7 +131,7 @@ class TestCreateAgentPipeline:
             raise AssertionError("LLM was called despite no connected platforms")
 
         monkeypatch.setattr(
-            "apps.agents.create_agent.generate",
+            "apps.create.agents.create_agent.generate",
             _should_not_be_called,
         )
 
@@ -162,7 +162,7 @@ class TestCreateAgentPipeline:
             ],
         }
         monkeypatch.setattr(
-            "apps.agents.create_agent.generate",
+            "apps.create.agents.create_agent.generate",
             _fake_llm(llm_output),
         )
 

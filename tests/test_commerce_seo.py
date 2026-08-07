@@ -3,8 +3,8 @@
 import pytest
 from django.urls import reverse
 
-from apps.products.commerce_links import resolve_public_shop, shop_index_path
-from apps.products.commerce_seo import (
+from apps.commerce.products.commerce_links import resolve_public_shop, shop_index_path
+from apps.commerce.products.commerce_seo import (
     build_breadcrumb_schema,
     build_seo_description,
     build_seo_title,
@@ -13,7 +13,7 @@ from apps.products.commerce_seo import (
     html_lang,
     build_local_business_schema,
 )
-from apps.products.models import Product
+from apps.commerce.products.models import Product
 
 
 @pytest.mark.django_db
@@ -201,8 +201,8 @@ class TestPublicShopPages:
         assert b'"@type": "LocalBusiness"' in response.content
 
     def test_public_shop_index_agency_brand_no_powered_by(self, client, user):
-        from apps.teams.branding import get_commerce_branding
-        from apps.teams.models import Brand, Team, TeamMember
+        from apps.core.teams.branding import get_commerce_branding
+        from apps.core.teams.models import Brand, Team, TeamMember
 
         user.profile.page_slug = "agency-shop"
         user.profile.company_name = "Agency Shop"

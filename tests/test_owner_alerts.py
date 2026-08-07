@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from apps.accounts.models import User
+from apps.core.accounts.models import User
 
 
 @pytest.fixture
@@ -17,9 +17,9 @@ def owner(db):
 
 
 class TestNewLeadAlert:
-    @patch("apps.briefs.owner_alerts.queue_owner_alert")
+    @patch("apps.create.briefs.owner_alerts.queue_owner_alert")
     def test_inbound_lead_triggers_alert(self, mock_queue, owner):
-        from apps.leads.models import Lead
+        from apps.commerce.leads.models import Lead
 
         Lead.objects.create(
             user=owner,
@@ -32,9 +32,9 @@ class TestNewLeadAlert:
         assert "New lead" in body
         assert "Jane Customer" in body
 
-    @patch("apps.briefs.owner_alerts.queue_owner_alert")
+    @patch("apps.create.briefs.owner_alerts.queue_owner_alert")
     def test_commerce_purchase_lead_skipped(self, mock_queue, owner):
-        from apps.leads.models import Lead
+        from apps.commerce.leads.models import Lead
 
         Lead.objects.create(
             user=owner,
@@ -43,9 +43,9 @@ class TestNewLeadAlert:
         )
         assert not mock_queue.called
 
-    @patch("apps.briefs.owner_alerts.queue_owner_alert")
+    @patch("apps.create.briefs.owner_alerts.queue_owner_alert")
     def test_manual_lead_skipped(self, mock_queue, owner):
-        from apps.leads.models import Lead
+        from apps.commerce.leads.models import Lead
 
         Lead.objects.create(
             user=owner,
@@ -56,13 +56,13 @@ class TestNewLeadAlert:
 
 
 class TestPaymentAlert:
-    @patch("apps.products.commerce_wa_orders._try_whatsapp_owner_alert")
+    @patch("apps.commerce.products.commerce_wa_orders._try_whatsapp_owner_alert")
     def test_payment_completion_notifies_seller(
         self, mock_alert, owner, django_capture_on_commit_callbacks,
     ):
         from django.utils import timezone
 
-        from apps.products.models import CommercePayment, Product
+        from apps.commerce.products.models import CommercePayment, Product
 
         product = Product.objects.create(user=owner, name="Leather Shoes", price=2500)
         payment = CommercePayment.objects.create(
@@ -85,9 +85,9 @@ class TestPaymentAlert:
         assert "Leather Shoes" in body
         assert "QAB12CD34" in body
 
-    @patch("apps.products.commerce_wa_orders._try_whatsapp_owner_alert")
+    @patch("apps.commerce.products.commerce_wa_orders._try_whatsapp_owner_alert")
     def test_no_alert_while_pending(self, mock_alert, owner):
-        from apps.products.models import CommercePayment, Product
+        from apps.commerce.products.models import CommercePayment, Product
 
         product = Product.objects.create(user=owner, name="Leather Shoes", price=2500)
         CommercePayment.objects.create(
@@ -103,16 +103,16 @@ class TestPaymentAlert:
 
 class TestSendOwnerAlert:
     def test_skips_without_phone(self, db):
-        from apps.briefs.owner_alerts import send_owner_alert
+        from apps.create.briefs.owner_alerts import send_owner_alert
 
         user = User.objects.create_user(
             username="nophone", email="np@kova.ai", password="x", phone_number="",
         )
         assert send_owner_alert(user, "hello") is False
 
-    @patch("apps.platforms.providers.whatsapp.WhatsAppProvider.send_text_message")
+    @patch("apps.core.platforms.providers.whatsapp.WhatsAppProvider.send_text_message")
     def test_sends_via_master_number(self, mock_send, owner, settings):
-        from apps.briefs.owner_alerts import send_owner_alert
+        from apps.create.briefs.owner_alerts import send_owner_alert
 
         settings.WHATSAPP_ACCESS_TOKEN = "token"
         settings.WHATSAPP_PHONE_NUMBER_ID = "12345"

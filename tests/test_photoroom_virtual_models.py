@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.test import override_settings
 
-from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG, resolve_variant_params, select_plus_variants
-from apps.products.photoroom_virtual_models import (
+from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG, resolve_variant_params, select_plus_variants
+from apps.commerce.products.photoroom_virtual_models import (
     STRATEGY_ADORN,
     STRATEGY_HOLD,
     STRATEGY_WEAR,
@@ -44,7 +44,7 @@ def _product(name: str, **kwargs):
 def test_resolve_virtual_model_strategy(name, tags, expected):
     product = _product(name, tags=tags)
     category = __import__(
-        "apps.products.photoroom_plus", fromlist=["detect_product_category"]
+        "apps.commerce.products.photoroom_plus", fromlist=["detect_product_category"]
     ).detect_product_category(product, {})
     assert resolve_virtual_model_strategy(category, product) == expected
 

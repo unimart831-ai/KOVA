@@ -2,15 +2,15 @@
 
 import pytest
 
-from apps.briefs.whatsapp_commands import _dispatch_command
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed, MarketingCampaign, Post
-from apps.content.campaign_whatsapp import (
+from apps.create.briefs.whatsapp_commands import _dispatch_command
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed, MarketingCampaign, Post
+from apps.create.content.campaign_whatsapp import (
     approve_campaign_via_whatsapp,
     campaigns_pending_review,
     format_commerce_share_message,
 )
-from apps.platforms.models import SocialAccount
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture

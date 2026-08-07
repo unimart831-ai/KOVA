@@ -6,14 +6,14 @@ from unittest.mock import patch
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.briefs.models import DailyBrief, BriefWhatsAppLog
-from apps.briefs.whatsapp_commands import (
+from apps.core.accounts.models import User, UserProfile
+from apps.create.briefs.models import DailyBrief, BriefWhatsAppLog
+from apps.create.briefs.whatsapp_commands import (
     _dispatch_command,
     find_user_by_whatsapp_id,
 )
-from apps.content.models import Post
-from apps.platforms.models import SocialAccount
+from apps.create.content.models import Post
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ class TestDispatchCommand:
         assert "Morning Standup" in text
         assert "APPROVE ALL" in text
 
-    @patch("apps.briefs.whatsapp_commands._send_owner_reply", return_value=True)
+    @patch("apps.create.briefs.whatsapp_commands._send_owner_reply", return_value=True)
     def test_approve_no_pending(self, _reply, pro_user, today_brief):
         text, cmd, ok, _ = _dispatch_command(pro_user, "approve")
         assert "Nothing to approve" in text
@@ -121,7 +121,7 @@ class TestDispatchCommand:
         assert "booking page" in text.lower()
 
     def test_book_command_with_link(self, pro_user, today_brief):
-        from apps.bookings.models import BookingLink
+        from apps.commerce.bookings.models import BookingLink
 
         BookingLink.objects.create(
             user=pro_user,
@@ -142,9 +142,9 @@ class TestDispatchCommand:
         assert ok is False
         assert "Only 2 idea" in text
 
-    @patch("apps.briefs.actions.create_seed_from_brief_idea")
+    @patch("apps.create.briefs.actions.create_seed_from_brief_idea")
     def test_idea_queues_seed(self, mock_seed, pro_user, today_brief):
-        from apps.content.models import ContentSeed
+        from apps.create.content.models import ContentSeed
 
         mock_seed.return_value = ContentSeed(user=pro_user, idea="Second idea")
         text, cmd, ok, meta = _dispatch_command(pro_user, "idea 2")
@@ -178,7 +178,7 @@ class TestPriceStockCommands:
         assert "No products yet" in text
 
     def test_price_list_with_products(self, pro_user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
         text, cmd, ok, meta = _dispatch_command(pro_user, "price")
@@ -187,7 +187,7 @@ class TestPriceStockCommands:
         assert meta["count"] == 1
 
     def test_price_update(self, pro_user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         p = Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
         text, cmd, ok, meta = _dispatch_command(pro_user, "price shoes 3000")
@@ -202,7 +202,7 @@ class TestPriceStockCommands:
         assert "No product matching" in text
 
     def test_price_update_ambiguous(self, pro_user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         Product.objects.create(user=pro_user, name="Red Shoes", price=1000)
         Product.objects.create(user=pro_user, name="Blue Shoes", price=1200)
@@ -211,7 +211,7 @@ class TestPriceStockCommands:
         assert "Red Shoes" in text and "Blue Shoes" in text
 
     def test_stock_overview(self, pro_user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         Product.objects.create(user=pro_user, name="In Stock Item", price=100)
         Product.objects.create(
@@ -225,7 +225,7 @@ class TestPriceStockCommands:
         assert meta["out"] == 1
 
     def test_stock_set_quantity(self, pro_user):
-        from apps.products.models import Product, StockUpdate
+        from apps.commerce.products.models import Product, StockUpdate
 
         p = Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
         text, cmd, ok, meta = _dispatch_command(pro_user, "stock shoes 10")
@@ -236,7 +236,7 @@ class TestPriceStockCommands:
         assert StockUpdate.objects.filter(product=p).exists()
 
     def test_stock_quantity_triggers_low_stock(self, pro_user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         p = Product.objects.create(
             user=pro_user, name="Leather Shoes", price=2500, low_stock_threshold=5,
@@ -246,7 +246,7 @@ class TestPriceStockCommands:
         assert p.stock_status == Product.StockStatus.LOW_STOCK
 
     def test_stock_mark_out(self, pro_user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         p = Product.objects.create(user=pro_user, name="Leather Shoes", price=2500)
         text, cmd, ok, _ = _dispatch_command(pro_user, "stock shoes out")
@@ -256,7 +256,7 @@ class TestPriceStockCommands:
         assert p.quantity == 0
 
     def test_stock_mark_back_in(self, pro_user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         p = Product.objects.create(
             user=pro_user, name="Leather Shoes", price=2500,
@@ -274,10 +274,10 @@ class TestPriceStockCommands:
 
 
 class TestBriefWhatsAppLog:
-    @patch("apps.briefs.whatsapp_commands._send_owner_action_buttons", return_value=True)
-    @patch("apps.briefs.whatsapp_commands._send_owner_reply", return_value=True)
+    @patch("apps.create.briefs.whatsapp_commands._send_owner_action_buttons", return_value=True)
+    @patch("apps.create.briefs.whatsapp_commands._send_owner_reply", return_value=True)
     def test_handle_owner_command_logs(self, _reply, _buttons, pro_user, today_brief):
-        from apps.briefs.whatsapp_commands import handle_owner_brief_command
+        from apps.create.briefs.whatsapp_commands import handle_owner_brief_command
 
         msg = {
             "from": "254712345678",
@@ -287,10 +287,10 @@ class TestBriefWhatsAppLog:
         assert handle_owner_brief_command(msg) is True
         assert BriefWhatsAppLog.objects.filter(user=pro_user, command="help").exists()
 
-    @patch("apps.briefs.whatsapp_commands._send_owner_action_buttons", return_value=True)
-    @patch("apps.briefs.whatsapp_commands._send_owner_reply", return_value=True)
+    @patch("apps.create.briefs.whatsapp_commands._send_owner_action_buttons", return_value=True)
+    @patch("apps.create.briefs.whatsapp_commands._send_owner_reply", return_value=True)
     def test_button_reply_id_maps_to_approve(self, mock_reply, _buttons, pro_user, today_brief):
-        from apps.briefs.whatsapp_commands import handle_owner_brief_command
+        from apps.create.briefs.whatsapp_commands import handle_owner_brief_command
 
         msg = {
             "from": "254712345678",

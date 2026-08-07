@@ -20,5 +20,5 @@ cmds = [
     "...",
     "npm install",
     "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify",
-    "chmod +x start.sh scripts/release.sh"
+    "chmod +x start.sh release.sh"
 ]

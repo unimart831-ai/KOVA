@@ -124,11 +124,13 @@
             {% if bm == 'professional' %}Portfolio{% elif bm == 'service' %}Services{% elif bm == 'digital' %}Products{% else %}Shop{% endif %}
           </a>
           {% endwith %}
+          {% if kova_features.bookings %}
           {% if request.user.profile.business_model == 'service' or request.user.profile.business_model == '' %}
           <a href="{% url 'bookings:list' %}"
              class="block text-xs py-1.5 px-2 rounded {% if '/bookings/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
             Bookings
           </a>
+          {% endif %}
           {% endif %}
           <a href="{% url 'links:list' %}"
              class="block text-xs py-1.5 px-2 rounded {% if '/links/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">

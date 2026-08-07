@@ -51,6 +51,14 @@ package-lock.json
 htmlcov/
 coverage.xml
 
+# Test / lint caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Office temp files
+~$*
+
 # OS
 Thumbs.db
 Desktop.ini

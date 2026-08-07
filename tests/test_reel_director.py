@@ -1,6 +1,6 @@
 """Tests for reel director (recipes, rotation, hooks)."""
 
-from apps.content.reel_director import (
+from apps.create.content.reel_director import (
     REEL_RECIPES,
     build_hook_texts,
     build_reel_plan,
@@ -124,7 +124,7 @@ def test_build_reel_plan_assigns_role_aware_hooks():
 
 
 def test_craft_scroll_stopping_hook_prefers_feature():
-    from apps.content.reel_director import craft_scroll_stopping_hook
+    from apps.create.content.reel_director import craft_scroll_stopping_hook
 
     hook = craft_scroll_stopping_hook(
         product_name="Amaya Speaker",
@@ -136,7 +136,7 @@ def test_craft_scroll_stopping_hook_prefers_feature():
 
 
 def test_craft_scroll_stopping_hook_override_wins():
-    from apps.content.reel_director import craft_scroll_stopping_hook
+    from apps.create.content.reel_director import craft_scroll_stopping_hook
 
     hook = craft_scroll_stopping_hook(
         product_name="Amaya Speaker",

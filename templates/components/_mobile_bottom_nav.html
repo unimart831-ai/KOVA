@@ -51,7 +51,7 @@
         </span>
         <span class="text-[11px] font-medium text-gray-700 dark:text-gray-300">Results</span>
       </a>
-      {% if request.user.profile.business_model == 'service' %}
+      {% if kova_features.bookings and request.user.profile.business_model == 'service' %}
       <a href="{% url 'bookings:list' %}" @click="moreOpen = false"
          class="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 {% if '/bookings/' in request.path %}bg-kova-50 dark:bg-kova-950/30{% endif %}">
         <span class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/30 flex items-center justify-center">

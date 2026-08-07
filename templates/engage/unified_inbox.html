@@ -9,6 +9,29 @@
 <div class="max-w-5xl mx-auto space-y-6">
   {% include "engage/_inbox_tabs.html" with active_tab="needs_reply" %}
 
+  <div class="flex items-center gap-2 overflow-x-auto overscroll-x-contain pb-1">
+    <a href="{% url 'engage:unified_inbox' %}"
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if source_filter == 'all' %}bg-kova-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      All
+    </a>
+    <a href="{% url 'engage:unified_inbox' %}?source=whatsapp"
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if source_filter == 'whatsapp' %}bg-[#25D366] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      WhatsApp
+    </a>
+    <a href="{% url 'engage:unified_inbox' %}?source=social"
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if source_filter == 'social' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      Comments
+    </a>
+    <a href="{% url 'engage:unified_inbox' %}?source=dms"
+       class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
+              {% if source_filter == 'dms' %}bg-violet-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
+      DMs
+    </a>
+  </div>
+
   <div class="flex flex-wrap items-center gap-3 text-sm">
     <span class="font-semibold text-gray-900 dark:text-white">{{ stats.total }} waiting</span>
     {% if stats.wa_count %}

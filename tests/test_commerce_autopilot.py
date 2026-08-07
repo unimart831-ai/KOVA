@@ -2,8 +2,8 @@
 
 import pytest
 
-from apps.content.models import Post
-from apps.products.commerce_autopilot import (
+from apps.create.content.models import Post
+from apps.commerce.products.commerce_autopilot import (
     apply_ai_detected_product_fields,
     commerce_autopilot_active,
     initial_commerce_post_status,
@@ -11,7 +11,7 @@ from apps.products.commerce_autopilot import (
     placeholder_name_for_offering,
     should_auto_publish_commerce,
 )
-from apps.products.models import Product
+from apps.commerce.products.models import Product
 
 
 @pytest.mark.django_db
@@ -43,7 +43,7 @@ class TestCommerceAutopilotHelpers:
         assert is_placeholder_product_name("Handmade Bag") is False
 
     def test_sanitize_product_name(self):
-        from apps.products.commerce_autopilot import sanitize_product_name
+        from apps.commerce.products.commerce_autopilot import sanitize_product_name
 
         assert sanitize_product_name("null") == ""
         assert sanitize_product_name("None") == ""
@@ -79,7 +79,7 @@ class TestCommerceAutopilotHelpers:
         assert product.name == "New product"
 
     def test_unique_placeholder_name(self, user):
-        from apps.products.commerce_autopilot import unique_placeholder_name
+        from apps.commerce.products.commerce_autopilot import unique_placeholder_name
 
         Product.objects.create(
             user=user,

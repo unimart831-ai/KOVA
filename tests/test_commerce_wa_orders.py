@@ -3,18 +3,18 @@
 import pytest
 from django.urls import reverse
 
-from apps.analytics.models import Conversion
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed
-from apps.notifications.models import Notification
-from apps.products.commerce_wa_orders import (
+from apps.insight.analytics.models import Conversion
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed
+from apps.messaging.notifications.models import Notification
+from apps.commerce.products.commerce_wa_orders import (
     build_tracked_whatsapp_order_url,
     build_wa_order_token,
     notify_seller_whatsapp_order_intent,
     parse_wa_order_token,
     resolve_whatsapp_order_redirect,
 )
-from apps.products.models import Product
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture

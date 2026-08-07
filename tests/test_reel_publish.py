@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from apps.content.models import Post
-from apps.content.tasks import (
+from apps.create.content.models import Post
+from apps.create.content.tasks import (
     _ensure_reel_compose_before_publish,
     _fail_post,
     _is_unreachable_platform_url,
@@ -17,8 +17,8 @@ from apps.content.tasks import (
     _reel_video_url,
     _resolve_tiktok_privacy,
 )
-from apps.platforms.providers.base import PublishResult
-from apps.platforms.providers.instagram_facebook import (
+from apps.core.platforms.providers.base import PublishResult
+from apps.core.platforms.providers.instagram_facebook import (
     FacebookProvider,
     InstagramProvider,
     _graph_api_error_text,
@@ -58,14 +58,14 @@ class TestReelPublishHelpers:
         url = "https://images.photoroom.com/product.jpg"
         assert _platform_media_url(url) == url
 
-    @patch("apps.content.tasks._presigned_storage_url")
-    @patch("apps.content.tasks._storage_custom_domain", return_value="")
+    @patch("apps.create.content.tasks._presigned_storage_url")
+    @patch("apps.create.content.tasks._storage_custom_domain", return_value="")
     def test_public_url_for_platform_api_uses_presigned(self, _domain, mock_presign):
         mock_presign.return_value = "https://r2.example.com/signed.mp4?sig=1"
         assert _public_url_for_file("reel_videos/test.mp4", for_platform_api=True) == mock_presign.return_value
         mock_presign.assert_called_once_with("reel_videos/test.mp4")
 
-    @patch("apps.content.tasks._public_url_for_file")
+    @patch("apps.create.content.tasks._public_url_for_file")
     def test_resolve_reel_publish_video_from_attachment(self, mock_pub):
         mock_pub.return_value = "https://r2.example.com/signed.mp4?sig=1"
         post = MagicMock()
@@ -97,7 +97,7 @@ class TestReelPublishHelpers:
 @pytest.mark.django_db
 class TestFailPostPersistence:
     def test_fail_post_sets_publish_error(self, user):
-        from apps.platforms.models import SocialAccount
+        from apps.core.platforms.models import SocialAccount
 
         account = SocialAccount.objects.create(
             user=user,
@@ -122,7 +122,7 @@ class TestFailPostPersistence:
 
 
 class TestFacebookReelPublish:
-    @patch("apps.platforms.providers.instagram_facebook.httpx.Client")
+    @patch("apps.core.platforms.providers.instagram_facebook.httpx.Client")
     def test_publish_reel_three_phase_flow(self, mock_client_cls):
         mock_client = MagicMock()
         mock_client_cls.return_value.__enter__.return_value = mock_client
@@ -231,14 +231,14 @@ class TestInstagramReelPublish:
 @pytest.mark.django_db
 class TestReelComposeOrchestration:
     def test_ensure_reel_compose_queues_when_never_started(self, user, monkeypatch):
-        from apps.platforms.models import SocialAccount
+        from apps.core.platforms.models import SocialAccount
 
         queued = []
 
         def _fake_queue(post_id):
             queued.append(post_id)
 
-        monkeypatch.setattr("apps.content.tasks._queue_reel_compose", _fake_queue)
+        monkeypatch.setattr("apps.create.content.tasks._queue_reel_compose", _fake_queue)
 
         account = SocialAccount.objects.create(
             user=user,
@@ -260,11 +260,11 @@ class TestReelComposeOrchestration:
         assert queued == [str(post.pk)]
 
     def test_queue_reel_compose_sets_queued_at(self, user, monkeypatch):
-        from apps.platforms.models import SocialAccount
+        from apps.core.platforms.models import SocialAccount
 
         fired = []
         monkeypatch.setattr(
-            "apps.utils.fire_task",
+            "apps.core.utils.fire_task",
             lambda task, *args, **kwargs: fired.append(args[0] if args else None),
         )
 

@@ -3,7 +3,7 @@
 import pytest
 from django.test import override_settings
 
-from apps.agents.llm import (
+from apps.create.agents.llm import (
     LLMAuthError,
     OPENROUTER_AUTH_USER_MESSAGE,
     _is_openrouter_auth_error,

@@ -2,9 +2,9 @@
 
 import pytest
 
-from apps.accounts.models import User
-from apps.content.models import Post
-from apps.content.product_visuals import (
+from apps.core.accounts.models import User
+from apps.create.content.models import Post
+from apps.create.content.product_visuals import (
     polished_carousel_sources,
     polished_reel_sources,
     product_has_polished_gallery,
@@ -12,7 +12,7 @@ from apps.content.product_visuals import (
     refresh_product_polished_posts,
     try_apply_product_polished_media,
 )
-from apps.products.models import Product
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def test_polished_carousel_sources_curates_studio_urls(product):
 
 
 def test_try_apply_skips_flux_for_carousel_with_product(user, product, monkeypatch):
-    from apps.content.models import Post
+    from apps.create.content.models import Post
 
     def _fake_carousel(post, prod, **kwargs):
         post.media_urls = [
@@ -57,7 +57,7 @@ def test_try_apply_skips_flux_for_carousel_with_product(user, product, monkeypat
         return post.media_urls
 
     monkeypatch.setattr(
-        "apps.media.carousel_bridge.generate_branded_carousel_urls",
+        "apps.create.media.carousel_renderer.generate_branded_carousel_urls",
         _fake_carousel,
     )
 
@@ -78,7 +78,7 @@ def test_try_apply_skips_flux_for_carousel_with_product(user, product, monkeypat
 
 def test_refresh_product_polished_posts_fixes_failed_reel(user, product, monkeypatch):
     def _fake_reel(post, prod):
-        from apps.content.models import Post as P
+        from apps.create.content.models import Post as P
 
         post.media_urls = ["/media/studio_polish/p1_studio_white.jpg"]
         post.media_status = P.MediaStatus.GENERATED
@@ -86,7 +86,7 @@ def test_refresh_product_polished_posts_fixes_failed_reel(user, product, monkeyp
         return True
 
     monkeypatch.setattr(
-        "apps.content.product_visuals.apply_polished_reel_post",
+        "apps.create.content.product_visuals.apply_polished_reel_post",
         _fake_reel,
     )
 
@@ -142,7 +142,7 @@ def test_try_apply_skips_flux_for_as_is_reel(user, as_is_product, monkeypatch):
     def _fake_queue(post_id):
         queued.append(post_id)
 
-    monkeypatch.setattr("apps.content.tasks._queue_reel_compose", _fake_queue)
+    monkeypatch.setattr("apps.create.content.tasks._queue_reel_compose", _fake_queue)
 
     post = Post.objects.create(
         user=user,

@@ -3,16 +3,16 @@
 import pytest
 from django.test import override_settings
 
-from apps.content.campaign_qa import (
+from apps.create.content.campaign_qa import (
     audit_campaign_qa,
     check_post_publish_gate,
     get_publish_min_score,
     refresh_campaign_qa,
     score_post_qa,
 )
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture

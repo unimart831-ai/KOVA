@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from apps.products.photoroom_api import (
+from apps.commerce.products.photoroom_api import (
     PhotoroomEditResult,
     beautify_mode_for_category,
     check_sandbox_quota,
@@ -12,9 +12,9 @@ from apps.products.photoroom_api import (
     parse_uncertainty_score,
     uncertainty_is_high,
 )
-from apps.products.photoroom_preflight import PhotoQualityReport, build_repair_plan
-from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG, select_plus_variants
-from apps.products.photoroom_virtual_models import build_virtual_model_params
+from apps.commerce.products.photoroom_preflight import PhotoQualityReport, build_repair_plan
+from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG, select_plus_variants
+from apps.commerce.products.photoroom_virtual_models import build_virtual_model_params
 
 
 def test_parse_uncertainty_score_valid():
@@ -83,7 +83,7 @@ def test_background_blur_variant_doc_aligned():
     assert spec.params["background.blur.mode"] in ("bokeh", "gaussian")
 
 
-@patch("apps.products.photoroom_api.get_sandbox_usage")
+@patch("apps.commerce.products.photoroom_api.get_sandbox_usage")
 @patch("django.conf.settings.PHOTOROOM_SANDBOX", True, create=True)
 def test_sandbox_quota_blocks_at_daily_limit(mock_usage):
     mock_usage.return_value = {
@@ -98,17 +98,17 @@ def test_sandbox_quota_blocks_at_daily_limit(mock_usage):
 
 
 def test_photoroom_edit_parses_uncertainty():
-    from apps.products.photoroom_plus import photoroom_edit
+    from apps.commerce.products.photoroom_plus import photoroom_edit
 
     mock_resp = MagicMock()
     mock_resp.content = b"\xff\xd8\xff" + b"x" * 100
     mock_resp.headers = {"x-uncertainty-score": "0.25"}
     mock_resp.raise_for_status = MagicMock()
 
-    with patch("apps.products.photoroom_plus._api_key_headers", return_value=("key", {})):
-        with patch("apps.products.photoroom_api.check_sandbox_quota", return_value=(True, None)):
-            with patch("apps.products.photoroom_api.record_sandbox_call"):
-                with patch("apps.products.photoroom_plus._load_image_bytes", return_value=(b"img", "a.jpg")):
+    with patch("apps.commerce.products.photoroom_plus._api_key_headers", return_value=("key", {})):
+        with patch("apps.commerce.products.photoroom_api.check_sandbox_quota", return_value=(True, None)):
+            with patch("apps.commerce.products.photoroom_api.record_sandbox_call"):
+                with patch("apps.commerce.products.photoroom_plus._load_image_bytes", return_value=(b"img", "a.jpg")):
                     with patch("requests.post", return_value=mock_resp):
                         result = photoroom_edit("/media/x.jpg", {"removeBackground": "true"})
     assert isinstance(result, PhotoroomEditResult)

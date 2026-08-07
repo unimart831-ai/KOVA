@@ -5,13 +5,13 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from apps.accounts.models import UserProfile
-from apps.platforms.models import SocialAccount
-from apps.products.catalog_showcase import (
+from apps.core.accounts.models import UserProfile
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.catalog_showcase import (
     select_products_for_showcase,
     weekly_showcase_due,
 )
-from apps.products.models import Product
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture

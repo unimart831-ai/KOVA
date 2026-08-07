@@ -3,18 +3,18 @@
 import pytest
 from decimal import Decimal
 
-from apps.analytics.models import Conversion
-from apps.content.campaign_attribution import (
+from apps.insight.analytics.models import Conversion
+from apps.create.content.campaign_attribution import (
     campaign_funnel_stats,
     campaign_revenue_brief_lines,
     create_attributed_conversion,
     resolve_marketing_campaign,
     top_campaigns_by_revenue,
 )
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
-from apps.products.models import Product
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture
@@ -134,7 +134,7 @@ class TestCampaignFunnel:
 @pytest.mark.django_db
 class TestCampaignPerformanceDashboard:
     def test_performance_rows_and_objective_comparison(self, user, product, ig_account):
-        from apps.content.campaign_attribution import (
+        from apps.create.content.campaign_attribution import (
             get_campaign_performance_rows,
             get_objective_platform_comparison,
         )

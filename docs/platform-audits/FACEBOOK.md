@@ -3,7 +3,7 @@
 > **Purpose:** Role-by-role audit of Facebook Page management for startups and small businesses, mapped to Kova capabilities, gaps, and build priorities.  
 > **Last updated:** May 2026  
 > **Code reference:** `apps/platforms/providers/instagram_facebook.py` (`FacebookProvider`)  
-> **Related:** `docs/KOVA_PLATFORM_CAPABILITY_CHECKLIST.md` (capability matrix — some rows outdated; this doc is the SMB lens)
+> **Related:** `docs/KOVA_PLATFORM_SETUP_GUIDE.md` · `docs/platform-audits/REELS_AND_VIDEO_STRATEGY.md`
 
 ---
 

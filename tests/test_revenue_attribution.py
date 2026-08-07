@@ -18,10 +18,10 @@ from __future__ import annotations
 import pytest
 from urllib.parse import parse_qs, urlparse
 
-from apps.accounts.models import User
-from apps.content.models import ContentSeed, Post
-from apps.content.tasks import add_utm_tracking, _add_utm_to_url
-from apps.platforms.models import SocialAccount
+from apps.core.accounts.models import User
+from apps.create.content.models import ContentSeed, Post
+from apps.create.content.tasks import add_utm_tracking, _add_utm_to_url
+from apps.core.platforms.models import SocialAccount
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ class TestRevenueHeadlineInsight:
 
     def test_no_pipeline_kind_for_brand_new_user(self, user):
         # Brand new user — no posts, no pixel, no conversions
-        from apps.analytics.revenue import get_revenue_headline_insight
+        from apps.insight.analytics.revenue import get_revenue_headline_insight
         insight = get_revenue_headline_insight(user, days=7)
         assert insight["kind"] == "no_pipeline"
         assert insight["cta_url"]  # has a next-action
@@ -186,32 +186,32 @@ class TestRevenueHeadlineInsight:
             user=user, social_account=social_account, platform="instagram",
             content_text="Live post", status="published",
         )
-        from apps.analytics.revenue import get_revenue_headline_insight
+        from apps.insight.analytics.revenue import get_revenue_headline_insight
         insight = get_revenue_headline_insight(user, days=7)
         assert insight["kind"] == "no_pixel"
         assert "Pixel" in insight["headline"]
 
     def test_pipeline_warming_when_events_but_no_conversions(self, user, social_account):
-        from apps.analytics.models import WebsiteEvent
+        from apps.insight.analytics.models import WebsiteEvent
         WebsiteEvent.objects.create(
             user=user, event_type="page_view",
             visitor_id="v1", session_id="s1",
             page_url="https://shop.co.ke/",
         )
-        from apps.analytics.revenue import get_revenue_headline_insight
+        from apps.insight.analytics.revenue import get_revenue_headline_insight
         insight = get_revenue_headline_insight(user, days=7)
         assert insight["kind"] == "pipeline_warming"
         assert "Pixel is firing" in insight["headline"]
 
     def test_top_post_kind_when_revenue_attributed(self, user, social_account, post):
-        from apps.analytics.models import Conversion
+        from apps.insight.analytics.models import Conversion
         from decimal import Decimal
         Conversion.objects.create(
             user=user, post=post, social_account=social_account,
             conversion_type="sale", event_name="purchase",
             revenue=Decimal("12400"),
         )
-        from apps.analytics.revenue import get_revenue_headline_insight
+        from apps.insight.analytics.revenue import get_revenue_headline_insight
         insight = get_revenue_headline_insight(user, days=7)
         assert insight["kind"] == "top_post"
         # The Instagram post content was "Try our new dress! Shop now …"
@@ -220,7 +220,7 @@ class TestRevenueHeadlineInsight:
         assert insight["post_revenue"] == 12400.0
 
     def test_no_revenue_in_window_when_old_conversion_exists(self, user, post):
-        from apps.analytics.models import Conversion
+        from apps.insight.analytics.models import Conversion
         from django.utils import timezone
         from datetime import timedelta
         from decimal import Decimal
@@ -233,7 +233,7 @@ class TestRevenueHeadlineInsight:
         Conversion.objects.filter(pk=c.pk).update(
             created_at=timezone.now() - timedelta(days=30)
         )
-        from apps.analytics.revenue import get_revenue_headline_insight
+        from apps.insight.analytics.revenue import get_revenue_headline_insight
         insight = get_revenue_headline_insight(user, days=7)
         assert insight["kind"] == "no_revenue_in_window"
         assert "?days=90" in insight["cta_url"]
@@ -249,7 +249,7 @@ class TestDailyBriefRevenueContext:
     the W1.2 work goes invisible."""
 
     def test_revenue_data_in_brief_includes_headline_insight(self, user):
-        from apps.briefs.tasks import _gather_brief_data
+        from apps.create.briefs.tasks import _gather_brief_data
         data = _gather_brief_data(user)
 
         assert "revenue_attribution" in data
@@ -262,14 +262,14 @@ class TestDailyBriefRevenueContext:
         assert ra["headline_insight"]["kind"] == "no_pipeline"
 
     def test_headline_insight_carries_through_with_revenue(self, user, social_account, post):
-        from apps.analytics.models import Conversion
+        from apps.insight.analytics.models import Conversion
         from decimal import Decimal
         Conversion.objects.create(
             user=user, post=post, social_account=social_account,
             conversion_type="sale", event_name="purchase",
             revenue=Decimal("8500"),
         )
-        from apps.briefs.tasks import _gather_brief_data
+        from apps.create.briefs.tasks import _gather_brief_data
         data = _gather_brief_data(user)
         insight = (data.get("revenue_attribution") or {}).get("headline_insight")
         assert insight is not None
@@ -287,7 +287,7 @@ class TestRevenueStatCard:
     misleading."""
 
     def test_brand_new_user_has_no_data(self, user):
-        from apps.analytics.revenue import get_revenue_stat_card
+        from apps.insight.analytics.revenue import get_revenue_stat_card
         stat = get_revenue_stat_card(user)
         assert stat["has_data"] is False
         assert stat["current_kes"] == 0
@@ -295,7 +295,7 @@ class TestRevenueStatCard:
         assert stat["direction"] == "flat"
 
     def test_up_direction_when_current_beats_previous(self, user, post):
-        from apps.analytics.models import Conversion
+        from apps.insight.analytics.models import Conversion
         from django.utils import timezone
         from datetime import timedelta
         from decimal import Decimal
@@ -314,7 +314,7 @@ class TestRevenueStatCard:
         Conversion.objects.filter(pk=c.pk).update(
             created_at=timezone.now() - timedelta(days=10)
         )
-        from apps.analytics.revenue import get_revenue_stat_card
+        from apps.insight.analytics.revenue import get_revenue_stat_card
         stat = get_revenue_stat_card(user)
         assert stat["has_data"] is True
         assert stat["current_kes"] == 5000.0
@@ -324,14 +324,14 @@ class TestRevenueStatCard:
 
     def test_first_week_revenue_is_100_pct_up(self, user, post):
         # No previous-week data — current=KES X should read as +100% "new"
-        from apps.analytics.models import Conversion
+        from apps.insight.analytics.models import Conversion
         from decimal import Decimal
         Conversion.objects.create(
             user=user, post=post,
             conversion_type="sale", event_name="purchase",
             revenue=Decimal("3500"),
         )
-        from apps.analytics.revenue import get_revenue_stat_card
+        from apps.insight.analytics.revenue import get_revenue_stat_card
         stat = get_revenue_stat_card(user)
         assert stat["current_kes"] == 3500.0
         assert stat["previous_kes"] == 0

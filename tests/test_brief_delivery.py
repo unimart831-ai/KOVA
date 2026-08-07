@@ -6,13 +6,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.briefs.delivery import (
+from apps.core.accounts.models import User, UserProfile
+from apps.create.briefs.delivery import (
     build_mobile_digest,
     deliver_daily_brief,
     extract_your_move,
 )
-from apps.briefs.models import DailyBrief
+from apps.create.briefs.models import DailyBrief
 
 
 @pytest.fixture
@@ -80,9 +80,9 @@ class TestBuildMobileDigest:
 
 
 class TestDeliverDailyBrief:
-    @patch("apps.briefs.delivery._notify_brief_ready", return_value=True)
-    @patch("apps.briefs.delivery._send_brief_email", return_value=True)
-    @patch("apps.briefs.delivery._send_brief_whatsapp", return_value=False)
+    @patch("apps.create.briefs.delivery._notify_brief_ready", return_value=True)
+    @patch("apps.create.briefs.delivery._send_brief_email", return_value=True)
+    @patch("apps.create.briefs.delivery._send_brief_whatsapp", return_value=False)
     def test_pro_user_gets_email_and_ws(self, _wa, _email, _ws, owner):
         brief = _make_brief(owner)
         results = deliver_daily_brief(owner, brief)
@@ -90,9 +90,9 @@ class TestDeliverDailyBrief:
         assert results["email"] is True
         _email.assert_called_once()
 
-    @patch("apps.briefs.delivery._notify_brief_ready", return_value=True)
-    @patch("apps.briefs.delivery._send_brief_email")
-    @patch("apps.briefs.delivery._send_brief_whatsapp")
+    @patch("apps.create.briefs.delivery._notify_brief_ready", return_value=True)
+    @patch("apps.create.briefs.delivery._send_brief_email")
+    @patch("apps.create.briefs.delivery._send_brief_whatsapp")
     def test_starter_skips_email(self, _wa, _email, _ws, owner):
         UserProfile.objects.filter(user=owner).update(plan="starter")
         brief = _make_brief(owner)
@@ -100,9 +100,9 @@ class TestDeliverDailyBrief:
         assert results["email"] is False
         _email.assert_not_called()
 
-    @patch("apps.briefs.delivery._notify_brief_ready", return_value=True)
-    @patch("apps.briefs.delivery._send_brief_email", return_value=True)
-    @patch("apps.briefs.delivery._send_brief_whatsapp", return_value=True)
+    @patch("apps.create.briefs.delivery._notify_brief_ready", return_value=True)
+    @patch("apps.create.briefs.delivery._send_brief_email", return_value=True)
+    @patch("apps.create.briefs.delivery._send_brief_whatsapp", return_value=True)
     def test_respects_user_opt_out(self, _wa, _email, _ws, owner):
         owner.brief_email_enabled = False
         owner.brief_whatsapp_enabled = False

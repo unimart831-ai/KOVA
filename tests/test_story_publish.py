@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
-from apps.platforms.providers.base import PublishResult
-from apps.platforms.providers.instagram_facebook import FacebookProvider, InstagramProvider
+from apps.core.platforms.providers.base import PublishResult
+from apps.core.platforms.providers.instagram_facebook import FacebookProvider, InstagramProvider
 
 
 class TestInstagramStoryPublish:
@@ -36,7 +36,7 @@ class TestInstagramStoryPublish:
             args = mock_internal.call_args[0]
             assert args[1] == "page-token"
 
-    @patch("apps.platforms.providers.instagram_facebook.httpx.Client")
+    @patch("apps.core.platforms.providers.instagram_facebook.httpx.Client")
     def test_publish_story_image_container_flow(self, mock_client_cls):
         mock_client = MagicMock()
         mock_client_cls.return_value.__enter__.return_value = mock_client
@@ -86,7 +86,7 @@ class TestFacebookStoryPublish:
             )
             mock_story.assert_called_once()
 
-    @patch("apps.platforms.providers.instagram_facebook.httpx.Client")
+    @patch("apps.core.platforms.providers.instagram_facebook.httpx.Client")
     def test_publish_photo_story_two_step_flow(self, mock_client_cls):
         mock_client = MagicMock()
         mock_client_cls.return_value.__enter__.return_value = mock_client
@@ -118,7 +118,7 @@ class TestFacebookStoryPublish:
         assert mock_client.post.call_count == 2
         assert "photo_stories" in mock_client.post.call_args_list[1][0][0]
 
-    @patch("apps.platforms.providers.instagram_facebook.httpx.Client")
+    @patch("apps.core.platforms.providers.instagram_facebook.httpx.Client")
     def test_publish_video_story_three_phase_flow(self, mock_client_cls):
         mock_client = MagicMock()
         mock_client_cls.return_value.__enter__.return_value = mock_client

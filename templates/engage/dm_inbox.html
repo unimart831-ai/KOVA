@@ -2,7 +2,7 @@
 
 {% block page_title %}Messages{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Unified inbox — Facebook, Instagram & WhatsApp</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Facebook & Instagram DMs — WhatsApp chats live under WhatsApp</p>
 {% endblock %}
 
 {% block content %}
@@ -44,10 +44,10 @@
               {% if platform_filter == 'instagram' %}bg-[#E4405F] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
       Instagram
     </a>
-    <a href="{% url 'engage:dm_inbox' %}?platform=whatsapp"
+    <a href="{% url 'whatsapp:inbox' %}"
        class="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition
-              {% if platform_filter == 'whatsapp' %}bg-[#25D366] text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}">
-      WhatsApp
+              bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+      WhatsApp →
     </a>
   </div>
 

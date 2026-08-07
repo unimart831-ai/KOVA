@@ -5,8 +5,8 @@ import json
 import pytest
 from django.urls import reverse
 
-from apps.accounts.models import User, UserProfile
-from apps.products.models import CommercePayment, Product
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.products.models import CommercePayment, Product
 
 
 @pytest.mark.django_db
@@ -117,7 +117,7 @@ class TestAnalyticsTabPages:
 @pytest.mark.django_db
 class TestPostOnboardingRedirects:
     def test_commerce_user_redirects_to_snap(self):
-        from apps.accounts.onboarding_redirects import post_onboarding_redirect_url_name
+        from apps.core.accounts.onboarding_redirects import post_onboarding_redirect_url_name
 
         u = User.objects.create_user(username="sell", email="s@b.com", password="P1!")
         p = u.profile
@@ -127,14 +127,14 @@ class TestPostOnboardingRedirects:
         assert post_onboarding_redirect_url_name(u) == "products:snap"
 
     def test_grow_user_redirects_to_studio(self):
-        from apps.accounts.onboarding_redirects import post_onboarding_redirect_url_name
+        from apps.core.accounts.onboarding_redirects import post_onboarding_redirect_url_name
 
         u = User.objects.create_user(username="grow", email="g@b.com", password="P1!")
         u.profile.record_onboarding_step("intent_grow")
         assert post_onboarding_redirect_url_name(u) == "content:studio"
 
     def test_whatsapp_url_for_commerce(self, settings):
-        from apps.accounts.onboarding_redirects import post_onboarding_site_path
+        from apps.core.accounts.onboarding_redirects import post_onboarding_site_path
 
         settings.SITE_URL = "https://app.kovaagent.com"
         u = User.objects.create_user(username="wa", email="wa@b.com", password="P1!")
@@ -162,7 +162,7 @@ class TestCommerceMpesaFlow:
         product = self._product(user)
 
         monkeypatch.setattr(
-            "apps.billing.mpesa.initiate_stk_push",
+            "apps.core.billing.mpesa.initiate_stk_push",
             lambda **kwargs: {
                 "CheckoutRequestID": "ws_CO_test123",
                 "MerchantRequestID": "mr_test",
@@ -257,8 +257,8 @@ class TestSnapToShopGoldenPath:
 @pytest.mark.django_db
 class TestInstantOnboardingWow:
     def test_ensure_instant_marks_progress_complete(self):
-        from apps.accounts.onboarding_flow import ensure_instant_onboarding_wow
-        from apps.agents.onboarding_tasks import get_onboarding_progress
+        from apps.core.accounts.onboarding_flow import ensure_instant_onboarding_wow
+        from apps.create.agents.onboarding_tasks import get_onboarding_progress
 
         u = User.objects.create_user(username="wow", email="wow@b.com", password="P1!")
         p = u.profile
@@ -276,7 +276,7 @@ class TestInstantOnboardingWow:
 @pytest.mark.django_db
 class TestProfileBackfill:
     def test_ensure_user_profile_creates_missing(self):
-        from apps.accounts.profile_utils import ensure_user_profile
+        from apps.core.accounts.profile_utils import ensure_user_profile
 
         u = User.objects.create_user(username="noprof", email="noprof@b.com", password="P1!")
         UserProfile.objects.filter(user=u).delete()

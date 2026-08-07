@@ -10,31 +10,25 @@
 
 | Item | Detail |
 |------|--------|
-| Location | `docs/config/settings/base.py` line 99 |
+| Location | `apps/core/campaigns/` (via `config/settings/base.py`) |
 | Issue | App has no models (all dropped in migration 0003) but is still registered. Comment says "migrations only — legacy tables dropped" |
 | Risk | Confusing for new developers; migration dependency chains |
 | Action | Remove from INSTALLED_APPS after squashing migrations. Keep migration files only if other apps reference `campaigns` in FK history. |
 | Effort | Low |
 
-### 2. Duplicate `kova_page` App
+### 2. Duplicate `kova_page` App — RESOLVED
 
 | Item | Detail |
 |------|--------|
-| Location | `apps/kova_page/` |
-| Issue | Models are empty (`models.py` has no classes). Actual link pages live in `apps/links/` (`links.KovaPage`). But `kova_page` has `salesperson.py` (AI Salesperson) which is valuable. |
-| Risk | Confusion about which app owns business profile pages |
-| Action | Move `salesperson.py` to `apps/products/` or `apps/links/`. Remove `kova_page` app or mark clearly as "public page rendering only" (templates + views). |
-| Effort | Medium |
+| Status | **DONE** (July 2026) |
+| Resolution | Folded into `apps/commerce/links/hub`. URL namespace `kova_page:` preserved. |
 
-### 3. Django Project Package at `docs/config/`
+### 3. Django Project Package at `docs/config/` — RESOLVED
 
 | Item | Detail |
 |------|--------|
-| Location | `docs/config/` is the Django project package (settings, urls, celery, wsgi, asgi) |
-| Issue | Unconventional location. `docs/` implies documentation, not runtime code. Python imports work because `docs/` is on the path, but it's confusing. |
-| Risk | Onboarding confusion; accidental exclusion from Docker builds |
-| Action | Document clearly. Consider moving to `kova_agent/config/` in a future refactor (breaking change, needs careful migration). |
-| Effort | High (defer) |
+| Status | **DONE** (July 2026) |
+| Resolution | Live package is `kova_agent/config/`. Stale `docs/config/` removed. |
 
 ### 4. Duplicate Model Names Across Apps
 
@@ -52,14 +46,14 @@
 
 ## High Debt (Fix in V1 Timeline)
 
-### 5. 18 Photoroom Files
+### 5. Photoroom module sprawl
 
 | Item | Detail |
 |------|--------|
-| Location | `apps/products/photoroom*.py` (15 files) + `apps/media/photoroom_brief.py` + admin views |
-| Issue | Over-engineered for a single integration. Files include: basic, plus, api, preflight, guard, photofix, composition, virtual_models, video, batch, create_any, visual_qa, review, brand_template, food, local |
-| Risk | Maintenance burden; single-vendor dependency across 18 files |
-| Action | Consolidate into 3 files: `photoroom_client.py` (API layer), `photoroom_pipeline.py` (orchestration), `photoroom_config.py` (settings/presets). Most "files" are just configuration variants. |
+| Location | `apps/commerce/products/photoroom*.py` |
+| Issue | Still more files than ideal after stub deletes + thin-helper merges (photofix/local/food folded). |
+| Risk | Maintenance burden; single-vendor dependency |
+| Action | Further consolidate toward `client` / `pipeline` / config-presets when safe. |
 | Effort | Medium |
 
 ### 6. Multiple Inbox Implementations
@@ -102,7 +96,7 @@
 
 | Feature | Location | Issue |
 |---------|----------|-------|
-| Remotion video rendering | `media_render/` | TypeScript subproject; requires Node.js; unclear if actively used |
+| Remotion video rendering | ~~`media_render/`~~ | **REMOVED** — FFmpeg is the reel backend |
 | Performance Recycle | `analytics/models.py` | Auto-republish old content; experimental |
 | Competitor Screenshots | `analytics/models.py` | Screenshot-based competitor analysis |
 | A/B Testing | `content/models.py` (ABTest, PostVersion) | Partial implementation |
@@ -116,7 +110,7 @@
 | `media_queue` references | README mentions it | App doesn't exist; `media/tasks.py` has deprecated no-op |
 | `memes` app | README mentions it | App doesn't exist |
 | `campaigns` app | `apps/campaigns/` | Empty models, migrations-only |
-| Deprecated task | `media/tasks.py` | `media_queue.process_queues` is a no-op stub |
+| Deprecated task | `media/tasks.py` | **Removed** — no-op `media_queue.process_queues` deleted; prune command still cleans DB beat rows |
 
 ### 11. Test Coverage Gaps
 

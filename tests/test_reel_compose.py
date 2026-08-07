@@ -7,8 +7,8 @@ from pathlib import Path
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from apps.content import reel_music
-from apps.content.reel_music import (
+from apps.create.content import reel_music
+from apps.create.content.reel_music import (
     add_track,
     delete_track,
     infer_mood_from_post,
@@ -17,7 +17,7 @@ from apps.content.reel_music import (
     replace_track_file,
     resolve_track_path,
 )
-from apps.content.video_compose import (
+from apps.create.content.video_compose import (
     ffmpeg_available,
     fit_composite_slide_to_story,
     fit_image_to_story_frame,
@@ -104,7 +104,7 @@ class TestVideoComposeHelpers:
 
     @pytest.mark.skipif(not ffmpeg_available(), reason="FFmpeg not installed")
     def test_compose_single_image_reel(self):
-        from apps.content.video_compose import compose_motion_reel
+        from apps.create.content.video_compose import compose_motion_reel
 
         img = Image.new("RGB", (1080, 1920), color=(30, 60, 120))
         buf = BytesIO()

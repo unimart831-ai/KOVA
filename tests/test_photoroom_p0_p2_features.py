@@ -4,11 +4,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from apps.products.asset_pack import build_asset_pack
-from apps.products.photoroom_plus import FRAGILE_HD_CATEGORIES, hd_cutout_headers_for_product
-from apps.products.photoroom_preflight import REPAIR_ORDER, build_repair_plan
-from apps.products.photoroom_review import post_blocked_by_alteration_review
-from apps.products.reel_curation import curate_reel_image_urls, story_export_urls
+from apps.commerce.products.asset_pack import build_asset_pack
+from apps.commerce.products.photoroom_plus import FRAGILE_HD_CATEGORIES, hd_cutout_headers_for_product
+from apps.commerce.products.photoroom_preflight import REPAIR_ORDER, build_repair_plan
+from apps.commerce.products.photoroom_review import post_blocked_by_alteration_review
+from apps.commerce.products.reel_curation import curate_reel_image_urls, story_export_urls
 
 
 def test_story_export_urls_prefers_uncrop():
@@ -38,7 +38,7 @@ def test_repair_order_includes_ai_ironing_for_apparel():
 
 
 def test_build_repair_plan_apparel_ironing():
-    from apps.products.photoroom_preflight import PhotoQualityReport
+    from apps.commerce.products.photoroom_preflight import PhotoQualityReport
 
     report = PhotoQualityReport(lighting="uneven", sharpness="soft")
     plan = build_repair_plan(
@@ -54,7 +54,7 @@ def test_hd_cutout_headers_for_jewelry():
     product = MagicMock()
     product.name = "Gold ring"
     product.tags = ["jewelry"]
-    with patch("apps.products.photoroom_plus.detect_product_category", return_value="jewelry"):
+    with patch("apps.commerce.products.photoroom_plus.detect_product_category", return_value="jewelry"):
         headers = hd_cutout_headers_for_product(product, {})
     assert headers.get("pr-hd-background-removal") == "auto"
     assert "jewelry" in FRAGILE_HD_CATEGORIES
@@ -65,7 +65,7 @@ def test_post_blocked_by_alteration_review():
     product = MagicMock()
     post.product = product
     with patch(
-        "apps.products.photoroom_review.review_state_for_product",
+        "apps.commerce.products.photoroom_review.review_state_for_product",
         return_value={
             "alteration_review_required": True,
             "review_pending_count": 1,
@@ -86,7 +86,7 @@ def test_asset_pack_groups():
         "/media/studio_polish/x/channel_marketplace_white.png",
     ]
     with patch(
-        "apps.products.gallery_preferences.filter_gallery_urls",
+        "apps.commerce.products.gallery_preferences.filter_gallery_urls",
         side_effect=lambda urls, _p: urls,
     ):
         groups = build_asset_pack(product)
@@ -99,7 +99,7 @@ def test_asset_pack_groups():
 
 @pytest.mark.django_db
 def test_video_animate_limits_pro(user):
-    from apps.billing.video_credits import get_video_animate_limits
+    from apps.core.billing.video_credits import get_video_animate_limits
 
     user.profile.plan = "pro"
     user.profile.save(update_fields=["plan"])

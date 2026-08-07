@@ -14,9 +14,9 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.content.models import Post
-from apps.content.tasks import publish_post
-from apps.platforms.models import SocialAccount
+from apps.create.content.models import Post
+from apps.create.content.tasks import publish_post
+from apps.core.platforms.models import SocialAccount
 
 User = get_user_model()
 
@@ -66,7 +66,7 @@ def test_already_published_post_is_not_republished(user, account):
         platform_post_id="ig_existing_123",
     )
 
-    with patch("apps.platforms.providers.get_provider") as mock_get_provider:
+    with patch("apps.core.platforms.providers.get_provider") as mock_get_provider:
         result = publish_post(str(post.pk))
 
     assert result == {"error": "already_published", "duplicate": True}
@@ -84,7 +84,7 @@ def test_non_publishable_status_is_skipped(user, account):
     status guard — never published a second time."""
     post = _make_post(user, account, status=Post.Status.PUBLISHED)
 
-    with patch("apps.platforms.providers.get_provider") as mock_get_provider:
+    with patch("apps.core.platforms.providers.get_provider") as mock_get_provider:
         result = publish_post(str(post.pk))
 
     assert "error" in result
@@ -116,7 +116,7 @@ def test_compare_and_swap_claim_is_atomic(user, account):
     assert lost == 0
 
     # And publish_post refuses the already-claimed (PUBLISHING) post.
-    with patch("apps.platforms.providers.get_provider") as mock_get_provider:
+    with patch("apps.core.platforms.providers.get_provider") as mock_get_provider:
         result = publish_post(str(post.pk))
     assert "error" in result
     mock_get_provider.assert_not_called()

@@ -23,7 +23,9 @@
       <div class="hidden md:flex items-center gap-6">
         <a href="{% url 'blog:index' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Blog</a>
         <a href="{% url 'learn:center' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Learn</a>
+        {% if kova_features.partners %}
         <a href="{% url 'partners:landing' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Partners</a>
+        {% endif %}
         <a href="{% url 'campus_rep' %}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Campus Rep</a>
       </div>
 
@@ -66,7 +68,9 @@
        class="md:hidden border-t border-gray-200/60 dark:border-gray-800 bg-[#FAFAF9] dark:bg-gray-900 px-4 py-4 space-y-1">
     <a href="{% url 'blog:index' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Blog</a>
     <a href="{% url 'learn:center' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Learn</a>
+    {% if kova_features.partners %}
     <a href="{% url 'partners:landing' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Partners</a>
+    {% endif %}
     <a href="{% url 'campus_rep' %}" class="block px-3 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Campus Rep</a>
     <div class="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
       {% if user.is_authenticated %}
@@ -95,7 +99,9 @@
       <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
         <a href="{% url 'blog:index' %}" class="hover:text-white transition-colors py-1">Blog</a>
         <a href="{% url 'learn:center' %}" class="hover:text-white transition-colors py-1">Learn</a>
+        {% if kova_features.partners %}
         <a href="{% url 'partners:landing' %}" class="hover:text-white transition-colors py-1">Partners</a>
+        {% endif %}
         <a href="{% url 'campus_rep' %}" class="hover:text-white transition-colors py-1">Campus Rep</a>
         <a href="{% url 'account_login' %}" class="hover:text-white transition-colors py-1">Sign in</a>
         <a href="{% url 'account_signup' %}" class="hover:text-white transition-colors py-1">Sign up</a>

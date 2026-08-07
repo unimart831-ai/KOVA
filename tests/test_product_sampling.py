@@ -3,10 +3,10 @@
 import pytest
 from django.utils import timezone
 
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
-from apps.products.models import Product
-from apps.products.utils import (
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.models import Product
+from apps.commerce.products.utils import (
     enrich_idea_with_product,
     resolve_product_by_name,
     sample_products_for_content,

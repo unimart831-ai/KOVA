@@ -6,9 +6,9 @@ from unittest.mock import patch
 
 import pytest
 
-from apps.accounts.models import User
-from apps.content.blueprint_retry import improve_low_blueprint_posts
-from apps.content.models import ContentSeed
+from apps.core.accounts.models import User
+from apps.create.content.blueprint_retry import improve_low_blueprint_posts
+from apps.create.content.models import ContentSeed
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def test_improve_skips_when_no_blueprint(user):
     assert result == posts
 
 
-@patch("apps.agents.create_agent._regenerate_single_platform")
+@patch("apps.create.agents.create_agent._regenerate_single_platform")
 def test_improve_retries_low_quality(mock_regen, user):
     seed = ContentSeed.objects.create(
         user=user,

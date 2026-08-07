@@ -3,19 +3,19 @@
 import pytest
 from django.utils import timezone
 
-from apps.billing.models import (
+from apps.core.billing.models import (
     PLAN_LIMITS,
     TRIAL_CAMPAIGN_LIMIT,
     TRIAL_FEATURE_PLAN,
     get_effective_plan_tier,
     get_user_plan_limits,
 )
-from apps.billing.whatsapp_marketing import (
+from apps.core.billing.whatsapp_marketing import (
     check_whatsapp_marketing_limit,
     is_marketing_template,
 )
-from apps.agents.budget import check_budget
-from apps.billing.exceptions import PlanLimitExceeded
+from apps.create.agents.budget import check_budget
+from apps.core.billing.exceptions import PlanLimitExceeded
 
 
 @pytest.mark.django_db
@@ -101,7 +101,7 @@ class TestWhatsAppMarketingEnforcement:
 class TestMonthlyLlmBudget:
     def test_monthly_cap_raises(self, user):
         from datetime import timedelta
-        from apps.agents.models import UserTokenBucket
+        from apps.create.agents.models import UserTokenBucket
 
         user.profile.plan = "starter"
         user.profile.subscription_status = "active"

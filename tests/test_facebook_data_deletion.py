@@ -10,13 +10,13 @@ from django.core.cache import cache
 from django.test import Client, override_settings
 from django.urls import reverse
 
-from apps.accounts.models import User
-from apps.platforms.facebook_data_deletion import (
+from apps.core.accounts.models import User
+from apps.core.platforms.facebook_data_deletion import (
     delete_facebook_user_data,
     parse_signed_request,
     store_deletion_status,
 )
-from apps.platforms.models import SocialAccount
+from apps.core.platforms.models import SocialAccount
 
 
 def _make_signed_request(payload: dict, app_secret: str) -> str:
@@ -130,7 +130,7 @@ def test_store_and_load_status():
         facebook_user_id="99",
         counts={"facebook_accounts": 1},
     )
-    from apps.platforms.facebook_data_deletion import get_deletion_status
+    from apps.core.platforms.facebook_data_deletion import get_deletion_status
 
     record = get_deletion_status("abc123")
     assert record["status"] == "completed"

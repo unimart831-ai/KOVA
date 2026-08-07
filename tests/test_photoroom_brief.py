@@ -2,13 +2,13 @@
 
 import pytest
 
-from apps.media.campaign_visual_brief import CampaignVisualBrief, DEFAULT_SCENE_ROLES
-from apps.media.photoroom_brief import (
+from apps.create.media.campaign_visual_brief import CampaignVisualBrief, DEFAULT_SCENE_ROLES
+from apps.create.media.photoroom_brief import (
     merge_brief_into_params,
     prioritize_brief_variants,
     variant_ids_from_brief,
 )
-from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG
+from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG
 
 
 @pytest.mark.django_db

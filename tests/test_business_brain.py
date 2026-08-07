@@ -9,12 +9,12 @@ deterministic, no-LLM path (use_llm=False) so CI needs no network.
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.accounts.business_brain import (
+from apps.core.accounts.business_brain import (
     brain_completeness,
     build_brain_snapshot,
     extract_and_apply_brain,
 )
-from apps.accounts.first_business_report import build_first_business_report
+from apps.core.accounts.first_business_report import build_first_business_report
 
 User = get_user_model()
 

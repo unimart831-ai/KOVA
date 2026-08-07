@@ -1,5 +1,5 @@
 """
-Tests for apps.agents.llm.parse_llm_json — the 5-stage repair pipeline
+Tests for apps.create.agents.llm.parse_llm_json — the 5-stage repair pipeline
 that extracts valid JSON from messy LLM output.
 """
 
@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from apps.agents.llm import coerce_llm_dict, parse_llm_json
+from apps.create.agents.llm import coerce_llm_dict, parse_llm_json
 
 
 # ── 1. Clean JSON ────────────────────────────────────────────────────

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User
-from apps.agents.create_agent import build_generation_prompt
-from apps.content.blueprint_pipeline import attach_blueprint_to_seed
-from apps.content.models import ContentSeed
-from apps.products.models import BusinessAsset, Product
+from apps.core.accounts.models import User
+from apps.create.agents.create_agent import build_generation_prompt
+from apps.create.content.blueprint_pipeline import attach_blueprint_to_seed
+from apps.create.content.models import ContentSeed
+from apps.commerce.products.models import BusinessAsset, Product
 
 
 @pytest.fixture

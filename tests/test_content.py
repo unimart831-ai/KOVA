@@ -6,9 +6,9 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
+from apps.core.accounts.models import User, UserProfile
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture

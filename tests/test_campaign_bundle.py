@@ -2,16 +2,16 @@
 
 import pytest
 
-from apps.content.campaign_bundle import (
+from apps.create.content.campaign_bundle import (
     audit_campaign_bundle,
     build_funnel_carousel_slides,
     ensure_campaign_bundle,
     required_bundle_roles,
 )
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
-from apps.products.models import Product
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture

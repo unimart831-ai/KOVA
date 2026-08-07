@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from apps.platforms.providers.instagram_facebook import (
+from apps.core.platforms.providers.instagram_facebook import (
     FacebookProvider,
     _graph_error_details,
     _normalize_fb_post_id,
@@ -53,7 +53,7 @@ def test_normalize_fb_post_id_prefixes_page():
     )
 
 
-@patch("apps.platforms.providers.instagram_facebook.httpx.Client")
+@patch("apps.core.platforms.providers.instagram_facebook.httpx.Client")
 def test_get_comments_skips_deprecated_statuses_error(mock_client_cls):
     provider = FacebookProvider()
     mock_client = MagicMock()

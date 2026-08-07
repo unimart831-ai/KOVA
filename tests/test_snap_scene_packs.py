@@ -1,11 +1,11 @@
 """Tests for Snap scene packs, credit estimator, and multi-angle gate."""
 
-from apps.products.photoroom_plus import (
+from apps.commerce.products.photoroom_plus import (
     multi_angle_polish_credit_enabled,
     select_plus_variants,
 )
-from apps.products.photoroom_preflight import PhotoQualityReport, build_repair_plan
-from apps.products.scene_packs import (
+from apps.commerce.products.photoroom_preflight import PhotoQualityReport, build_repair_plan
+from apps.commerce.products.scene_packs import (
     SCENE_PACK_FASHION_FLAT,
     SCENE_PACK_FOOD_DELIVERY,
     SCENE_PACK_MARKETPLACE_WHITE,
@@ -13,7 +13,7 @@ from apps.products.scene_packs import (
     scene_pack_export_budget,
     store_product_scene_pack,
 )
-from apps.products.snap_pipeline import estimate_polish_credits
+from apps.commerce.products.snap_pipeline import estimate_polish_credits
 
 
 class _Product:
@@ -149,7 +149,7 @@ def test_multi_angle_polish_credit_enabled_gate():
 
 
 def test_resolve_scene_vertical_mitumba_from_stall_brief():
-    from apps.products.scene_packs import resolve_scene_vertical
+    from apps.commerce.products.scene_packs import resolve_scene_vertical
 
     p = _Product(name="Blue Shirt", tags=["fashion"])
     vertical = resolve_scene_vertical(

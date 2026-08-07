@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 from django.urls import reverse
 
-from apps.accounts.models import User, UserProfile
-from apps.leads.models import NurtureSequence, NurtureStep
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.leads.models import NurtureSequence, NurtureStep
 
 
 @pytest.fixture

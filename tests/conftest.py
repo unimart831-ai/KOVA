@@ -14,7 +14,16 @@ os.environ.setdefault(
 import pytest
 from django.test import RequestFactory
 
-from apps.accounts.models import User, UserProfile
+from apps.core.accounts.models import User, UserProfile
+
+
+@pytest.fixture(autouse=True)
+def _celery_eager_in_tests(settings):
+    """Development disables eager Celery; tests must not hang on Redis."""
+    settings.CELERY_TASK_ALWAYS_EAGER = True
+    settings.CELERY_TASK_EAGER_PROPAGATES = True
+    settings.CELERY_BROKER_URL = ""
+    settings.CELERY_RESULT_BACKEND = ""
 
 
 @pytest.fixture

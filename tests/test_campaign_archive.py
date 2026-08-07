@@ -5,14 +5,14 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from apps.content.campaign_archive import (
+from apps.create.content.campaign_archive import (
     archive_expired_campaigns,
     default_campaign_expiry,
     is_campaign_publicly_live,
 )
-from apps.content.campaign_pages import resolve_public_campaign
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed, MarketingCampaign
+from apps.create.content.campaign_pages import resolve_public_campaign
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed, MarketingCampaign
 
 
 @pytest.mark.django_db

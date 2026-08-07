@@ -5,7 +5,7 @@ from datetime import date
 import pytest
 from django.urls import reverse
 
-from apps.briefs.models import DailyBrief
+from apps.create.briefs.models import DailyBrief
 
 
 @pytest.mark.django_db

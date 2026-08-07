@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.content.blueprint_pipeline import attach_blueprint_to_seed
-from apps.content.models import ContentSeed
-from apps.content.professional_templates import apply_professional_template_to_blueprint
-from apps.products.professional_assets import create_case_study, create_portfolio_item
-from apps.products.models import BusinessAsset
+from apps.core.accounts.models import User, UserProfile
+from apps.create.content.blueprint_pipeline import attach_blueprint_to_seed
+from apps.create.content.models import ContentSeed
+from apps.create.content.professional_templates import apply_professional_template_to_blueprint
+from apps.commerce.products.professional_assets import create_case_study, create_portfolio_item
+from apps.commerce.products.models import BusinessAsset
 
 
 @pytest.fixture

@@ -6,10 +6,10 @@ from unittest.mock import patch
 import pytest
 from django.utils import timezone
 
-from apps.billing.models import get_plan_limits
-from apps.partners.models import Commission, Partner, Referral
-from apps.partners.referral_billing import record_referral_payment_safe
-from apps.partners.tasks import calculate_monthly_commissions, check_partner_milestones
+from apps.core.billing.models import get_plan_limits
+from apps.core.partners.models import Commission, Partner, Referral
+from apps.core.partners.referral_billing import record_referral_payment_safe
+from apps.core.partners.tasks import calculate_monthly_commissions, check_partner_milestones
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def growth_partner(db, user):
 
 @pytest.fixture
 def referred_user(db):
-    from apps.accounts.models import User, UserProfile
+    from apps.core.accounts.models import User, UserProfile
 
     u = User.objects.create_user(
         username="referred",
@@ -88,12 +88,12 @@ class TestPartnerTasks:
         growth_partner.refresh_from_db()
         assert growth_partner.pending_payout_kes >= expected
 
-    @patch("apps.emails.tasks.send_partner_milestone_email.delay")
+    @patch("apps.messaging.emails.tasks.send_partner_milestone_email.delay")
     def test_milestone_awarded_at_threshold(self, mock_email, growth_partner, referred_user):
         for i in range(10):
             u = referred_user if i == 0 else None
             if i > 0:
-                from apps.accounts.models import User, UserProfile
+                from apps.core.accounts.models import User, UserProfile
 
                 u = User.objects.create_user(
                     username=f"ref{i}",

@@ -5,13 +5,13 @@ from io import BytesIO
 import pytest
 from PIL import Image, ImageDraw
 
-from apps.products.photoroom_guard import (
+from apps.commerce.products.photoroom_guard import (
     SAFE_HERO_VARIANT_ID,
     validate_cutout_output,
     uncertainty_is_high_for_category,
     should_block_beautify,
 )
-from apps.products.reel_curation import curate_reel_image_urls
+from apps.commerce.products.reel_curation import curate_reel_image_urls
 
 
 def _jpeg_with_subject(*, subject_ratio: float = 0.4) -> bytes:
@@ -77,7 +77,7 @@ def test_curate_single_product_returns_one_slide():
 
 
 def test_studio_safe_variant_in_catalog():
-    from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG
+    from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG
 
     spec = PLUS_VARIANT_CATALOG[SAFE_HERO_VARIANT_ID]
     assert spec.params.get("removeBackground") == "false"

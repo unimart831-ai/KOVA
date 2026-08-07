@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.bookings.models import BookingLink
-from apps.content.renderers import (
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.bookings.models import BookingLink
+from apps.create.content.renderers import (
     apply_blueprint_renderer,
     blueprint_quality_score,
     compose_content_from_slots,

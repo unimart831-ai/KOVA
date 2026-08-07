@@ -1,6 +1,6 @@
 """Professional carousel studio — curation, planning, image assignment."""
 
-from apps.content.carousel_studio import (
+from apps.create.content.carousel_studio import (
     assign_images_to_plan,
     build_professional_carousel_plan,
     curate_carousel_images,

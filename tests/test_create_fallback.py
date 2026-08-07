@@ -2,7 +2,7 @@
 
 import pytest
 
-from apps.agents.create_agent import build_fallback_posts
+from apps.create.agents.create_agent import build_fallback_posts
 
 
 @pytest.mark.django_db
@@ -15,7 +15,7 @@ class TestBuildFallbackPosts:
             description="A great widget for everyday use.",
             price=29.99,
         )
-        from apps.content.models import ContentSeed
+        from apps.create.content.models import ContentSeed
 
         seed = ContentSeed.objects.create(
             user=user,

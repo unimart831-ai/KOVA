@@ -10,10 +10,10 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 
-from apps.accounts.models import User, UserProfile
-from apps.products.business_assets import sync_asset_from_product
-from apps.products.models import BusinessAsset, Product
-from apps.products.owner_snap_whatsapp import (
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.products.business_assets import sync_asset_from_product
+from apps.commerce.products.models import BusinessAsset, Product
+from apps.commerce.products.owner_snap_whatsapp import (
     launch_owner_snap,
     parse_snap_caption,
     try_complete_pending_snap,
@@ -60,9 +60,9 @@ class TestOwnerSnapFlow:
     def setup_method(self):
         cache.clear()
 
-    @patch("apps.products.owner_snap_whatsapp.fire_task")
-    @patch("apps.content.safety.check_uploaded_images_safe")
-    @patch("apps.products.owner_snap_whatsapp._download_owner_media")
+    @patch("apps.commerce.products.owner_snap_whatsapp.fire_task")
+    @patch("apps.create.content.safety.check_uploaded_images_safe")
+    @patch("apps.commerce.products.owner_snap_whatsapp._download_owner_media")
     def test_launch_with_caption_creates_product_and_asset(
         self,
         mock_download,
@@ -101,9 +101,9 @@ class TestOwnerSnapFlow:
         assert key == "snap_awaiting_details"
         assert cache.get(f"wa_owner_snap:{snap_user.pk}") is not None
 
-    @patch("apps.products.owner_snap_whatsapp.fire_task")
-    @patch("apps.content.safety.check_uploaded_images_safe")
-    @patch("apps.products.owner_snap_whatsapp._download_owner_media")
+    @patch("apps.commerce.products.owner_snap_whatsapp.fire_task")
+    @patch("apps.create.content.safety.check_uploaded_images_safe")
+    @patch("apps.commerce.products.owner_snap_whatsapp._download_owner_media")
     def test_complete_pending_with_price_only(
         self,
         mock_download,

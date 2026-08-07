@@ -4,8 +4,8 @@ Tests for the AI agent system: configs, actions, task logging.
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.agents.models import AgentConfig, AgentAction
+from apps.core.accounts.models import User, UserProfile
+from apps.create.agents.models import AgentConfig, AgentAction
 
 
 @pytest.mark.django_db

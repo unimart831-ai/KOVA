@@ -9,9 +9,9 @@ use the deterministic no-LLM path so CI needs no network.
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.kova_page.hub import build_hub_context, resolve_business_model
-from apps.kova_page.salesperson import answer_customer_question
-from apps.products.models import Product
+from apps.commerce.links.hub.hub import build_hub_context, resolve_business_model
+from apps.commerce.links.hub.salesperson import answer_customer_question
+from apps.commerce.products.models import Product
 
 User = get_user_model()
 
@@ -111,7 +111,7 @@ class TestHubEndpoints:
     def test_ask_endpoint_returns_answer(self, client, owner, monkeypatch):
         _product(owner, "Dell Laptop", description="Great for programming", price=60000)
         # Force the deterministic path so the endpoint test needs no LLM.
-        monkeypatch.setattr("apps.kova_page.salesperson._llm_answer", lambda *a, **k: "")
+        monkeypatch.setattr("apps.commerce.links.hub.salesperson._llm_answer", lambda *a, **k: "")
         resp = client.post("/p/mary/ask/", {"q": "laptop for programming"})
         assert resp.status_code == 200
         data = resp.json()

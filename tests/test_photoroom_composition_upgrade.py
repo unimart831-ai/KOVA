@@ -5,14 +5,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.test import override_settings
 
-from apps.products.photoroom_api import beautify_mode_for_category
-from apps.products.photoroom_composition import (
+from apps.commerce.products.photoroom_api import beautify_mode_for_category
+from apps.commerce.products.photoroom_composition import (
     build_composition_prompt,
     build_market_day_composition_prompt,
     compose_via_native_api,
 )
-from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG
-from apps.products.photoroom_preflight import PhotoQualityReport, build_repair_plan
+from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG
+from apps.commerce.products.photoroom_preflight import PhotoQualityReport, build_repair_plan
 
 
 def _product(name: str):
@@ -64,8 +64,8 @@ def test_repair_plan_beautify_nocutout_before_smart_crop():
 
 
 def test_compose_via_native_api_passes_additional_images():
-    with patch("apps.products.photoroom_composition.photoroom_edit") as mock_edit:
-        from apps.products.photoroom_api import PhotoroomEditResult
+    with patch("apps.commerce.products.photoroom_composition.photoroom_edit") as mock_edit:
+        from apps.commerce.products.photoroom_api import PhotoroomEditResult
 
         mock_edit.return_value = PhotoroomEditResult(
             content=b"\xff\xd8\xff" + b"x" * 6000,
@@ -88,6 +88,6 @@ def test_beautify_mode_food_and_beauty():
 
 
 def test_basic_route_includes_studio_brand():
-    from apps.products.photoroom_basic import BASIC_ROUTE_VARIANT_IDS
+    from apps.commerce.products.photoroom_basic import BASIC_ROUTE_VARIANT_IDS
 
     assert "studio_brand" in BASIC_ROUTE_VARIANT_IDS

@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User
-from apps.content.blueprints import (
+from apps.core.accounts.models import User
+from apps.create.content.blueprints import (
     build_blueprint_from_asset,
     validate_blueprint,
 )
-from apps.products.models import BusinessAsset
+from apps.commerce.products.models import BusinessAsset
 
 
 @pytest.fixture

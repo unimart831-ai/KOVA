@@ -1,6 +1,6 @@
 """Reel multi-scene image generation."""
 
-from apps.content.image_gen import build_reel_scene_prompts
+from apps.create.content.image_gen import build_reel_scene_prompts
 
 
 def test_build_reel_scene_prompts_returns_distinct_scenes():

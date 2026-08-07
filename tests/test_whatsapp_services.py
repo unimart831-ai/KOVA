@@ -1,6 +1,6 @@
 """Unit tests for WhatsApp services helpers (no API calls)."""
 
-from apps.whatsapp.services import normalize_wa_id, variables_to_components
+from apps.messaging.whatsapp.services import normalize_wa_id, variables_to_components
 
 
 def test_normalize_wa_id_kenya_local():

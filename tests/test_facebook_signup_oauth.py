@@ -7,7 +7,7 @@ from django.contrib.messages import get_messages
 from django.test import Client
 from django.urls import reverse
 
-from apps.accounts.facebook_oauth import (
+from apps.core.accounts.facebook_oauth import (
     FacebookOAuthError,
     _extract_facebook_phone,
     facebook_synthetic_email,
@@ -18,9 +18,9 @@ from apps.accounts.facebook_oauth import (
     start_facebook_platform_oauth,
     validate_facebook_callback_state,
 )
-from apps.accounts.models import User
-from apps.platforms.models import SocialAccount
-from apps.platforms.providers.base import OAuthResult
+from apps.core.accounts.models import User
+from apps.core.platforms.models import SocialAccount
+from apps.core.platforms.providers.base import OAuthResult
 
 
 @pytest.fixture
@@ -281,7 +281,7 @@ class TestFacebookOAuthCallback:
         nonce = client.session["oauth_state_facebook"]
         return sign_facebook_oauth_state(nonce, mode)
 
-    @patch("apps.platforms.views.get_provider")
+    @patch("apps.core.platforms.views.get_provider")
     def test_callback_success_signup_redirects_onboarding(self, mock_get_provider, settings, fb_result):
         settings.FACEBOOK_APP_ID = "app123"
         settings.FACEBOOK_APP_SECRET = "secret456"
@@ -297,7 +297,7 @@ class TestFacebookOAuthCallback:
         assert "/accounts/onboarding/" in resp["Location"] or "phone" in resp["Location"]
         assert client.session.get("_auth_user_id")
 
-    @patch("apps.platforms.views.get_provider")
+    @patch("apps.core.platforms.views.get_provider")
     def test_callback_no_email_redirects_phone_capture(
         self, mock_get_provider, settings,
     ):
@@ -328,7 +328,7 @@ class TestFacebookOAuthCallback:
         user = User.objects.get(email=facebook_synthetic_email("123456"))
         assert SocialAccount.objects.filter(user=user, platform="facebook").exists()
 
-    @patch("apps.platforms.views.get_provider")
+    @patch("apps.core.platforms.views.get_provider")
     def test_callback_invalid_state_redirects_signup_with_message(
         self, mock_get_provider, settings,
     ):

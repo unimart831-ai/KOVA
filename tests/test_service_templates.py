@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User
-from apps.content.service_templates import (
+from apps.core.accounts.models import User
+from apps.create.content.service_templates import (
     apply_service_template_to_blueprint,
     pick_service_template,
     service_template_prompt_lines,
 )
-from apps.products.models import BusinessAsset
+from apps.commerce.products.models import BusinessAsset
 
 
 @pytest.fixture

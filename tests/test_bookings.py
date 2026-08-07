@@ -18,9 +18,9 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.bookings.models import Booking, BookingLink
-from apps.bookings.slots import free_slots
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.bookings.models import Booking, BookingLink
+from apps.commerce.bookings.slots import free_slots
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -271,54 +271,6 @@ class TestOwnerViews:
         assert b.status == "cancelled"
 
 
-# ── Engage Agent intent detection ──────────────────────────────────────────
-
-
-class TestBookingIntent:
-    @pytest.mark.parametrize("msg", [
-        "can I book braids saturday?",
-        "are you open thursday?",
-        "I want an appointment please",
-        "any time available tomorrow?",
-        "what time is free?",
-        "reserve a slot for me",
-    ])
-    def test_detects_intent(self, msg):
-        from apps.agents.booking_intent import detect_booking_intent
-        assert detect_booking_intent(msg) is True
-
-    @pytest.mark.parametrize("msg", [
-        "love your work!",
-        "how much do you charge",
-        "where are you located",
-        "",
-    ])
-    def test_no_false_positives(self, msg):
-        from apps.agents.booking_intent import detect_booking_intent
-        assert detect_booking_intent(msg) is False
-
-    def test_augment_appends_booking_link(self, owner, link):
-        from apps.agents.booking_intent import augment_reply_with_booking_link
-        out = augment_reply_with_booking_link(
-            "Sure! We have slots open.", owner, "can I book?",
-        )
-        assert link.slug in out
-        assert "Tap to book" in out
-
-    def test_augment_skips_when_no_link(self, db):
-        from apps.agents.booking_intent import augment_reply_with_booking_link
-        u = User.objects.create_user(
-            username="noLink", email="nolink@kova.ai", password="x",
-        )
-        out = augment_reply_with_booking_link("Sure!", u, "book please")
-        assert out == "Sure!"
-
-    def test_augment_skips_when_no_intent(self, owner, link):
-        from apps.agents.booking_intent import augment_reply_with_booking_link
-        out = augment_reply_with_booking_link("Hello!", owner, "thanks!")
-        assert out == "Hello!"
-
-
 # ── Revenue rollup ─────────────────────────────────────────────────────────
 
 
@@ -342,7 +294,7 @@ class TestRevenueRollup:
             scheduled_at=timezone.now() + timedelta(days=3),
             status="completed",
         )
-        from apps.analytics.revenue import get_revenue_summary
+        from apps.insight.analytics.revenue import get_revenue_summary
         summary = get_revenue_summary(owner, days=30)
         assert summary["totals"]["booking_revenue"] == Decimal("2000")
         assert summary["totals"]["booking_count"] == 1
@@ -357,7 +309,7 @@ class TestRevenueRollup:
             scheduled_at=timezone.now() + timedelta(days=2),
             status="cancelled",
         )
-        from apps.analytics.revenue import get_revenue_summary
+        from apps.insight.analytics.revenue import get_revenue_summary
         summary = get_revenue_summary(owner, days=30)
         assert summary["totals"]["booking_revenue"] == Decimal("0")
 

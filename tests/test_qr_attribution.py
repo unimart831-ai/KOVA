@@ -17,8 +17,8 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.qr_attribution.models import QRCode, QRScan, WalkInEvent
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.qr_attribution.models import QRCode, QRScan, WalkInEvent
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -279,7 +279,7 @@ class TestRevenueRollup:
         WalkInEvent.objects.create(
             user=owner, attribution_source="flyer", revenue=Decimal("1500"),
         )
-        from apps.analytics.revenue import get_revenue_summary
+        from apps.insight.analytics.revenue import get_revenue_summary
         summary = get_revenue_summary(owner, days=30)
         assert summary["totals"]["walkin_revenue"] == Decimal("6500")
         assert summary["totals"]["walkin_count"] == 2
@@ -289,7 +289,7 @@ class TestRevenueRollup:
         WalkInEvent.objects.create(
             user=owner, attribution_source="instagram", revenue=Decimal("4000"),
         )
-        from apps.analytics.revenue import get_revenue_summary
+        from apps.insight.analytics.revenue import get_revenue_summary
         summary = get_revenue_summary(owner, days=30)
         ig_row = next(
             (r for r in summary["platform_revenue"]
@@ -302,7 +302,7 @@ class TestRevenueRollup:
         WalkInEvent.objects.create(
             user=owner, attribution_source="word_of_mouth", revenue=Decimal("2000"),
         )
-        from apps.analytics.revenue import get_revenue_summary
+        from apps.insight.analytics.revenue import get_revenue_summary
         summary = get_revenue_summary(owner, days=30)
         # Doesn't pollute platform_revenue — but DOES show in walkin_by_source
         assert all(

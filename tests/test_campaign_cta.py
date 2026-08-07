@@ -2,14 +2,14 @@
 
 import pytest
 
-from apps.content.campaign_cta import (
+from apps.create.content.campaign_cta import (
     apply_default_campaign_cta,
     campaign_cta_label,
     resolve_post_commerce_url,
 )
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed, Post
-from apps.products.models import Product
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed, Post
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture

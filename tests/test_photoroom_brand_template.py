@@ -1,11 +1,11 @@
 """Tests for Photoroom seller brand template (Phase D)."""
 
-from apps.products.photoroom_brand_template import (
+from apps.commerce.products.photoroom_brand_template import (
     apply_brand_template,
     build_photoroom_brand_template,
     stable_ai_seed,
 )
-from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG
+from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG
 
 
 class _Profile:

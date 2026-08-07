@@ -2,13 +2,16 @@
 
 from unittest.mock import MagicMock, patch
 
-from apps.products.photoroom_composition import _compose_grid_local
-from apps.products.photoroom_photofix import should_run_photofix_for_commerce
-from apps.products.photoroom_video import reel_should_use_photoroom_video, video_generation_enabled
+from django.test import override_settings
+
+from apps.commerce.products.photoroom_composition import _compose_grid_local
+from apps.commerce.products.photoroom_preflight import should_run_photofix_for_commerce
+from apps.commerce.products.photoroom_video import reel_should_use_photoroom_video, video_generation_enabled
 
 
+@override_settings(PHOTOROOM_PHOTOFIX_ALWAYS=False)
 def test_should_run_photofix_for_snap():
-    with patch("apps.products.photoroom_photofix.photofix_enabled", return_value=True):
+    with patch("apps.commerce.products.photoroom_preflight.photofix_enabled", return_value=True):
         assert should_run_photofix_for_commerce(commerce_source="snap") is True
         assert should_run_photofix_for_commerce(commerce_source="batch_snap") is True
         assert should_run_photofix_for_commerce(commerce_source=None) is False
@@ -38,9 +41,9 @@ def test_video_enabled_in_sandbox():
 def test_reel_prefers_photoroom_when_not_forced_ffmpeg():
     post = MagicMock()
     post.visual_metadata = {}
-    with patch("apps.products.photoroom_video.video_generation_enabled", return_value=True):
+    with patch("apps.commerce.products.photoroom_video.video_generation_enabled", return_value=True):
         with patch("django.conf.settings.PHOTOROOM_REEL_USE_VIDEO_API", True, create=True):
             assert reel_should_use_photoroom_video(post) is True
     post.visual_metadata = {"reel_compose_backend": "ffmpeg"}
-    with patch("apps.products.photoroom_video.video_generation_enabled", return_value=True):
+    with patch("apps.commerce.products.photoroom_video.video_generation_enabled", return_value=True):
         assert reel_should_use_photoroom_video(post) is False

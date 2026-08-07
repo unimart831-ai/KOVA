@@ -15,8 +15,8 @@ Wire-up tests (Commit 2: auto_respond + form gating) and undo tests
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.agents.engage_routing import (
+from apps.core.accounts.models import User, UserProfile
+from apps.create.agents.engage_routing import (
     RoutingAction,
     SafetyContext,
     clamp_level_to_plan,
@@ -239,14 +239,14 @@ class TestAutoEngageMigration:
 @pytest.mark.django_db
 class TestSingleReplyPayload:
     def test_parse_payload_handles_valid_json(self):
-        from apps.agents.engage_agent import _parse_reply_payload
+        from apps.create.agents.engage_agent import _parse_reply_payload
         out = _parse_reply_payload('{"reply":"Hi!", "confidence":0.92, "intent":"praise", "action":"reply", "reasoning":"clear"}')
         assert out["reply"] == "Hi!"
         assert out["confidence"] == 0.92
         assert out["intent"] == "praise"
 
     def test_parse_payload_falls_back_for_non_json(self):
-        from apps.agents.engage_agent import _parse_reply_payload
+        from apps.create.agents.engage_agent import _parse_reply_payload
         out = _parse_reply_payload("Just a string, not JSON")
         # Falls back to low-confidence draft path
         assert out["reply"] == "Just a string, not JSON"
@@ -254,24 +254,24 @@ class TestSingleReplyPayload:
         assert out["action"] == "reply"
 
     def test_parse_payload_strips_code_fences(self):
-        from apps.agents.engage_agent import _parse_reply_payload
+        from apps.create.agents.engage_agent import _parse_reply_payload
         raw = '```json\n{"reply":"Open till 11pm", "confidence":0.88, "intent":"hours", "action":"reply", "reasoning":"in profile"}\n```'
         out = _parse_reply_payload(raw)
         assert out["reply"] == "Open till 11pm"
         assert out["confidence"] == 0.88
 
     def test_parse_payload_clamps_confidence(self):
-        from apps.agents.engage_agent import _parse_reply_payload
+        from apps.create.agents.engage_agent import _parse_reply_payload
         out = _parse_reply_payload('{"reply":"Hi", "confidence":5.0, "intent":"praise", "action":"reply"}')
         assert out["confidence"] == 1.0
 
     def test_parse_payload_sanitizes_unknown_intent(self):
-        from apps.agents.engage_agent import _parse_reply_payload
+        from apps.create.agents.engage_agent import _parse_reply_payload
         out = _parse_reply_payload('{"reply":"Hi", "confidence":0.5, "intent":"bogus", "action":"reply"}')
         assert out["intent"] == "other"
 
     def test_empty_response_returns_skip_payload(self):
-        from apps.agents.engage_agent import _parse_reply_payload
+        from apps.create.agents.engage_agent import _parse_reply_payload
         out = _parse_reply_payload("")
         assert out["action"] == "no_reply"
         assert out["confidence"] == 0.0
@@ -284,8 +284,8 @@ class TestSingleReplyPayload:
 def engage_user(db):
     """A Growth-tier user with a connected social account and a candidate
     interaction. Returns (user, interaction)."""
-    from apps.platforms.models import SocialAccount
-    from apps.engage.models import Interaction
+    from apps.core.platforms.models import SocialAccount
+    from apps.messaging.engage.models import Interaction
 
     u = User.objects.create_user(
         username="engage", email="engage@b.com", password="P1!",
@@ -324,18 +324,18 @@ class TestAutoRespondRouting:
     without actually hitting platform APIs."""
 
     def test_high_confidence_auto_sends_when_flag_on(self, engage_user, settings, monkeypatch):
-        from apps.engage.models import Interaction
+        from apps.messaging.engage.models import Interaction
         u, account, interaction = engage_user
 
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
 
         # Stub the actual platform send so we don't hit Instagram in tests.
         monkeypatch.setattr(
-            "apps.agents.engage_agent._send_reply_to_platform",
+            "apps.create.agents.engage_agent._send_reply_to_platform",
             lambda i: {"ok": True, "platform_reply_id": "stub_reply_id", "error": ""},
         )
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         assert counts["auto_sent"] == 1
         interaction.refresh_from_db()
@@ -344,12 +344,12 @@ class TestAutoRespondRouting:
         assert interaction.responded_at is not None
 
     def test_high_confidence_falls_back_to_draft_when_flag_off(self, engage_user, settings):
-        from apps.engage.models import Interaction
+        from apps.messaging.engage.models import Interaction
         u, account, interaction = engage_user
 
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = False
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         assert counts["auto_sent"] == 0
         assert counts["drafted"] == 1
@@ -359,14 +359,14 @@ class TestAutoRespondRouting:
         assert interaction.ai_reply_sent == ""
 
     def test_low_confidence_escalates(self, engage_user, settings):
-        from apps.engage.models import Interaction
+        from apps.messaging.engage.models import Interaction
         u, _, interaction = engage_user
         interaction.ai_confidence = 0.30
         interaction.save(update_fields=["ai_confidence"])
 
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         assert counts["escalated"] == 1
         assert counts["auto_sent"] == 0
@@ -380,11 +380,11 @@ class TestAutoRespondRouting:
         # If the platform send WERE called, this would crash the test.
         # Stays uncalled because safety flag forces DRAFT_FOR_REVIEW.
         monkeypatch.setattr(
-            "apps.agents.engage_agent._send_reply_to_platform",
+            "apps.create.agents.engage_agent._send_reply_to_platform",
             lambda i: pytest.fail("Should not have auto-sent with safety flag"),  # noqa
         )
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         assert counts["auto_sent"] == 0
         assert counts["drafted"] == 1
@@ -395,7 +395,7 @@ class TestAutoRespondRouting:
         u.profile.save(update_fields=["engage_autonomy_level"])
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         assert counts == {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
 
@@ -405,7 +405,7 @@ class TestAutoRespondRouting:
         u.profile.save(update_fields=["emergency_pause"])
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         assert counts == {"auto_sent": 0, "drafted": 0, "escalated": 0, "skipped": 0}
 
@@ -419,11 +419,11 @@ class TestAutoRespondRouting:
         u.profile.save(update_fields=["plan"])
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
         monkeypatch.setattr(
-            "apps.agents.engage_agent._send_reply_to_platform",
+            "apps.create.agents.engage_agent._send_reply_to_platform",
             lambda i: pytest.fail("Should not have auto-sent after plan downgrade"),
         )
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         # Effective level becomes SUGGEST, so draft (not auto-send)
         assert counts["auto_sent"] == 0
@@ -432,7 +432,7 @@ class TestAutoRespondRouting:
     def test_dm_never_auto_sends_v2(self, engage_user, settings, monkeypatch):
         """DM auto-send is deliberately deferred. Even at confidence 1.0
         with the flag on, _send_reply_to_platform returns False for DMs."""
-        from apps.engage.models import Interaction
+        from apps.messaging.engage.models import Interaction
         u, _, interaction = engage_user
         interaction.interaction_type = Interaction.InteractionType.DM
         interaction.ai_confidence = 1.0
@@ -440,7 +440,7 @@ class TestAutoRespondRouting:
 
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         # _send_reply_to_platform returns False for DMs -> drafted (fallback)
         assert counts["auto_sent"] == 0
@@ -464,14 +464,14 @@ class TestSettingsFormTierGating:
         return u
 
     def test_starter_only_sees_off_and_suggest(self):
-        from apps.accounts.forms import BrandProfileForm
+        from apps.core.accounts.forms import BrandProfileForm
         u = self._make_user("starter")
         form = BrandProfileForm(instance=u.profile)
         choices = dict(form.fields["engage_autonomy_level"].choices)
         assert set(choices.keys()) == {"off", "suggest"}
 
     def test_growth_sees_through_graduated(self):
-        from apps.accounts.forms import BrandProfileForm
+        from apps.core.accounts.forms import BrandProfileForm
         u = self._make_user("growth")
         form = BrandProfileForm(instance=u.profile)
         choices = dict(form.fields["engage_autonomy_level"].choices)
@@ -479,7 +479,7 @@ class TestSettingsFormTierGating:
         assert "aggressive" not in choices
 
     def test_agency_sees_all_levels(self):
-        from apps.accounts.forms import BrandProfileForm
+        from apps.core.accounts.forms import BrandProfileForm
         u = self._make_user("agency")
         form = BrandProfileForm(instance=u.profile)
         choices = dict(form.fields["engage_autonomy_level"].choices)
@@ -488,7 +488,7 @@ class TestSettingsFormTierGating:
     def test_starter_post_with_graduated_rejected(self):
         """Defence in depth: even if the form is tampered, the server-side
         clean rejects an out-of-plan level."""
-        from apps.accounts.forms import BrandProfileForm
+        from apps.core.accounts.forms import BrandProfileForm
         u = self._make_user("starter")
         # Build a minimal valid form data POST
         form = BrandProfileForm(
@@ -535,17 +535,17 @@ class TestEngageReplyCreation:
 
     def test_auto_send_creates_engage_reply_with_undo_window(self, engage_user, settings, monkeypatch):
         from datetime import timedelta
-        from apps.engage.models import EngageReply
+        from apps.messaging.engage.models import EngageReply
         u, _, interaction = engage_user
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
 
         # Stub the platform send to return a real comment_id
         monkeypatch.setattr(
-            "apps.agents.engage_agent._send_reply_to_platform",
+            "apps.create.agents.engage_agent._send_reply_to_platform",
             lambda i: {"ok": True, "platform_reply_id": "fb_comment_42", "error": ""},
         )
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         assert counts["auto_sent"] == 1
 
@@ -563,16 +563,16 @@ class TestEngageReplyCreation:
         assert reply.can_undo() is True
 
     def test_send_failure_creates_no_engage_reply(self, engage_user, settings, monkeypatch):
-        from apps.engage.models import EngageReply
+        from apps.messaging.engage.models import EngageReply
         u, _, _ = engage_user
         settings.ENGAGE_GRADUATED_AUTONOMY_ENABLED = True
 
         monkeypatch.setattr(
-            "apps.agents.engage_agent._send_reply_to_platform",
+            "apps.create.agents.engage_agent._send_reply_to_platform",
             lambda i: {"ok": False, "platform_reply_id": "", "error": "API 500"},
         )
 
-        from apps.agents.engage_agent import auto_respond
+        from apps.create.agents.engage_agent import auto_respond
         counts = auto_respond(u)
         # Failed send falls back to drafted, no audit row written
         assert counts["auto_sent"] == 0
@@ -586,7 +586,7 @@ class TestUndoWindow:
 
     def _make_reply(self, engage_user, *, minutes_ago=0):
         from datetime import timedelta
-        from apps.engage.models import EngageReply
+        from apps.messaging.engage.models import EngageReply
         from django.utils import timezone as tz
         _, _, interaction = engage_user
         reply = EngageReply.objects.create(
@@ -628,7 +628,7 @@ class TestUndoView:
 
     def test_undo_within_window_calls_provider_delete(self, engage_user, client, monkeypatch):
         from datetime import timedelta
-        from apps.engage.models import EngageReply, Interaction
+        from apps.messaging.engage.models import EngageReply, Interaction
         from django.utils import timezone as tz
         u, _, interaction = engage_user
         reply = EngageReply.objects.create(
@@ -654,7 +654,7 @@ class TestUndoView:
             delete_comment = staticmethod(fake_delete)
 
         monkeypatch.setattr(
-            "apps.platforms.providers.registry.get_provider",
+            "apps.core.platforms.providers.registry.get_provider",
             lambda platform: FakeProvider,
         )
 
@@ -670,7 +670,7 @@ class TestUndoView:
 
     def test_undo_after_window_returns_422(self, engage_user, client):
         from datetime import timedelta
-        from apps.engage.models import EngageReply
+        from apps.messaging.engage.models import EngageReply
         from django.utils import timezone as tz
         u, _, interaction = engage_user
         reply = EngageReply.objects.create(
@@ -692,7 +692,7 @@ class TestCorrectionView:
 
     def test_correction_persists_text_and_reason(self, engage_user, client):
         from datetime import timedelta
-        from apps.engage.models import EngageReply
+        from apps.messaging.engage.models import EngageReply
         from django.utils import timezone as tz
         u, _, interaction = engage_user
         reply = EngageReply.objects.create(
@@ -717,7 +717,7 @@ class TestCorrectionView:
 
     def test_empty_correction_text_rejected(self, engage_user, client):
         from datetime import timedelta
-        from apps.engage.models import EngageReply
+        from apps.messaging.engage.models import EngageReply
         from django.utils import timezone as tz
         u, _, interaction = engage_user
         reply = EngageReply.objects.create(
@@ -742,7 +742,7 @@ class TestCorrectionFewShot:
 
     def test_recent_corrections_for_brand_returns_recent_corrections(self, engage_user):
         from datetime import timedelta
-        from apps.engage.models import EngageReply
+        from apps.messaging.engage.models import EngageReply
         from django.utils import timezone as tz
         u, _, interaction = engage_user
         EngageReply.objects.create(
@@ -756,13 +756,13 @@ class TestCorrectionFewShot:
             correction_reason="tone",
             corrected_at=tz.now(),
         )
-        from apps.agents.engage_agent import _recent_corrections_for_brand
+        from apps.create.agents.engage_agent import _recent_corrections_for_brand
         out = _recent_corrections_for_brand(u)
         assert "Tunaomba subira" in out
         assert "Wrong tone" in out  # the get_correction_reason_display
 
     def test_no_corrections_returns_empty_string(self, engage_user):
-        from apps.agents.engage_agent import _recent_corrections_for_brand
+        from apps.create.agents.engage_agent import _recent_corrections_for_brand
         u, _, _ = engage_user
         assert _recent_corrections_for_brand(u) == ""
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 import pytest
 from django.urls import reverse
 
-from apps.leads.bridges import create_lead_from_whatsapp_conversation, find_lead_for_whatsapp_conversation
-from apps.leads.models import Lead
-from apps.platforms.models import SocialAccount
-from apps.whatsapp.models import WhatsAppConversation
+from apps.commerce.leads.bridges import create_lead_from_whatsapp_conversation, find_lead_for_whatsapp_conversation
+from apps.commerce.leads.models import Lead
+from apps.core.platforms.models import SocialAccount
+from apps.messaging.whatsapp.models import WhatsAppConversation
 
 
 @pytest.mark.django_db

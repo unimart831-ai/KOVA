@@ -7,18 +7,18 @@ from django.shortcuts import render, redirect
 from django.urls import include, path, re_path
 from django.views.generic.base import RedirectView
 
-from apps.links.views import public_page, public_form_submit, public_link_click
-from apps.products.commerce_views import (
+from apps.commerce.links.views import public_page, public_form_submit, public_link_click
+from apps.commerce.products.commerce_views import (
     commerce_payment_status,
     public_commerce_link,
     public_commerce_pay,
     public_shop_index,
     public_whatsapp_order,
 )
-from apps.content.views.campaign_pages import public_campaign_page
-from apps.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
-from apps.partners.views import referral_redirect
-from apps.platforms.facebook_data_deletion_views import (
+from apps.create.content.views.campaign_pages import public_campaign_page
+from apps.commerce.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
+from apps.core.partners.views import referral_redirect
+from apps.core.platforms.facebook_data_deletion_views import (
     facebook_data_deletion_instructions,
     facebook_data_deletion_status,
 )
@@ -31,8 +31,8 @@ admin.site.index_title = "Administration"
 def landing_page(request):
     if request.user.is_authenticated:
         return redirect("brief:home")
-    from apps.accounts.product_voice import marketing_voice_context
-    from apps.billing.models import (
+    from apps.core.accounts.product_voice import marketing_voice_context
+    from apps.core.billing.models import (
         TRIAL_CAMPAIGN_LIMIT,
         get_campaign_addon_packs,
         get_plan_limits,
@@ -66,7 +66,7 @@ def compare_page(request, slug):
     template = _COMPARE_TEMPLATES.get(slug)
     if not template:
         return redirect("landing")
-    from apps.billing.models import get_public_plan_limits
+    from apps.core.billing.models import get_public_plan_limits
     return render(request, template, {"all_plans": get_public_plan_limits()})
 
 
@@ -96,7 +96,7 @@ def health_check_deep(request):
     """Deep probe — DB, Redis, Celery broker, media/LLM keys."""
     from django.http import JsonResponse
 
-    from apps.system.health_checks import run_health_checks
+    from apps.core.system.health_checks import run_health_checks
 
     report = run_health_checks(deep=True)
     status = 200 if report.get("ok") else 503
@@ -140,12 +140,9 @@ urlpatterns = [
     ),
     path("campus-rep/", legal_page("campus_rep.html"), name="campus_rep"),
     # Public help / learn section (no login required)
-    path("learn/", include("apps.help.urls_public")),
+    path("learn/", include("apps.insight.help.urls_public")),
     # Public SEO blog (Educator agent output — no login required)
-    path("blog/", include("apps.help.urls_blog")),
-    # Growth Partners (public + authenticated)
-    path("partners/", include("apps.partners.urls")),
-    path("r/<str:referral_code>/", referral_redirect, name="referral_redirect"),
+    path("blog/", include("apps.insight.help.urls_blog")),
     # Public Kova Link pages (no login required)
     path("k/<slug:slug>/", public_page, name="public_page"),
     path("k/<slug:slug>/click/<uuid:link_id>/", public_link_click, name="public_link_click"),
@@ -155,25 +152,25 @@ urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
     # Kova accounts routes before allauth so /accounts/facebook/login/ uses platform OAuth
-    path("accounts/", include("apps.accounts.urls")),
-    # Auth (allauth) — legacy social callbacks; after apps.accounts for path precedence
+    path("accounts/", include("apps.core.accounts.urls")),
+    # Auth (allauth) — legacy social callbacks; after apps.core.accounts for path precedence
     path("accounts/", include("allauth.urls")),
-    path("brief/", include("apps.briefs.urls")),
-    path("calendar/", include("apps.calendar_intel.urls")),
-    path("content/", include("apps.content.urls")),
-    path("platforms/", include("apps.platforms.urls")),
-    path("profile-audit/", include("apps.profile_audit.urls")),
-    path("agents/", include("apps.agents.urls")),
-    path("analytics/", include("apps.analytics.urls")),
-    path("engage/", include("apps.engage.urls")),
-    path("billing/", include("apps.billing.urls")),
-    path("notifications/", include("apps.notifications.urls")),
-    path("emails/", include("apps.emails.urls")),
-    path("help/", include("apps.help.urls")),
-    path("teams/", include("apps.teams.urls")),
-    path("links/", include("apps.links.urls")),
-    path("leads/", include("apps.leads.urls")),
-    path("products/", include("apps.products.urls")),
+    path("brief/", include("apps.create.briefs.urls")),
+    path("calendar/", include("apps.create.briefs.calendar_urls")),
+    path("content/", include("apps.create.content.urls")),
+    path("platforms/", include("apps.core.platforms.urls")),
+    path("profile-audit/", include("apps.core.platforms.audit_urls")),
+    path("agents/", include("apps.create.agents.urls")),
+    path("analytics/", include("apps.insight.analytics.urls")),
+    path("engage/", include("apps.messaging.engage.urls")),
+    path("billing/", include("apps.core.billing.urls")),
+    path("notifications/", include("apps.messaging.notifications.urls")),
+    path("emails/", include("apps.messaging.emails.urls")),
+    path("help/", include("apps.insight.help.urls")),
+    path("teams/", include("apps.core.teams.urls")),
+    path("links/", include("apps.commerce.links.urls")),
+    path("leads/", include("apps.commerce.leads.urls")),
+    path("products/", include("apps.commerce.products.urls")),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", commerce_sitemap_xml, name="sitemap"),
     path(
@@ -206,22 +203,37 @@ urlpatterns = [
         public_whatsapp_order,
         name="public_whatsapp_order",
     ),
-    path("whatsapp/", include("apps.whatsapp.urls")),
-    # QR codes + walk-in attribution (Phase 2 W5-6). Mounted at root
-    # because it owns both /qr/ and /walkin/ namespaces.
-    path("", include("apps.qr_attribution.urls")),
-    # Booking integration (Phase 2 W7-8). Owns /bookings/ and /book/.
-    path("", include("apps.bookings.urls")),
-    # Review request loop (Phase 3 W9). Owns /reviews/.
-    path("", include("apps.reviews.urls")),
-    # Kova Link Page — public business profile + conversion page.
-    path("p/", include("apps.kova_page.urls")),
-    path("dashboard/", include("apps.admin_dashboard.urls")),
-    path("api/v1/", include("apps.api.urls")),
-    path("api/v1/partner/", include("apps.api.partner_urls")),
+    path("whatsapp/", include("apps.messaging.whatsapp.urls")),
+    path("p/", include("apps.commerce.links.hub.urls")),
+    path("dashboard/", include("apps.core.admin_dashboard.urls")),
+    path("api/v1/", include("apps.insight.api.urls")),
     # OpenAPI schema + interactive docs
-    path("api/schema/", include("apps.api.schema_urls")),
+    path("api/schema/", include("apps.insight.api.schema_urls")),
 ]
+
+from apps.core.features import feature_enabled
+
+if feature_enabled("partners"):
+    urlpatterns += [
+        path("partners/", include("apps.core.partners.urls")),
+        path("r/<str:referral_code>/", referral_redirect, name="referral_redirect"),
+        path("api/v1/partner/", include("apps.insight.api.partner_urls")),
+    ]
+
+if feature_enabled("qr_attribution"):
+    urlpatterns += [
+        path("", include("apps.commerce.qr_attribution.urls")),
+    ]
+
+if feature_enabled("bookings"):
+    urlpatterns += [
+        path("", include("apps.commerce.bookings.urls")),
+    ]
+
+if feature_enabled("reviews"):
+    urlpatterns += [
+        path("", include("apps.commerce.reviews.urls")),
+    ]
 
 if settings.DEBUG:
     urlpatterns += staticfiles_urlpatterns()

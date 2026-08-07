@@ -79,7 +79,7 @@ python manage.py shell
 ```
 
 ```python
-from apps.accounts.models import User
+from apps.core.accounts.models import User
 user = User.objects.create_user(email='test@test.com', password='testpass123', full_name='Test User')
 user.plan = 'agency'  # Set to highest plan to test all features
 user.save()
@@ -97,7 +97,7 @@ Then open: `http://127.0.0.1:8000/`
 
 ```python
 # In Django shell — create test data for various features
-from apps.accounts.models import User, UserProfile
+from apps.core.accounts.models import User, UserProfile
 
 user = User.objects.get(email='test@test.com')
 profile = user.profile  # Auto-created
@@ -372,7 +372,7 @@ Test each of the 10 platforms:
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 1 | Manual trigger | Via Django shell: `from apps.agents.research_agent import discover_trends; discover_trends(user)` | Returns trending topics for user's industry |
+| 1 | Manual trigger | Via Django shell: `from apps.create.agents.research_agent import discover_trends; discover_trends(user)` | Returns trending topics for user's industry |
 | 2 | Content angles | `generate_content_angles(user, 'AI in marketing')` | Returns specific content angle suggestions |
 | 3 | Plan gating | Starter user | Research Agent not available |
 | 4 | Task execution | Trigger `run_daily_research` Celery task | Trends discovered for all eligible users |
@@ -1164,7 +1164,7 @@ Test each of the 10 platforms:
 In development (`CELERY_TASK_ALWAYS_EAGER=True`), tasks run synchronously. Test via Django shell:
 
 ```python
-from apps.content.tasks import check_and_publish_due_posts
+from apps.create.content.tasks import check_and_publish_due_posts
 result = check_and_publish_due_posts()
 # Runs immediately, returns result
 ```
@@ -1456,7 +1456,7 @@ Access Django Admin at `/admin/` (superuser required). Verify all 50+ models are
 For manual testing, create users at each plan level:
 
 ```python
-from apps.accounts.models import User
+from apps.core.accounts.models import User
 
 # Create test users for each plan
 for plan in ['starter', 'growth', 'pro', 'agency']:

@@ -8,7 +8,7 @@ crashing Post.objects.create() and silently dropping the whole batch.
 
 import pytest
 
-from apps.agents.schemas import PostDraft
+from apps.create.agents.schemas import PostDraft
 
 
 class TestPredictedScoreCoercion:

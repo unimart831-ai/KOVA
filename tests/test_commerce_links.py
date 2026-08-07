@@ -3,14 +3,14 @@
 import pytest
 from django.urls import reverse
 
-from apps.bookings.models import BookingLink
-from apps.products.commerce_links import (
+from apps.commerce.bookings.models import BookingLink
+from apps.commerce.products.commerce_links import (
     commerce_link_path,
     ensure_commerce_slug,
     resolve_public_product,
 )
-from apps.products.product_cta import resolve_product_cta_url
-from apps.products.models import Product
+from apps.commerce.products.product_cta import resolve_product_cta_url
+from apps.commerce.products.models import Product
 
 
 @pytest.mark.django_db

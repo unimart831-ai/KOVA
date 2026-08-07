@@ -2,7 +2,7 @@
 
 import pytest
 
-from apps.content.video_compose import (
+from apps.create.content.video_compose import (
     REEL_TRANSITIONS,
     _build_xfade_filter,
     _ken_burns_ease,
@@ -49,7 +49,7 @@ def test_xfade_single_clip():
 
 
 def test_slide_durations_for_roles_targets_runtime():
-    from apps.content.video_compose import slide_durations_for_roles
+    from apps.create.content.video_compose import slide_durations_for_roles
 
     roles = ["hook", "hero", "desire", "cta"]
     d = slide_durations_for_roles(roles, target_total_sec=14.0, transition_sec=0.45)

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from apps.briefs.smm_commands import (
+from apps.create.briefs.smm_commands import (
     PROMO_PRESETS,
     dispatch_smm_command,
     handle_add_product,
@@ -25,7 +25,7 @@ def test_dispatch_plan(user):
 
 @pytest.mark.django_db
 def test_handle_add_product(user):
-    with patch("apps.products.owner_snap_whatsapp._product_limit_message", return_value=None):
+    with patch("apps.commerce.products.owner_snap_whatsapp._product_limit_message", return_value=None):
         text, key, ok, meta = handle_add_product(user, "ADD Test item 1500")
     assert ok is True
     assert "Test item" in text
@@ -34,8 +34,8 @@ def test_handle_add_product(user):
 
 @pytest.mark.django_db
 def test_handle_promo_preset(user):
-    with patch("apps.billing.enforcement.check_seed_limit", return_value=(True, "")):
-        with patch("apps.briefs.actions.proposals_url_for_asset", return_value="https://example.com/p"):
+    with patch("apps.core.billing.enforcement.check_seed_limit", return_value=(True, "")):
+        with patch("apps.create.briefs.actions.proposals_url_for_asset", return_value="https://example.com/p"):
             text, key, ok, meta = handle_promo_preset(user, "PROMO launch", preset=None)
     assert ok is True
     assert meta.get("preset") == "launch"

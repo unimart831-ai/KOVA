@@ -7,8 +7,8 @@ from django.core import mail
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.billing.models import AgencySalesInquiry, BillingEvent, MpesaPayment, PLAN_LIMITS
+from apps.core.accounts.models import User, UserProfile
+from apps.core.billing.models import AgencySalesInquiry, BillingEvent, MpesaPayment, PLAN_LIMITS
 
 
 @pytest.mark.django_db
@@ -65,7 +65,7 @@ class TestPlanLimits:
         assert PLAN_LIMITS["kova"]["price_kes"] == 1300
 
     def test_public_pricing_tiers(self):
-        from apps.billing.models import PUBLIC_PLAN_TIERS, get_public_plan_limits
+        from apps.core.billing.models import PUBLIC_PLAN_TIERS, get_public_plan_limits
 
         assert PUBLIC_PLAN_TIERS == ("kova",)
         public = get_public_plan_limits()
@@ -86,7 +86,7 @@ class TestPlanLimits:
 @pytest.mark.django_db
 class TestSidebarPlanDisplay:
     def test_active_trial_shows_starter_trial(self, user):
-        from apps.billing.models import get_sidebar_plan_display
+        from apps.core.billing.models import get_sidebar_plan_display
 
         profile = user.profile
         profile.subscription_status = "trialing"
@@ -99,7 +99,7 @@ class TestSidebarPlanDisplay:
         assert display["variant"] == "trial"
 
     def test_active_paid_shows_tier_name(self, user):
-        from apps.billing.models import get_sidebar_plan_display
+        from apps.core.billing.models import get_sidebar_plan_display
 
         profile = user.profile
         profile.plan = "pro"
@@ -111,7 +111,7 @@ class TestSidebarPlanDisplay:
         assert display["variant"] == "paid"
 
     def test_no_subscription_shows_free(self, user):
-        from apps.billing.models import get_sidebar_plan_display
+        from apps.core.billing.models import get_sidebar_plan_display
 
         profile = user.profile
         profile.subscription_status = "none"
@@ -122,7 +122,7 @@ class TestSidebarPlanDisplay:
         assert display["variant"] == "free"
 
     def test_agency_without_approval_shows_pending(self, user):
-        from apps.billing.models import get_sidebar_plan_display
+        from apps.core.billing.models import get_sidebar_plan_display
 
         profile = user.profile
         profile.plan = "agency"
@@ -152,12 +152,12 @@ class TestSidebarPlanDisplay:
 @pytest.mark.django_db
 class TestBillingAccess:
     def test_can_start_free_trial_before_payment(self, user):
-        from apps.billing.access import can_start_free_trial
+        from apps.core.billing.access import can_start_free_trial
 
         assert can_start_free_trial(user) is True
 
     def test_cannot_start_trial_after_mpesa_payment(self, user):
-        from apps.billing.access import can_start_free_trial
+        from apps.core.billing.access import can_start_free_trial
 
         MpesaPayment.objects.create(
             user=user,
@@ -172,7 +172,7 @@ class TestBillingAccess:
         assert can_start_free_trial(user) is False
 
     def test_expired_trial_blocks_access(self, user):
-        from apps.billing.access import subscription_allows_app_access
+        from apps.core.billing.access import subscription_allows_app_access
 
         profile = user.profile
         profile.subscription_status = "trialing"
@@ -184,10 +184,10 @@ class TestBillingAccess:
         assert "trial" in msg.lower()
 
     def test_active_trial_uses_kova_features_with_campaign_cap(self, user):
-        from apps.billing.enforcement import check_ab_testing, check_seed_limit
-        from apps.billing.models import TRIAL_CAMPAIGN_LIMIT, get_effective_plan_tier, get_user_plan_limits
-        from apps.content.campaigns import ensure_campaign_for_seed
-        from apps.content.models import ContentSeed
+        from apps.core.billing.enforcement import check_ab_testing, check_seed_limit
+        from apps.core.billing.models import TRIAL_CAMPAIGN_LIMIT, get_effective_plan_tier, get_user_plan_limits
+        from apps.create.content.campaigns import ensure_campaign_for_seed
+        from apps.create.content.models import ContentSeed
 
         profile = user.profile
         profile.plan = "kova"
@@ -212,9 +212,9 @@ class TestBillingAccess:
 @pytest.mark.django_db
 class TestEnforcement:
     def test_seed_limit_blocks_at_cap(self, user):
-        from apps.billing.enforcement import check_seed_limit
-        from apps.content.campaigns import ensure_campaign_for_seed
-        from apps.content.models import ContentSeed
+        from apps.core.billing.enforcement import check_seed_limit
+        from apps.create.content.campaigns import ensure_campaign_for_seed
+        from apps.create.content.models import ContentSeed
 
         profile = user.profile
         profile.plan = "starter"
@@ -230,7 +230,7 @@ class TestEnforcement:
         assert "marketing campaign" in msg.lower()
 
     def test_ab_testing_blocked_on_starter(self, user):
-        from apps.billing.enforcement import check_ab_testing
+        from apps.core.billing.enforcement import check_ab_testing
 
         user.profile.plan = "starter"
         user.profile.subscription_status = "active"
@@ -239,8 +239,8 @@ class TestEnforcement:
         assert allowed is False
 
     def test_llm_config_overrides_daily_cap(self, user):
-        from apps.agents.models import LLMConfig
-        from apps.billing.enforcement import get_daily_llm_token_cap
+        from apps.create.agents.models import LLMConfig
+        from apps.core.billing.enforcement import get_daily_llm_token_cap
 
         config = LLMConfig.load()
         config.pk = 1

@@ -1,6 +1,6 @@
 """Tests for Photoroom preflight repair planning (Phase A/B)."""
 
-from apps.products.photoroom_preflight import (
+from apps.commerce.products.photoroom_preflight import (
     PhotoQualityReport,
     assess_photo_quality,
     build_repair_plan,
@@ -113,7 +113,7 @@ def test_build_repair_plan_smart_crop_before_uncrop():
 
 
 def test_channel_variants_not_in_scene_pack():
-    from apps.products.photoroom_plus import PLUS_VARIANT_CATALOG, select_plus_variants
+    from apps.commerce.products.photoroom_plus import PLUS_VARIANT_CATALOG, select_plus_variants
 
     class P:
         name = "Test"

@@ -107,7 +107,7 @@ def _log_storage_backend(sender, **kwargs):
     )
 
     # Log Fernet key diagnostics to detect web/worker key mismatch
-    from apps.platforms.encryption import _build_fernets
+    from apps.core.platforms.encryption import _build_fernets
     _build_fernets()
 
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)

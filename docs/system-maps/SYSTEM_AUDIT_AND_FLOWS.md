@@ -113,7 +113,7 @@ Research + Strategist → **Create** → Publish → **Analyst** → **Adapt** �
 
 ---
 
-## All 22 System Maps
+## System Maps
 
 | # | Slug | Title |
 |---|------|-------|
@@ -123,22 +123,21 @@ Research + Strategist → **Create** → Publish → **Analyst** → **Adapt** �
 | 4 | `daily-brief` | Home / Daily Brief |
 | 5 | `studio-approval` | Studio → Approve → Publish |
 | 6 | `autopilot-week` | Autopilot Weekly Plan |
-| 7 | `voice-campaigns` | Voice Campaigns & Campaigns App |
-| 8 | `memes-visual-publisher` | Memes & Visual Publisher |
-| 9 | `engage-inbox` | Engage Inbox |
-| 10 | `whatsapp-customers` | WhatsApp |
-| 11 | `leads-nurture` | Leads & Nurture |
-| 12 | `email-marketing` | Email Marketing |
-| 13 | `bookings-loop` | Bookings |
-| 14 | `products-commerce` | Products & Snap to Sell |
-| 15 | `revenue-attribution` | Revenue & Attribution |
-| 16 | `links-kova-page` | Links & Kova Page |
-| 17 | `insights-competitors` | Insights & Competitors |
-| 18 | `onboarding-first-value` | Signup → Onboarding → First Value |
-| 19 | `platforms-agents-settings` | Platforms, Agents & Settings |
-| 20 | `billing-plan-gates` | Billing & Plan Gates |
-| 21 | `hidden-surfaces` | Hidden Surfaces |
-| 22 | `celery-beat-schedule` | Background Jobs |
+| 7 | `voice-campaigns` | Voice Campaigns |
+| 8 | `engage-inbox` | Engage Inbox |
+| 9 | `whatsapp-customers` | WhatsApp |
+| 10 | `leads-nurture` | Leads & Nurture |
+| 11 | `email-marketing` | Email Marketing |
+| 12 | `bookings-loop` | Bookings |
+| 13 | `products-commerce` | Products & Snap to Sell |
+| 14 | `revenue-attribution` | Revenue & Attribution |
+| 15 | `links-kova-page` | Links & Kova Page |
+| 16 | `insights-competitors` | Insights & Competitors |
+| 17 | `onboarding-first-value` | Signup → Onboarding → First Value |
+| 18 | `platforms-agents-settings` | Platforms, Agents & Settings |
+| 19 | `billing-plan-gates` | Billing & Plan Gates |
+| 20 | `hidden-surfaces` | Hidden Surfaces |
+| 21 | `celery-beat-schedule` | Background Jobs |
 
 Source of truth for diagrams: `apps/help/system_maps.py`
 
@@ -148,6 +147,6 @@ Source of truth for diagrams: `apps/help/system_maps.py`
 
 - `docs/KOVA_LIFECYCLE.md` — customer lifecycle
 - `docs/NAVIGATION.md` — nav structure
-- `docs/COFOUNDER_PLATFORM_AUDIT_2026_05.md` — platform audit
+- `docs/v1-audit/TECHNICAL_DEBT_REGISTER.md` — technical debt
 - `docs/specs/ADAPT_AGENT_V2_SPEC.md` — Adapt agent
 - `docs/specs/ENGAGE_AGENT_V2_SPEC.md` — Engage agent

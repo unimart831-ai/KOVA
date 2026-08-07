@@ -7,15 +7,15 @@ import pytest
 from django.test import Client, override_settings
 from django.urls import reverse
 
-from apps.analytics.models import ShopifyStore
-from apps.partners.models import Partner, PartnerApplication, PayoutRequest, ReferralClick
-from apps.products.shopify_import import upsert_shopify_product
-from apps.teams.models import Brand, Team, TeamMember
+from apps.insight.analytics.models import ShopifyStore
+from apps.core.partners.models import Partner, PartnerApplication, PayoutRequest, ReferralClick
+from apps.commerce.products.shopify_import import upsert_shopify_product
+from apps.core.teams.models import Brand, Team, TeamMember
 
 
 @pytest.fixture
 def pro_user(db):
-    from apps.accounts.models import User, UserProfile
+    from apps.core.accounts.models import User, UserProfile
 
     u = User.objects.create_user(
         username="shopifyuser",
@@ -62,9 +62,9 @@ class TestShopifyProductUpsert:
         assert action2 == "updated"
         assert pid2 == pid
 
-    @patch("apps.products.shopify_import.requests.get")
+    @patch("apps.commerce.products.shopify_import.requests.get")
     def test_fetch_pagination(self, mock_get, shopify_store):
-        from apps.products.shopify_import import fetch_shopify_products
+        from apps.commerce.products.shopify_import import fetch_shopify_products
 
         first = MagicMock()
         first.raise_for_status = MagicMock()
@@ -144,9 +144,9 @@ class TestCampusRepApproval:
 @pytest.mark.django_db
 class TestAgencyClientScope:
     def test_client_brand_scope_filters_posts(self, db):
-        from apps.accounts.models import User, UserProfile
-        from apps.content.models import Post
-        from apps.teams.permissions import filter_posts_by_brand_scope, get_client_brand_scope
+        from apps.core.accounts.models import User, UserProfile
+        from apps.create.content.models import Post
+        from apps.core.teams.permissions import filter_posts_by_brand_scope, get_client_brand_scope
 
         owner = User.objects.create_user(username="agency", email="agency@example.com", password="x")
         client = User.objects.create_user(username="client", email="client@example.com", password="x")
@@ -171,10 +171,11 @@ class TestAgencyClientScope:
         assert scoped.first().content_text == "Post A"
 
 
-@override_settings(SHOPIFY_API_KEY="test_key", SHOPIFY_API_SECRET="test_secret")
 @pytest.mark.django_db
 class TestShopifyOAuthConfigured:
-    def test_shopify_configured_flag(self):
-        from apps.analytics.shopify_oauth import shopify_configured
+    def test_shopify_configured_flag(self, settings):
+        settings.SHOPIFY_API_KEY = "test_key"
+        settings.SHOPIFY_API_SECRET = "test_secret"
+        from apps.insight.analytics.shopify_oauth import shopify_configured
 
         assert shopify_configured() is True

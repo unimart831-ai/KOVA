@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from PIL import Image
 
-from apps.products.photo_variations import (
+from apps.commerce.products.photo_variations import (
     PRESET_PROMO_FRAME,
     PRESET_SOFT_PASTEL,
     PRESET_WHITE_STUDIO,

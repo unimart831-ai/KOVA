@@ -1,6 +1,6 @@
 """Tests for primary image exclude toggle."""
 
-from apps.products.models import Product
+from apps.commerce.products.models import Product
 
 
 def test_all_image_urls_skips_excluded_primary(db):

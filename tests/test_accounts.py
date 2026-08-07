@@ -5,7 +5,7 @@ Tests for the accounts app: User model, soft-delete, profile creation.
 import pytest
 from django.test import TestCase
 
-from apps.accounts.models import User, UserProfile
+from apps.core.accounts.models import User, UserProfile
 
 
 @pytest.mark.django_db

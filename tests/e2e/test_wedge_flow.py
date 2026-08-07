@@ -8,11 +8,11 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from playwright.sync_api import expect
 
-from apps.accounts.models import UserProfile
-from apps.content.models import Post
-from apps.leads.models import Lead
-from apps.platforms.models import SocialAccount
-from apps.products.models import Product
+from apps.core.accounts.models import UserProfile
+from apps.create.content.models import Post
+from apps.commerce.leads.models import Lead
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.models import Product
 
 User = get_user_model()
 

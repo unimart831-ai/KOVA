@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.test import override_settings
 
-from apps.accounts.models import User, UserProfile
-from apps.content.models import ContentSafetyIncident, Post, SystemSafetyConfig
-from apps.content.safety import (
+from apps.core.accounts.models import User, UserProfile
+from apps.create.content.models import ContentSafetyIncident, Post, SystemSafetyConfig
+from apps.create.content.safety import (
     POLICY_BLOCK_MESSAGE,
     SafetyResult,
     _parse_moderation_response,
@@ -24,8 +24,8 @@ from apps.content.safety import (
     is_snap_blocked,
     record_content_safety_incident,
 )
-from apps.content.tasks import publish_post
-from apps.platforms.models import SocialAccount
+from apps.create.content.tasks import publish_post
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture(autouse=True)
@@ -92,7 +92,7 @@ class TestContentSafetyEnabled:
 
 class TestStaffModerationToggle:
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.content.safety._openrouter_moderate_image")
+    @patch("apps.create.content.safety._openrouter_moderate_image")
     def test_paused_skips_api_returns_safe(self, mock_mod, user):
         config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
         config.content_safety_checks_enabled = False
@@ -106,7 +106,7 @@ class TestStaffModerationToggle:
         mock_mod.assert_not_called()
 
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.content.safety._openrouter_moderate_image")
+    @patch("apps.create.content.safety._openrouter_moderate_image")
     def test_enabled_calls_api(self, mock_mod, user):
         config, _ = SystemSafetyConfig.objects.get_or_create(pk=1)
         config.content_safety_checks_enabled = True
@@ -146,7 +146,7 @@ class TestCheckTextSafe:
         assert result.severity == 100
 
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.content.safety._openrouter_moderate_text")
+    @patch("apps.create.content.safety._openrouter_moderate_text")
     def test_api_merged_when_enabled(self, mock_mod, user):
         mock_mod.return_value = SafetyResult(
             safe=False,
@@ -167,7 +167,7 @@ class TestFailClosed:
         assert result.api_failed is True
 
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.agents.llm._get_openrouter_client")
+    @patch("apps.create.agents.llm._get_openrouter_client")
     def test_image_fail_closed_on_api_error(self, mock_client_fn, user):
         mock_client = MagicMock()
         mock_client.chat.completions.create.side_effect = RuntimeError("API down")
@@ -178,7 +178,7 @@ class TestFailClosed:
         assert result.api_failed is True
 
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.agents.llm._get_openrouter_client")
+    @patch("apps.create.agents.llm._get_openrouter_client")
     def test_image_fail_open_when_model_unavailable(self, mock_client_fn, user):
         mock_client = MagicMock()
         mock_client.chat.completions.create.side_effect = RuntimeError(
@@ -193,8 +193,8 @@ class TestFailClosed:
 
 class TestCheckPostSafe:
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.content.safety.check_image_safe")
-    @patch("apps.content.safety.check_text_safe")
+    @patch("apps.create.content.safety.check_image_safe")
+    @patch("apps.create.content.safety.check_text_safe")
     def test_post_checks_text_and_images(self, mock_text, mock_image, approved_post):
         mock_text.return_value = SafetyResult(safe=True)
         mock_image.return_value = SafetyResult(
@@ -210,7 +210,7 @@ class TestCheckPostSafe:
 
 class TestPublishPostBlocks:
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.content.safety.check_post_safe")
+    @patch("apps.create.content.safety.check_post_safe")
     def test_publish_post_blocks_unsafe_content(self, mock_check, approved_post):
         mock_check.return_value = SafetyResult(
             safe=False,
@@ -260,7 +260,7 @@ class TestSexualOnlyPolicy:
         assert is_sexual_policy_violation(result) is True
 
     @override_settings(CONTENT_SAFETY_ENABLED=True, OPENROUTER_API_KEY="test-key")
-    @patch("apps.content.safety._openrouter_moderate_image")
+    @patch("apps.create.content.safety._openrouter_moderate_image")
     def test_construction_image_no_incident_path(self, mock_mod, user):
         mock_mod.return_value = _parse_moderation_response({
             "safe": False,
@@ -293,7 +293,7 @@ class TestSexualOnlyPolicy:
         assert is_snap_blocked(user)[0] is False
 
     @override_settings(CONTENT_SAFETY_ENABLED=True)
-    @patch("apps.content.safety.check_post_safe")
+    @patch("apps.create.content.safety.check_post_safe")
     def test_block_post_no_strike_without_sexual_category(self, mock_check, approved_post):
         mock_check.return_value = SafetyResult(
             safe=False,

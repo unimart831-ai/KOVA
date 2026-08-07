@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User, UserProfile
-from apps.bookings.models import BookingLink
-from apps.content.professional_cta import apply_professional_cta_to_post, should_apply_professional_cta
-from apps.content.models import ContentSeed, Post
-from apps.platforms.models import SocialAccount
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.bookings.models import BookingLink
+from apps.create.content.professional_cta import apply_professional_cta_to_post, should_apply_professional_cta
+from apps.create.content.models import ContentSeed, Post
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture

@@ -74,57 +74,48 @@ npm run dev:css
 
 ```
 kova_agent/
-├── apps/                    # 27 Django apps (modular monolith)
-│   ├── accounts/            # User model, auth, onboarding, brand intelligence
-│   ├── platforms/           # Social account OAuth (9 providers)
-│   ├── content/             # Posts, scheduling, A/B tests, voice briefs, media
-│   ├── agents/              # AI agent configs, LLM router, token budgets
-│   ├── analytics/           # Post metrics, competitors, revenue attribution, Kova Pixel
-│   ├── briefs/              # Daily AI briefings
-│   ├── engage/              # Inbox, auto-reply with safety rails, superfans
-│   ├── billing/             # M-Pesa + Stripe subscriptions, plan enforcement
-│   ├── notifications/       # In-app notification system
-│   ├── emails/              # Transactional + marketing email (Resend)
-│   ├── teams/               # Multi-brand agency management
-│   ├── partners/            # Referral program + marketplace B2B API
-│   ├── leads/               # CRM-lite, nurture sequences, lead scoring
-│   ├── products/            # Product catalog, stock tracking, snap-to-sell
-│   ├── campaigns/           # Cross-channel campaign orchestration
-│   ├── whatsapp/            # WhatsApp Cloud API (inbox, broadcasts, status, channels)
-│   ├── memes/               # Meme trend intelligence + brand adaptation
-│   ├── calendar_intel/      # Holiday/cultural moment awareness
-│   ├── links/               # Link-in-bio pages + lead capture forms
-│   ├── kova_page/           # Public business profile pages
-│   ├── media_queue/         # Photo drip publishing queue
-│   ├── profile_audit/       # Social profile completeness audits
-│   ├── qr_attribution/      # QR codes + walk-in attribution
-│   ├── bookings/            # Appointment booking with post attribution
-│   ├── reviews/             # Post-conversion review request loop
-│   ├── help/                # Help center + public blog
-│   ├── admin_dashboard/     # Internal ops dashboard (~100 routes)
-│   └── api/                 # REST API v1 + partner marketplace API
-├── config/
-│   ├── settings/            # Split settings (base, development, production)
-│   ├── urls.py              # Root URL configuration
-│   ├── celery.py            # Celery configuration (3 priority queues)
-│   └── wsgi.py / asgi.py
-├── templates/               # ~394 Django HTML templates
-│   ├── layouts/             # Base layouts (app, marketing, admin)
-│   ├── components/          # Reusable UI components (modals, cards, icons)
-│   └── [app]/               # Per-app templates + partials
+├── apps/                    # 5 domains → Django apps (modular monolith)
+│   ├── core/                # Identity, billing, teams, ops
+│   │   ├── accounts/        # Users, auth, onboarding, brand intelligence
+│   │   ├── platforms/       # Social OAuth (+ profile_audit)
+│   │   ├── billing/         # M-Pesa + Stripe
+│   │   ├── teams/           # Multi-brand agencies
+│   │   ├── partners/        # Referrals / marketplace
+│   │   └── admin_dashboard/ # Internal ops
+│   ├── create/              # Make & publish
+│   │   ├── content/         # Posts, studio, scheduling
+│   │   ├── agents/          # AI agents + LLM router
+│   │   ├── media/           # Media orchestration
+│   │   └── briefs/          # Daily briefings + calendar preferences
+│   ├── messaging/           # Conversations & outreach
+│   │   ├── engage/          # Needs-reply hub, comments, FB/IG DMs
+│   │   ├── whatsapp/        # WhatsApp Cloud API workspace
+│   │   ├── emails/          # Transactional + marketing email
+│   │   └── notifications/   # In-app notifications
+│   ├── commerce/            # Sell & convert
+│   │   ├── products/        # Catalog, snap-to-sell, Photoroom
+│   │   ├── links/           # Link-in-bio (/k/) + Business Hub (/p/)
+│   │   ├── leads/           # CRM-lite
+│   │   ├── bookings/        # Appointments (FEATURE_BOOKINGS)
+│   │   ├── reviews/         # Post-sale reviews (FEATURE_REVIEWS)
+│   │   └── qr_attribution/  # QR / walk-in (FEATURE_QR_ATTRIBUTION)
+│   └── insight/             # Measure & expose
+│       ├── analytics/       # Metrics, pixel, attribution
+│       ├── api/             # REST API v1
+│       └── help/            # Help center + system maps
+├── config/                  # Django settings, urls, celery, ASGI/WSGI
+├── templates/
 ├── static/
-│   ├── css/                 # Tailwind input/output
-│   └── js/                  # Kova Pixel, service worker
-├── tests/                   # ~390+ pytest tests + Locust load tests
-├── docs/                    # 50+ docs (roadmap, API, specs, business)
-├── requirements/            # Split: base, development, production
-├── .github/workflows/       # CI pipeline (lint, test, security)
-├── docker-compose.yml       # Local full stack (web, Postgres, Redis, Celery, Tailwind)
-├── Dockerfile               # Development container
-├── Procfile                 # Railway process types
-├── nixpacks.toml            # Railway build config
+├── tests/
+├── docs/
 └── manage.py
 ```
+
+Django **app labels** (migration history) are unchanged — only Python import paths moved under domains.
+
+Stub apps folded: `calendar_intel` → `briefs`, `profile_audit` → `platforms` (URL names preserved).
+
+Optional surfaces: `KOVA_FEATURES` / `FEATURE_*` env vars (defaults on). See `apps/README.md`.
 
 ## Development
 
@@ -174,11 +165,12 @@ GitHub Actions runs on every push/PR:
 
 ## Documentation
 
-- [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) — 12-sprint master plan
+- [Docs index](docs/README.md) — all essential docs
+- [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) — product / sprint plan
 - [API Reference](docs/API_REFERENCE.md) — REST API v1
-- [Platform Setup](docs/PLATFORM_DEVELOPER_SETUP.md) — OAuth for 9 platforms
-- [Testing Guide](docs/KOVA_TESTING_GUIDE.md) — Test procedures and coverage
-- [Co-Founder Audit](docs/COFOUNDER_PLATFORM_AUDIT_2026_05.md) — Full system audit (May 2026)
+- [Platform Setup](docs/PLATFORM_DEVELOPER_SETUP.md) — OAuth for social platforms
+- [Testing Guide](docs/KOVA_TESTING_GUIDE.md) — test procedures and coverage
+- [Legacy & debt](docs/v1-audit/TECHNICAL_DEBT_REGISTER.md) — known debt register
 
 ## License
 

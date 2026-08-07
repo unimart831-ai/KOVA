@@ -216,7 +216,7 @@ catch-all for anything that's:
 
 If you reach a dead end and the table at the top doesn't show your
 feature: it may have been deferred to a later phase. Check
-`docs/KOVA_MASTER_PLAN.md` for the roadmap.
+`docs/DEVELOPMENT_ROADMAP.md` for the roadmap.
 
 ---
 

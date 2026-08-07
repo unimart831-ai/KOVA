@@ -3,15 +3,15 @@
 import pytest
 from django.urls import reverse
 
-from apps.links.models import KovaLink, KovaPage
-from apps.products.commerce_canonical import (
+from apps.commerce.links.models import KovaLink, KovaPage
+from apps.commerce.products.commerce_canonical import (
     build_unified_shop_footer,
     canonical_shop_path,
     canonical_shop_url,
     commerce_shop_redirect_path,
     user_has_commerce_shop,
 )
-from apps.products.models import Product
+from apps.commerce.products.models import Product
 
 
 @pytest.fixture

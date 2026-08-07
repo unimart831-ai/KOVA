@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from apps.products.photoroom_plus import _default_shadow_mode
-from apps.products.platform_visuals import (
+from apps.commerce.products.photoroom_plus import _default_shadow_mode
+from apps.commerce.products.platform_visuals import (
     aspect_ratio_for,
     pick_platform_images,
     profile_for,

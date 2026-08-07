@@ -4,9 +4,9 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.billing.campaign_addons import apply_campaign_addon_purchase, user_can_purchase_addons
-from apps.billing.enforcement import get_seed_usage
-from apps.billing.models import CampaignAddonPurchase, ContentSeedQuotaLog, MpesaPayment
+from apps.core.billing.campaign_addons import apply_campaign_addon_purchase, user_can_purchase_addons
+from apps.core.billing.enforcement import get_seed_usage
+from apps.core.billing.models import CampaignAddonPurchase, ContentSeedQuotaLog, MpesaPayment
 
 
 @pytest.mark.django_db

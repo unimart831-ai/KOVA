@@ -2,14 +2,14 @@
 
 import pytest
 
-from apps.content.campaign_approval import (
+from apps.create.content.campaign_approval import (
     approve_campaign_posts,
     campaign_rollout_minutes,
     sync_campaign_after_approval,
 )
-from apps.content.campaigns import ensure_campaign_for_seed
-from apps.content.models import ContentSeed, MarketingCampaign, Post
-from apps.platforms.models import SocialAccount
+from apps.create.content.campaigns import ensure_campaign_for_seed
+from apps.create.content.models import ContentSeed, MarketingCampaign, Post
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture
@@ -120,7 +120,7 @@ class TestCampaignApproveView:
         from django.contrib.sessions.middleware import SessionMiddleware
         from django.test import RequestFactory
 
-        from apps.content.views.queue import _handle_campaign_approve
+        from apps.create.content.views.queue import _handle_campaign_approve
 
         seed = ContentSeed.objects.create(user=user, idea="View test")
         campaign = ensure_campaign_for_seed(seed, title="View test")

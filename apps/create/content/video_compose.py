@@ -1,0 +1,1062 @@
+"""
+Motion Reel compositor — Ken Burns slideshow + crossfade + music bed.
+
+Produces 1080×1920 H.264 MP4 from image URLs or local paths.
+Requires FFmpeg on the worker host.
+"""
+
+from __future__ import annotations
+
+import logging
+import shutil
+import subprocess
+import tempfile
+from io import BytesIO
+from pathlib import Path
+from typing import Iterable, Optional
+from urllib.parse import urlparse
+
+import httpx
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
+
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+OUTPUT_WIDTH = 1080
+OUTPUT_HEIGHT = 1920
+DEFAULT_FPS = 30
+DEFAULT_SLIDE_SEC = 3.5
+DEFAULT_TRANSITION_SEC = 0.55
+MIN_SLIDE_SEC = 2.0
+MAX_SLIDE_SEC = 6.0
+
+# 9:16 platform safe areas (Instagram / TikTok UI chrome).
+SAFE_TOP_MARGIN = 0.10
+SAFE_BOTTOM_MARGIN = 0.15
+HERO_ZONE_HEIGHT = 0.60
+LOWER_THIRD_HEIGHT = 0.22
+CAPTION_MAX_LINES = 2
+CAPTION_FONT_SCALE = 0.072
+
+# Professional transitions — calm crossfades only (director supplies per-gap).
+PROFESSIONAL_TRANSITIONS = ("fade", "dissolve", "smoothup")
+
+# Legacy pool — only used when no director plan is present.
+REEL_TRANSITIONS = PROFESSIONAL_TRANSITIONS
+
+
+class VideoComposeError(Exception):
+    """Raised when reel composition fails."""
+
+
+def caption_safe_zones(
+    width: int = OUTPUT_WIDTH,
+    height: int = OUTPUT_HEIGHT,
+) -> dict[str, int]:
+    """Hero product zone (top 60%) and lower-third caption bar with platform margins."""
+    hero_top = int(height * SAFE_TOP_MARGIN)
+    hero_bottom = int(height * (SAFE_TOP_MARGIN + HERO_ZONE_HEIGHT))
+    caption_bottom = int(height * (1.0 - SAFE_BOTTOM_MARGIN))
+    caption_top = max(
+        hero_bottom + int(height * 0.02),
+        caption_bottom - int(height * LOWER_THIRD_HEIGHT),
+    )
+    return {
+        "width": width,
+        "height": height,
+        "hero_top": hero_top,
+        "hero_bottom": hero_bottom,
+        "caption_top": caption_top,
+        "caption_bottom": caption_bottom,
+    }
+
+
+def hook_position_for_slide(slide_index: int, text: str) -> str:
+    """All on-screen hooks render in the lower-third bar — never over the hero product."""
+    return "lower_third" if text and text.strip() else ""
+
+
+def ffmpeg_available() -> bool:
+    return shutil.which("ffmpeg") is not None
+
+
+def is_video_url(url: str) -> bool:
+    if not url or not isinstance(url, str):
+        return False
+    path = urlparse(url).path.lower()
+    return path.endswith((".mp4", ".mov", ".webm", ".m4v"))
+
+
+def _download_bytes(source: str, timeout: float = 45.0) -> bytes:
+    if source.startswith(("http://", "https://")):
+        resp = httpx.get(source, timeout=timeout, follow_redirects=True)
+        resp.raise_for_status()
+        return resp.content
+    path = Path(source)
+    if not path.is_file():
+        raise VideoComposeError(f"Image not found: {source}")
+    return path.read_bytes()
+
+
+def _is_light_studio_background(img: Image.Image) -> bool:
+    """Detect white/near-white product shots (Photoroom studio) for reel framing."""
+    sample = img.convert("RGB")
+    sample.thumbnail((120, 120), Image.LANCZOS)
+    pixels = list(sample.getdata())
+    if not pixels:
+        return False
+    light = sum(1 for r, g, b in pixels if r > 230 and g > 230 and b > 230)
+    return (light / len(pixels)) >= 0.55
+
+
+def _branded_story_background(target_w: int, target_h: int) -> Image.Image:
+    """Dark branded canvas for studio product shots — avoids muddy white blur."""
+    top = (12, 18, 34)
+    bottom = (26, 35, 58)
+    bg = Image.new("RGB", (target_w, target_h))
+    draw = ImageDraw.Draw(bg)
+    for y in range(target_h):
+        t = y / max(target_h - 1, 1)
+        r = int(top[0] + (bottom[0] - top[0]) * t)
+        g = int(top[1] + (bottom[1] - top[1]) * t)
+        b = int(top[2] + (bottom[2] - top[2]) * t)
+        draw.line([(0, y), (target_w, y)], fill=(r, g, b))
+    return bg
+
+
+def _is_native_story_source(source: str) -> bool:
+    u = (source or "").lower()
+    return "channel_story" in u
+
+
+def _is_composite_slide_source(source: str) -> bool:
+    """Designed carousel / promo JPEGs — already have layout; never thumbnail into hero zone."""
+    u = (source or "").lower()
+    return any(
+        marker in u
+        for marker in ("promo_frame", "/carousels/", "product_carousel", "catalog_carousel")
+    )
+
+
+def fit_composite_slide_to_story(image_bytes: bytes) -> Image.Image:
+    """Letterbox a designed square or landscape slide into 9:16 — centered, full width."""
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
+
+    scale = target_w / max(img.width, 1)
+    new_w = target_w
+    new_h = int(img.height * scale)
+    if new_h > target_h:
+        scale = target_h / max(img.height, 1)
+        new_w = int(img.width * scale)
+        new_h = target_h
+
+    resized = img.resize((new_w, new_h), Image.LANCZOS)
+    canvas = _branded_story_background(target_w, target_h)
+    x = (target_w - new_w) // 2
+    y = (target_h - new_h) // 2
+    canvas.paste(resized, (x, y))
+    return canvas
+
+
+def fit_native_story_export(image_bytes: bytes) -> Image.Image:
+    """Use Photoroom channel_story / channel_story_uncrop with minimal reframe."""
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
+    aspect = img.width / max(img.height, 1)
+    target_aspect = target_w / target_h
+    if abs(aspect - target_aspect) < 0.04:
+        return img.resize((target_w, target_h), method=Image.LANCZOS)
+    return ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS, centering=(0.5, 0.42))
+
+
+def fit_image_to_story_frame(
+    image_bytes: bytes,
+    *,
+    slide_index: int = 0,
+    source_hint: str = "",
+) -> Image.Image:
+    """
+    Fit any aspect ratio into 9:16 with background + foreground.
+    Studio white-bg products get a dark branded canvas instead of blurred white.
+    User uploads (product_images/) prefer cover-crop when far from 9:16.
+    Native Photoroom story exports skip blur-letterbox compositing.
+    """
+    if _is_native_story_source(source_hint):
+        return fit_native_story_export(image_bytes)
+
+    if _is_composite_slide_source(source_hint):
+        return fit_composite_slide_to_story(image_bytes)
+
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    target_w, target_h = OUTPUT_WIDTH, OUTPUT_HEIGHT
+    aspect = img.width / max(img.height, 1)
+    target_aspect = target_w / target_h
+
+    # Square studio shots — cover-fill the 9:16 frame (no side pillarboxing).
+    if _is_light_studio_background(img) and abs(aspect - 1.0) < 0.12:
+        return ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS, centering=(0.5, 0.42))
+
+    # Portrait-first: tall phone photos get cover crop into hero zone (no letterbox bars).
+    if abs(aspect - target_aspect) > 0.12 and aspect < target_aspect * 0.95:
+        cover = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS, centering=(0.5, 0.42))
+        if not _is_light_studio_background(img):
+            return cover
+
+    cover = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS)
+    if abs(aspect - target_aspect) < 0.05:
+        if not _is_light_studio_background(img):
+            return cover
+
+    if _is_light_studio_background(img):
+        bg = _branded_story_background(target_w, target_h)
+    else:
+        bg = ImageOps.fit(img, (target_w, target_h), method=Image.LANCZOS)
+        bg = bg.filter(ImageFilter.GaussianBlur(radius=10))
+
+    fg = img.copy()
+    zones = caption_safe_zones(target_w, target_h)
+    hero_h = zones["hero_bottom"] - zones["hero_top"]
+    max_fg_w = int(target_w * 0.92)
+    max_fg_h = int(hero_h * 0.92)
+    fg.thumbnail((max_fg_w, max_fg_h), Image.LANCZOS)
+
+    # Keep product in the hero band (upper ~60%) — captions live in lower third only.
+    anchors = (
+        (0.50, 0.38),
+        (0.48, 0.35),
+        (0.52, 0.40),
+        (0.46, 0.37),
+        (0.54, 0.39),
+        (0.50, 0.34),
+        (0.50, 0.42),
+    )
+    ax, ay = anchors[slide_index % len(anchors)]
+    x = int((target_w - fg.width) * ax)
+    y_range = max(zones["hero_bottom"] - zones["hero_top"] - fg.height, 1)
+    y = zones["hero_top"] + int(y_range * ay)
+    x = max(0, min(x, target_w - fg.width))
+    y = max(zones["hero_top"], min(y, zones["hero_bottom"] - fg.height))
+
+    canvas = bg.copy()
+    canvas.paste(fg, (x, y))
+    return canvas
+
+
+def _write_story_frame(image_bytes: bytes, dest: Path, *, slide_index: int = 0) -> None:
+    frame = fit_image_to_story_frame(image_bytes, slide_index=slide_index)
+    frame.save(dest, format="JPEG", quality=92, optimize=True)
+
+
+def _wrap_caption_lines(text: str, *, max_lines: int, chars_per_line: int) -> str:
+    import textwrap
+
+    lines = [ln.strip() for ln in text.replace("\r", "").split("\n") if ln.strip()]
+    if not lines:
+        return ""
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+    wrapped_lines: list[str] = []
+    for line in lines:
+        wrapped_lines.extend(textwrap.wrap(line, width=chars_per_line) or [line[:chars_per_line]])
+    return "\n".join(wrapped_lines[:max_lines])
+
+
+def _draw_lower_third_gradient(img: Image.Image, zones: dict[str, int]) -> None:
+    """Semi-transparent gradient bar — captions never sit directly on product pixels."""
+    w, h = img.size
+    bar_top = zones["caption_top"]
+    bar_bottom = min(zones["caption_bottom"], h)
+    bar_h = max(bar_bottom - bar_top, 1)
+    gradient = Image.new("RGBA", (w, bar_h))
+    pixels = gradient.load()
+    for row in range(bar_h):
+        t = row / max(bar_h - 1, 1)
+        alpha = int(40 + 175 * (t ** 0.85))
+        for col in range(w):
+            pixels[col, row] = (8, 8, 12, alpha)
+    img.paste(gradient, (0, bar_top), gradient)
+
+
+def _draw_stroked_multiline_text(
+    draw,
+    xy: tuple[int, int],
+    text: str,
+    *,
+    font,
+    fill: tuple[int, int, int],
+    spacing: int,
+    stroke_width: int = 2,
+) -> None:
+    stroke_fill = (0, 0, 0)
+    for dx in range(-stroke_width, stroke_width + 1):
+        for dy in range(-stroke_width, stroke_width + 1):
+            if dx == 0 and dy == 0:
+                continue
+            draw.multiline_text(
+                (xy[0] + dx, xy[1] + dy),
+                text,
+                font=font,
+                fill=stroke_fill,
+                spacing=spacing,
+                align="center",
+            )
+    draw.multiline_text(
+        xy, text, font=font, fill=fill, spacing=spacing, align="center",
+    )
+
+
+def render_progress_bar(
+    frame: Image.Image,
+    *,
+    slide_index: int,
+    slide_count: int,
+    zones: dict[str, int] | None = None,
+) -> Image.Image:
+    """Minimal progress indicator above the platform bottom safe margin."""
+    if slide_count <= 1:
+        return frame
+
+    img = frame.copy().convert("RGBA")
+    w, h = img.size
+    zones = zones or caption_safe_zones(w, h)
+    bar_y = min(zones["caption_bottom"] + int(h * 0.012), h - int(h * 0.04))
+    bar_h = max(int(h * 0.006), 4)
+    track_w = int(w * 0.56)
+    track_x = (w - track_w) // 2
+    from PIL import ImageDraw
+
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle(
+        [track_x, bar_y, track_x + track_w, bar_y + bar_h],
+        radius=bar_h // 2,
+        fill=(255, 255, 255, 55),
+    )
+    progress = (slide_index + 1) / slide_count
+    fill_w = max(int(track_w * progress), bar_h)
+    draw.rounded_rectangle(
+        [track_x, bar_y, track_x + fill_w, bar_y + bar_h],
+        radius=bar_h // 2,
+        fill=(255, 255, 255, 210),
+    )
+    return img.convert("RGB")
+
+
+def show_progress_bars() -> bool:
+    return bool(getattr(settings, "REEL_SHOW_PROGRESS_BAR", False))
+
+
+def render_hook_text_on_frame(
+    frame: Image.Image,
+    text: str,
+    *,
+    position: str = "lower_third",
+    font_scale: float = 1.0,
+    slide_index: int = 0,
+    slide_count: int = 1,
+    show_progress: bool | None = None,
+) -> Image.Image:
+    """
+    Burn a single hook into the lower-third caption bar (never over the hero product).
+
+    position: 'lower_third' (default) — legacy 'top'/'center'/'bottom' map here too.
+    """
+    if show_progress is None:
+        show_progress = show_progress_bars()
+    from PIL import ImageDraw, ImageFont
+
+    if not text or not text.strip():
+        return frame
+
+    img = frame.copy().convert("RGBA")
+    w, h = img.size
+    zones = caption_safe_zones(w, h)
+    _draw_lower_third_gradient(img, zones)
+    draw = ImageDraw.Draw(img)
+
+    base_size = int(w * CAPTION_FONT_SCALE * font_scale)
+    try:
+        from apps.create.agents.graphics import _get_font
+        font = _get_font(base_size, bold=True)
+    except Exception:
+        font = ImageFont.load_default()
+
+    padding_x = int(w * 0.08)
+    max_text_w = w - padding_x * 2
+    chars_per_line = max(int(max_text_w / (base_size * 0.52)), 10)
+    wrapped = _wrap_caption_lines(
+        text, max_lines=CAPTION_MAX_LINES, chars_per_line=chars_per_line,
+    )
+    if not wrapped:
+        return frame.convert("RGB")
+
+    line_spacing = int(base_size * 0.22)
+    bbox = draw.multiline_textbbox(
+        (0, 0), wrapped, font=font, spacing=line_spacing,
+    )
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+
+    x = (w - text_w) // 2
+    bar_mid = (zones["caption_top"] + zones["caption_bottom"]) // 2
+    y = bar_mid - text_h // 2
+    y = max(zones["caption_top"] + int(base_size * 0.15), y)
+    y = min(y, zones["caption_bottom"] - text_h - int(base_size * 0.12))
+
+    _draw_stroked_multiline_text(
+        draw,
+        (x, y),
+        wrapped,
+        font=font,
+        fill=(255, 255, 255),
+        spacing=line_spacing,
+        stroke_width=max(2, base_size // 28),
+    )
+
+    out = img.convert("RGB")
+    if show_progress:
+        out = render_progress_bar(
+            out,
+            slide_index=slide_index,
+            slide_count=slide_count,
+            zones=zones,
+        )
+    return out
+
+
+def _write_hook_frame(
+    image_bytes: bytes,
+    dest: Path,
+    *,
+    slide_index: int = 0,
+    slide_count: int = 1,
+    hook_text: str = "",
+    position: str = "lower_third",
+    source_hint: str = "",
+) -> None:
+    """Write a reel frame with optional lower-third hook burned in."""
+    frame = fit_image_to_story_frame(
+        image_bytes, slide_index=slide_index, source_hint=source_hint,
+    )
+    if hook_text:
+        frame = render_hook_text_on_frame(
+            frame,
+            hook_text,
+            position=position or "lower_third",
+            slide_index=slide_index,
+            slide_count=slide_count,
+        )
+    elif slide_count > 1 and show_progress_bars():
+        frame = render_progress_bar(
+            frame, slide_index=slide_index, slide_count=slide_count,
+        )
+    frame.save(dest, format="JPEG", quality=92, optimize=True)
+
+
+def _ken_burns_ease(progress_expr: str) -> str:
+    """Smoothstep ease-in-out for Ken Burns (0→1 over slide)."""
+    return f"(3*pow({progress_expr},2)-2*pow({progress_expr},3))"
+
+
+def _ken_burns_filter(slide_frames: int, variant: int = 0, *, static: bool = False) -> str:
+    """zoompan filter — eased Ken Burns with directional pan, zoom in/out, and drift."""
+    h, w = OUTPUT_HEIGHT, OUTPUT_WIDTH
+    d = max(slide_frames, 1)
+    if static:
+        return (
+            f"zoompan=z='1':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+            f"d={slide_frames}:s={w}x{h}:fps={DEFAULT_FPS}"
+        )
+
+    v = variant % 10
+    h, w = OUTPUT_HEIGHT, OUTPUT_WIDTH
+    pan_y = int(h * 0.10)
+    pan_x = int(w * 0.08)
+    d = max(slide_frames, 1)
+    ease = _ken_burns_ease(f"on/{d}")
+
+    if v == 0:
+        zoom_expr = f"1+0.10*{ease}"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif v == 1:
+        zoom_expr = f"1.08-0.08*{ease}"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif v == 2:
+        zoom_expr = f"1+0.08*{ease}"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = f"ih/2-(ih/zoom/2)+{pan_y}*(1-{ease})"
+    elif v == 3:
+        zoom_expr = f"1+0.14*{ease}"
+        x_expr = "iw/2-(iw/zoom/2)"
+        y_expr = f"ih/2-(ih/zoom/2)-{pan_y}*(1-{ease})"
+    elif v == 4:
+        zoom_expr = f"1+0.14*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)-{pan_x}*(1-{ease})"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif v == 5:
+        zoom_expr = f"1+0.14*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x}*(1-{ease})"
+        y_expr = "ih/2-(ih/zoom/2)"
+    elif v == 6:
+        zoom_expr = f"1.12-0.12*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x//2}*{ease}"
+        y_expr = f"ih/2-(ih/zoom/2)-{pan_y//2}*{ease}"
+    elif v == 7:
+        zoom_expr = f"1+0.20*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)-{pan_x//2}*{ease}"
+        y_expr = f"ih/2-(ih/zoom/2)+{pan_y//2}*{ease}"
+    elif v == 8:
+        zoom_expr = f"1+0.10*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x}*({ease}-0.5)"
+        y_expr = "ih/2-(ih/zoom/2)"
+    else:
+        zoom_expr = f"1.14-0.14*{ease}"
+        x_expr = f"iw/2-(iw/zoom/2)+{pan_x//3}*{ease}"
+        y_expr = f"ih/2-(ih/zoom/2)-{pan_y//3}*{ease}"
+
+    return (
+        f"zoompan=z='{zoom_expr}':"
+        f"x='{x_expr}':y='{y_expr}':"
+        f"d={slide_frames}:s={w}x{h}:fps={DEFAULT_FPS}"
+    )
+
+
+def _pick_transition(index: int) -> str:
+    return REEL_TRANSITIONS[index % len(REEL_TRANSITIONS)]
+
+
+def slide_durations_for_roles(
+    slide_roles: list[str],
+    *,
+    template: str = "story_arc",
+    target_total_sec: float | None = None,
+    transition_sec: float = 0.45,
+    category: str = "general",
+) -> list[float]:
+    """Role-weighted beats scaled to a target reel length (~12–15s)."""
+    from apps.create.content.reel_director import (
+        CATEGORY_PACING,
+        ROLE_DURATION_SEC,
+        SLIDE_ROLE_CTA,
+        SLIDE_ROLE_HERO,
+        SLIDE_ROLE_HOOK,
+    )
+
+    if not slide_roles:
+        return []
+
+    if len(slide_roles) == 1:
+        return [min(8.0, target_total_sec or 8.0)]
+
+    cat_key = (category or "general").lower()
+    pacing = CATEGORY_PACING.get(cat_key, {})
+
+    weights: list[float] = []
+    for role in slide_roles:
+        base = ROLE_DURATION_SEC.get(role, 2.5)
+        weights.append(base * pacing.get(role, 1.0))
+
+    if template == "flash_commerce":
+        for i, role in enumerate(slide_roles):
+            if role not in (SLIDE_ROLE_HOOK, SLIDE_ROLE_CTA, SLIDE_ROLE_HERO):
+                weights[i] *= 0.88  # snappy but readable (was 0.85)
+    elif template == "lifestyle_story":
+        for i, role in enumerate(slide_roles):
+            if role in (SLIDE_ROLE_HERO, "staging", "desire"):
+                weights[i] *= 1.12  # slower lifestyle holds
+    elif template == "product_reveal":
+        for i, role in enumerate(slide_roles):
+            if role == SLIDE_ROLE_HERO:
+                weights[i] *= 1.20  # long product reveal
+            elif role == SLIDE_ROLE_HOOK:
+                weights[i] *= 0.92
+
+    raw_total = sum(weights)
+    gaps = max(len(slide_roles) - 1, 0)
+    target = target_total_sec or 14.0
+    clip_sum_target = target + gaps * transition_sec
+    scale = clip_sum_target / max(raw_total, 0.1)
+
+    durations = [
+        max(MIN_SLIDE_SEC, min(w * scale, MAX_SLIDE_SEC))
+        for w in weights
+    ]
+
+    # Hero beat held slightly longer when present
+    for i, role in enumerate(slide_roles):
+        if role == SLIDE_ROLE_HERO and i < len(durations):
+            durations[i] = min(MAX_SLIDE_SEC, durations[i] * 1.08)
+        if role == SLIDE_ROLE_HOOK and i == 0 and i < len(durations):
+            durations[i] = min(MAX_SLIDE_SEC, durations[i] * 1.05)
+
+    return durations
+
+
+def _slide_durations_for(
+    count: int,
+    *,
+    is_promo_last: bool = False,
+    template: str = "slideshow",
+) -> list[float]:
+    """Rhythmic pacing — hook longer, AI scenes snappy, CTA held."""
+    if count <= 0:
+        return []
+    if count == 1:
+        return [3.8]
+
+    # Flash commerce: snappy but readable — never below 2.2s middle beats
+    if template == "flash_commerce":
+        durations: list[float] = []
+        for i in range(count):
+            if i == 0:
+                durations.append(2.4)  # Hook — still punchy
+            elif i == count - 1:
+                durations.append(3.0)  # CTA held for price readability
+            else:
+                durations.append(2.2)  # Middle cuts — readable, not frantic
+        return durations
+
+    # Lifestyle story: slower dissolves, longer hero holds
+    if template == "lifestyle_story":
+        durations = []
+        for i in range(count):
+            if i == 0:
+                durations.append(3.0)
+            elif i == 1:
+                durations.append(4.0)  # Staging / lifestyle hold
+            elif i == count - 1:
+                durations.append(3.2)
+            else:
+                durations.append(3.0)
+        return durations
+
+    # Product reveal: quick hook, long hero reveal, crisp CTA
+    if template == "product_reveal":
+        durations = []
+        for i in range(count):
+            if i == 0:
+                durations.append(2.5)
+            elif i == 1:
+                durations.append(4.2)  # Product reveal held
+            elif i == count - 1:
+                durations.append(3.0)
+            else:
+                durations.append(2.6)
+        return durations
+
+    # Story arc: longer storytelling beats
+    if template == "story_arc":
+        durations = []
+        for i in range(count):
+            if i == 0:
+                durations.append(3.5)  # Problem setup
+            elif i == 1:
+                durations.append(3.8)  # Product reveal (held)
+            elif i == count - 1:
+                durations.append(3.0)  # CTA
+            else:
+                durations.append(2.8)  # Benefits
+        return durations
+
+    # Default slideshow pacing
+    durations = []
+    for i in range(count):
+        if i == 0:
+            durations.append(4.0)
+        elif is_promo_last and i == count - 1:
+            durations.append(3.2)
+        elif i % 3 == 1:
+            durations.append(2.7)
+        elif i % 3 == 2:
+            durations.append(3.1)
+        else:
+            durations.append(2.9)
+    return durations
+
+
+def _build_xfade_filter(
+    num_clips: int,
+    slide_sec: float,
+    transition_sec: float,
+    *,
+    slide_durations: list[float] | None = None,
+    transitions: list[str] | None = None,
+) -> tuple[str, str]:
+    """Build filter_complex for chained xfade transitions with varied motion styles."""
+    if num_clips == 1:
+        return "[0:v]format=yuv420p[vout]", "vout"
+
+    durations = slide_durations or [slide_sec] * num_clips
+    if len(durations) < num_clips:
+        durations = durations + [slide_sec] * (num_clips - len(durations))
+
+    parts = []
+    prev = "0:v"
+    offset = 0.0
+    for i in range(1, num_clips):
+        offset += durations[i - 1] - transition_sec
+        out = f"v{i}"
+        if transitions and i - 1 < len(transitions):
+            transition = transitions[i - 1]
+        else:
+            transition = _pick_transition(i - 1)
+        parts.append(
+            f"[{prev}][{i}:v]xfade=transition={transition}:duration={transition_sec:.3f}:offset={offset:.3f}[{out}]"
+        )
+        prev = out
+    parts.append(f"[{prev}]format=yuv420p[vout]")
+    return ";".join(parts), "vout"
+
+
+def _audio_filter_for_reel(*, cta_boost: bool, duration_sec: float) -> str | None:
+    """Optional loudness lift on final beat (flash_drop CTA)."""
+    if not cta_boost or duration_sec < 4:
+        return None
+    fade_start = max(duration_sec - 1.2, 0.0)
+    return (
+        f"volume=1.0:enable='between(t,0,{fade_start:.2f})',"
+        f"volume=1.12:enable='between(t,{fade_start:.2f},{duration_sec:.2f})'"
+    )
+
+
+def compose_motion_reel(
+    image_sources: Iterable[str],
+    *,
+    slide_duration_sec: float = DEFAULT_SLIDE_SEC,
+    transition_sec: float = DEFAULT_TRANSITION_SEC,
+    audio_path: Optional[Path] = None,
+    template: str = "slideshow",
+    hook_texts: list[str] | None = None,
+    slide_roles: list[str] | None = None,
+    ken_burns_variants: list[int] | None = None,
+    transitions: list[str] | None = None,
+    cta_audio_boost: bool = False,
+    slide_durations: list[float] | None = None,
+    brand_context: dict | None = None,
+    music_mood: str = "upbeat",
+) -> bytes:
+    """
+    Compose a motion Reel MP4 from ordered image sources (URLs or paths).
+
+    Returns raw MP4 bytes.
+    """
+    if not ffmpeg_available():
+        raise VideoComposeError("FFmpeg is not installed on this worker")
+
+    sources = [s for s in image_sources if s]
+    if not sources:
+        raise VideoComposeError("At least one image is required for reel composition")
+
+    slide_sec = max(MIN_SLIDE_SEC, min(float(slide_duration_sec), MAX_SLIDE_SEC))
+    transition_sec = min(float(transition_sec), slide_sec * 0.4)
+
+    workdir = Path(tempfile.mkdtemp(prefix="kova-reel-"))
+    output_path = workdir / "output.mp4"
+    silent_audio = False
+
+    try:
+        frame_paths: list[Path] = []
+        texts = hook_texts or []
+        roles = list(slide_roles or [])
+        if not roles:
+            for src in sources:
+                sl = (src or "").lower()
+                if "promo_frame" in sl:
+                    roles.append("cta")
+                elif "channel_story" in sl:
+                    roles.append("hook")
+                else:
+                    roles.append("hero")
+        slide_count = len(sources)
+        use_beat_frames = False
+        hero_bytes: bytes | None = None
+        from apps.create.content.reel_frame_studio import beat_frames_enabled, write_beat_frame
+
+        if beat_frames_enabled():
+            use_beat_frames = True
+            if sources:
+                try:
+                    hero_bytes = _download_bytes(sources[0])
+                except Exception:
+                    hero_bytes = None
+
+        for idx, source in enumerate(sources):
+            frame_path = workdir / f"frame_{idx:02d}.jpg"
+            text = texts[idx] if idx < len(texts) else ""
+            role = roles[idx] if idx < len(roles) else ""
+            if not role and _is_composite_slide_source(source):
+                role = "cta"
+            if role in ("hero", "staging", "angle", "desire"):
+                text = ""
+            image_bytes = _download_bytes(source)
+            is_closing = role == "cta" or _is_composite_slide_source(source)
+
+            if use_beat_frames and (role == "hook" and text.strip() or is_closing):
+                from apps.create.content.reel_frame_studio import write_beat_frame
+
+                beat_text = text
+                if is_closing and not beat_text.strip():
+                    ctx = brand_context or {}
+                    price = (ctx.get("price_label") or "").strip()
+                    cta = (ctx.get("cta_label") or "Shop on WhatsApp").strip()
+                    beat_text = f"{price}\n{cta}" if price else cta
+                write_beat_frame(
+                    frame_path,
+                    role="cta" if is_closing else role,
+                    text=beat_text,
+                    image_bytes=image_bytes,
+                    brand=brand_context,
+                    slide_index=idx,
+                    hero_image_bytes=hero_bytes,
+                    source_hint=source,
+                )
+            elif text and not use_beat_frames:
+                pos = hook_position_for_slide(idx, text)
+                _write_hook_frame(
+                    image_bytes,
+                    frame_path,
+                    slide_index=idx,
+                    slide_count=slide_count,
+                    hook_text=text,
+                    position=pos,
+                    source_hint=source,
+                )
+            else:
+                if _is_composite_slide_source(source):
+                    frame = fit_composite_slide_to_story(image_bytes)
+                else:
+                    frame = fit_image_to_story_frame(
+                        image_bytes, slide_index=idx, source_hint=source,
+                    )
+                if slide_count > 1 and show_progress_bars():
+                    frame = render_progress_bar(
+                        frame, slide_index=idx, slide_count=slide_count,
+                    )
+                frame.save(frame_path, format="JPEG", quality=92, optimize=True)
+            frame_paths.append(frame_path)
+
+        source_list = list(sources)
+        is_promo_last = bool(source_list) and "promo_frame" in (source_list[-1] or "")
+        if slide_durations and len(slide_durations) >= len(frame_paths):
+            slide_durs = list(slide_durations[: len(frame_paths)])
+        elif slide_roles and len(slide_roles) >= len(frame_paths):
+            slide_durs = slide_durations_for_roles(
+                slide_roles[: len(frame_paths)],
+                template=template,
+                transition_sec=transition_sec,
+            )
+        else:
+            slide_durs = _slide_durations_for(
+                len(frame_paths), is_promo_last=is_promo_last, template=template,
+            )
+
+        clip_paths: list[Path] = []
+        for idx, frame_path in enumerate(frame_paths):
+            clip_path = workdir / f"clip_{idx:02d}.mp4"
+            dur = slide_durs[idx] if idx < len(slide_durs) else slide_sec
+            dur = max(MIN_SLIDE_SEC, min(dur, MAX_SLIDE_SEC))
+            slide_frames = max(int(dur * DEFAULT_FPS), 1)
+            kb_variant = idx
+            if ken_burns_variants and idx < len(ken_burns_variants):
+                kb_variant = ken_burns_variants[idx]
+            role_for_kb = roles[idx] if idx < len(roles) else ""
+            src = source_list[idx] if idx < len(source_list) else ""
+            kb_static = role_for_kb == "cta" or _is_composite_slide_source(src)
+            vf = _ken_burns_filter(slide_frames, variant=kb_variant, static=kb_static)
+            cmd = [
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                "-loop", "1", "-i", str(frame_path),
+                "-vf", vf,
+                "-t", f"{dur:.3f}",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-an",
+                str(clip_path),
+            ]
+            subprocess.run(cmd, check=True, capture_output=True, timeout=120)
+            clip_paths.append(clip_path)
+
+        total_duration = sum(slide_durs[: len(clip_paths)])
+        total_duration -= transition_sec * max(len(clip_paths) - 1, 0)
+        total_duration = max(total_duration, slide_durs[0] if slide_durs else slide_sec)
+
+        audio_input = audio_path
+        if audio_input is None:
+            from apps.create.content.reel_music import ensure_audio_bed
+
+            silent_tmp = ensure_audio_bed({"file": ""}, total_duration + 1)
+            audio_input = silent_tmp
+            silent_audio = True
+
+        from apps.create.content.reel_beat_sync import (
+            build_audio_mix_filter,
+            cta_slide_start_sec,
+            cta_sfx_enabled,
+            ensure_cta_sfx_path,
+        )
+
+        sfx_path = None
+        cta_start = None
+        has_cta_role = bool(roles) and roles[-1] == "cta"
+        if cta_sfx_enabled() and has_cta_role and len(clip_paths) > 1:
+            sfx_path = ensure_cta_sfx_path()
+            cta_start = cta_slide_start_sec(slide_durs[: len(clip_paths)], transition_sec)
+
+        filter_graph, vout = _build_xfade_filter(
+            len(clip_paths),
+            slide_sec,
+            transition_sec,
+            slide_durations=slide_durs[: len(clip_paths)],
+            transitions=transitions,
+        )
+
+        audio_idx = len(clip_paths)
+        sfx_idx = audio_idx + 1 if sfx_path else None
+        audio_filter = build_audio_mix_filter(
+            music_input_idx=audio_idx,
+            duration_sec=total_duration,
+            cta_start_sec=cta_start,
+            cta_boost=cta_audio_boost,
+            sfx_input_idx=sfx_idx,
+        )
+        if not audio_filter:
+            audio_filter = _audio_filter_for_reel(
+                cta_boost=cta_audio_boost, duration_sec=total_duration,
+            )
+
+        cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
+        for clip in clip_paths:
+            cmd.extend(["-i", str(clip)])
+        cmd.extend(["-i", str(audio_input)])
+        if sfx_path:
+            cmd.extend(["-i", str(sfx_path)])
+
+        if len(clip_paths) == 1:
+            if audio_filter and "[aout]" in (audio_filter or ""):
+                cmd.extend([
+                    "-map", "0:v",
+                    "-filter_complex", audio_filter,
+                    "-map", "[aout]",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            elif audio_filter:
+                cmd.extend([
+                    "-map", "0:v",
+                    "-filter:a", audio_filter,
+                    "-map", f"{audio_idx}:a",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            else:
+                cmd.extend([
+                    "-map", "0:v", "-map", f"{audio_idx}:a",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+        else:
+            if audio_filter and "[aout]" in audio_filter:
+                fc = f"{filter_graph};{audio_filter}"
+                cmd.extend([
+                    "-filter_complex", fc,
+                    "-map", f"[{vout}]", "-map", "[aout]",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            elif audio_filter:
+                fc = f"{filter_graph};[{audio_idx}:a]{audio_filter}[aout]"
+                cmd.extend([
+                    "-filter_complex", fc,
+                    "-map", f"[{vout}]", "-map", "[aout]",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+            else:
+                cmd.extend([
+                    "-filter_complex", filter_graph,
+                    "-map", f"[{vout}]", "-map", f"{audio_idx}:a",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-shortest",
+                    str(output_path),
+                ])
+
+        subprocess.run(cmd, check=True, capture_output=True, timeout=300)
+
+        if not output_path.is_file() or output_path.stat().st_size < 1000:
+            raise VideoComposeError("FFmpeg produced an empty or invalid MP4")
+
+        logger.info(
+            "compose_motion_reel: template=%s slides=%d duration~%.1fs size=%d",
+            template, len(sources), total_duration, output_path.stat().st_size,
+        )
+        return output_path.read_bytes()
+
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or b"").decode(errors="replace")[-500:]
+        raise VideoComposeError(f"FFmpeg failed: {stderr}") from exc
+    finally:
+        if silent_audio and audio_path is None:
+            try:
+                if audio_input and Path(audio_input).is_file() and str(audio_input).startswith(tempfile.gettempdir()):
+                    Path(audio_input).unlink(missing_ok=True)
+            except Exception:
+                pass
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
+def compose_carousel_to_reel(
+    slide_urls: Iterable[str],
+    *,
+    audio_path: Optional[Path] = None,
+    hook_texts: list[str] | None = None,
+    slide_roles: list[str] | None = None,
+    ken_burns_variants: list[int] | None = None,
+    transitions: list[str] | None = None,
+    cta_audio_boost: bool = False,
+    template: str = "carousel_to_video",
+) -> bytes:
+    """Carousel → Reel: Ken Burns + role-based xfade."""
+    return compose_motion_reel(
+        slide_urls,
+        slide_duration_sec=2.8,
+        transition_sec=0.65,
+        audio_path=audio_path,
+        template=template,
+        hook_texts=hook_texts,
+        slide_roles=slide_roles,
+        ken_burns_variants=ken_burns_variants,
+        transitions=transitions,
+        cta_audio_boost=cta_audio_boost,
+    )
+
+
+def compose_from_plan(plan, *, audio_path: Optional[Path] = None, brand_context: dict | None = None) -> bytes:
+    """Render a ReelComposePlan from reel_director."""
+    transition_sec = plan.transition_sec if plan.transition_sec is not None else DEFAULT_TRANSITION_SEC
+    return compose_motion_reel(
+        plan.image_urls,
+        transition_sec=transition_sec,
+        audio_path=audio_path,
+        template=plan.template,
+        hook_texts=plan.hook_texts,
+        slide_roles=plan.slide_roles,
+        ken_burns_variants=plan.ken_burns_variants,
+        transitions=plan.transitions or None,
+        cta_audio_boost=plan.cta_audio_boost,
+        slide_durations=plan.slide_durations or None,
+        brand_context=brand_context,
+        music_mood=plan.music_mood,
+    )

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from django.urls import reverse
 
-from apps.platforms.models import SocialAccount
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.mark.django_db

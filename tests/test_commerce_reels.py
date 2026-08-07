@@ -3,9 +3,9 @@
 import pytest
 from django.urls import reverse
 
-from apps.content.models import Post
-from apps.products.commerce_reels import get_public_product_reel, get_public_shop_reels
-from apps.products.models import Product
+from apps.create.content.models import Post
+from apps.commerce.products.commerce_reels import get_public_product_reel, get_public_shop_reels
+from apps.commerce.products.models import Product
 
 
 def _ready_reel(user, product, *, video_url="https://cdn.example.com/reel.mp4"):

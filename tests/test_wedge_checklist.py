@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.wedge_checklist import build_wedge_checklist
-from apps.leads.models import Lead
-from apps.platforms.models import SocialAccount
-from apps.products.models import Product
+from apps.core.accounts.wedge_checklist import build_wedge_checklist
+from apps.commerce.leads.models import Lead
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.models import Product
 
 
 @pytest.mark.django_db

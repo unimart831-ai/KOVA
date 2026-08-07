@@ -379,11 +379,11 @@ print(bool(settings.MPESA_CONSUMER_KEY))  # → True
 print(settings.MPESA_CALLBACK_URL)      # → "https://xxxx.ngrok-free.app/billing/webhook/mpesa/"
 
 # Check M-Pesa payments
-from apps.billing.models import MpesaPayment
+from apps.core.billing.models import MpesaPayment
 MpesaPayment.objects.all()  # → list of payment records
 
 # Test phone formatting
-from apps.billing.mpesa import format_phone_number
+from apps.core.billing.mpesa import format_phone_number
 format_phone_number("0712345678")   # → "254712345678"
 format_phone_number("+254712345678")  # → "254712345678"
 ```
@@ -672,7 +672,7 @@ python manage.py shell
 ```
 
 ```python
-from apps.billing.models import MpesaPayment
+from apps.core.billing.models import MpesaPayment
 
 # Last 5 payments
 for p in MpesaPayment.objects.all()[:5]:
@@ -698,16 +698,16 @@ print(p.status, p.result_code, p.result_desc)
 
 ```powershell
 # Test M-Pesa auth (in Django shell)
-python manage.py shell -c "from apps.billing.mpesa import get_access_token; print(get_access_token()[:20] + '...')"
+python manage.py shell -c "from apps.core.billing.mpesa import get_access_token; print(get_access_token()[:20] + '...')"
 
 # Test phone formatting
-python manage.py shell -c "from apps.billing.mpesa import format_phone_number; print(format_phone_number('0712345678'))"
+python manage.py shell -c "from apps.core.billing.mpesa import format_phone_number; print(format_phone_number('0712345678'))"
 
 # Check pending payments
-python manage.py shell -c "from apps.billing.models import MpesaPayment; print(MpesaPayment.objects.filter(status='pending').count(), 'pending')"
+python manage.py shell -c "from apps.core.billing.models import MpesaPayment; print(MpesaPayment.objects.filter(status='pending').count(), 'pending')"
 
 # Manually run the subscription check task
-python manage.py shell -c "from apps.billing.tasks import check_mpesa_subscriptions; print(check_mpesa_subscriptions())"
+python manage.py shell -c "from apps.core.billing.tasks import check_mpesa_subscriptions; print(check_mpesa_subscriptions())"
 ```
 
 ### ngrok Inspector

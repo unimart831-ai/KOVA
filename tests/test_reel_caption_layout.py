@@ -1,8 +1,8 @@
 """Unit tests for reel caption layout, safe zones, and hook sequencing."""
 
 from PIL import Image
-from apps.content.reel_director import build_hook_texts
-from apps.content.video_compose import (
+from apps.create.content.reel_director import build_hook_texts
+from apps.create.content.video_compose import (
     CAPTION_MAX_LINES,
     SAFE_BOTTOM_MARGIN,
     SAFE_TOP_MARGIN,

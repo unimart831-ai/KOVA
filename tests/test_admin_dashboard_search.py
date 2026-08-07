@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from django.urls import reverse
 
-from apps.accounts.models import User
-from apps.billing.models import AgencySalesInquiry
+from apps.core.accounts.models import User
+from apps.core.billing.models import AgencySalesInquiry
 
 
 @pytest.mark.django_db

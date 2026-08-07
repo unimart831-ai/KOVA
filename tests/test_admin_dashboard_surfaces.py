@@ -6,10 +6,10 @@ import pytest
 from django.test import override_settings
 from django.urls import reverse
 
-from apps.analytics.models import PageView
-from apps.briefs.models import DailyBrief
-from apps.content.models import SystemSafetyConfig
-from apps.products.models import Product
+from apps.insight.analytics.models import PageView
+from apps.create.briefs.models import DailyBrief
+from apps.create.content.models import SystemSafetyConfig
+from apps.commerce.products.models import Product
 
 
 @pytest.mark.django_db
@@ -163,7 +163,7 @@ class TestAdminDashboardSurfaces:
         assert config.content_safety_checks_enabled is False
 
     def test_overview_metrics_uses_cache(self, staff_user):
-        from apps.admin_dashboard.overview_metrics import (
+        from apps.core.admin_dashboard.overview_metrics import (
             get_cached_overview_context,
             invalidate_overview_cache,
         )

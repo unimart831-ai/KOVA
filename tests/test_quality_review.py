@@ -8,8 +8,8 @@ dimensions, gates on the publish threshold + safety floors, and produces a
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.content.models import Post
-from apps.content.quality_review import review_post
+from apps.create.content.models import Post
+from apps.create.content.quality_review import review_post
 
 User = get_user_model()
 

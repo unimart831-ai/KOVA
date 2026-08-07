@@ -266,7 +266,7 @@ send_email_task.delay(
 
 Import:
 ```python
-from apps.emails.services import email_service
+from apps.messaging.emails.services import email_service
 ```
 
 ### Core method
@@ -463,7 +463,7 @@ def send_my_new_type(self, user, custom_data):
 # apps/emails/tasks.py
 @shared_task(name="emails.send_my_new_type")
 def send_my_new_type_email(user_id, custom_data):
-    from apps.emails.services import email_service
+    from apps.messaging.emails.services import email_service
     from django.contrib.auth import get_user_model
     user = get_user_model().objects.get(pk=user_id)
     email_service.send_my_new_type(user, custom_data)
@@ -472,7 +472,7 @@ def send_my_new_type_email(user_id, custom_data):
 ### Step 6: Wire it in
 ```python
 # In whatever view/signal/task triggers this email:
-from apps.emails.tasks import send_my_new_type_email
+from apps.messaging.emails.tasks import send_my_new_type_email
 send_my_new_type_email.delay(str(user.pk), "some data")
 ```
 
@@ -613,7 +613,7 @@ Check your terminal/Celery worker output.
 # Test all templates load correctly
 python manage.py shell -c "
 from django.template.loader import get_template
-from apps.emails.services import EMAIL_TEMPLATES
+from apps.messaging.emails.services import EMAIL_TEMPLATES
 for key, (path, _) in EMAIL_TEMPLATES.items():
     get_template(path)
     print(f'  ✓ {key}: {path}')

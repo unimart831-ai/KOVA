@@ -4,11 +4,11 @@ from unittest.mock import patch
 
 import pytest
 
-from apps.partners.marketplace_rules import is_platform_allowed, is_sandbox_publish
-from apps.partners.models import MarketplacePartner, Partner, WebhookDeliveryLog
-from apps.products.marketplace_sync import apply_sync_images_to_product_data, merge_sync_images
-from apps.products.models import Product
-from apps.products.product_cta import resolve_product_cta_url, uses_marketplace_cta
+from apps.core.partners.marketplace_rules import is_platform_allowed, is_sandbox_publish
+from apps.core.partners.models import MarketplacePartner, Partner, WebhookDeliveryLog
+from apps.commerce.products.marketplace_sync import apply_sync_images_to_product_data, merge_sync_images
+from apps.commerce.products.models import Product
+from apps.commerce.products.product_cta import resolve_product_cta_url, uses_marketplace_cta
 
 
 @pytest.mark.django_db
@@ -67,7 +67,7 @@ class TestMarketplaceSyncHelpers:
 
 @pytest.mark.django_db
 class TestMarketplaceWebhooks:
-    @patch("apps.partners.webhooks.dispatch_marketplace_webhook.delay")
+    @patch("apps.core.partners.webhooks.dispatch_marketplace_webhook.delay")
     def test_notify_product_synced(self, mock_delay, user):
         partner = Partner.objects.create(user=user, referral_code="KOVA-TEST-BBBB")
         mp = MarketplacePartner.objects.create(
@@ -78,8 +78,8 @@ class TestMarketplaceWebhooks:
             api_key_prefix="kmp_uni",
             webhook_url="https://example.com/hook",
         )
-        from apps.partners.models import MarketplaceSellerAccount
-        from apps.partners.webhooks import notify_product_synced
+        from apps.core.partners.models import MarketplaceSellerAccount
+        from apps.core.partners.webhooks import notify_product_synced
 
         seller = MarketplaceSellerAccount.objects.create(
             marketplace=mp,
@@ -91,7 +91,7 @@ class TestMarketplaceWebhooks:
         mock_delay.assert_called_once()
         assert mock_delay.call_args[0][1] == "product.synced"
 
-    @patch("apps.partners.webhooks.dispatch_marketplace_webhook.delay")
+    @patch("apps.core.partners.webhooks.dispatch_marketplace_webhook.delay")
     def test_notify_seller_activated(self, mock_delay, user):
         partner = Partner.objects.create(user=user, referral_code="KOVA-TEST-CCCC")
         mp = MarketplacePartner.objects.create(
@@ -102,8 +102,8 @@ class TestMarketplaceWebhooks:
             api_key_prefix="kmp_sbx",
             webhook_url="https://example.com/hook",
         )
-        from apps.partners.models import MarketplaceSellerAccount
-        from apps.partners.webhooks import notify_seller_activated
+        from apps.core.partners.models import MarketplaceSellerAccount
+        from apps.core.partners.webhooks import notify_seller_activated
 
         seller = MarketplaceSellerAccount.objects.create(
             marketplace=mp,
@@ -128,7 +128,7 @@ class TestMarketplaceRules:
             api_key_prefix="kmp_rst",
             settings={"allowed_platforms": ["instagram"]},
         )
-        from apps.partners.models import MarketplaceSellerAccount
+        from apps.core.partners.models import MarketplaceSellerAccount
 
         MarketplaceSellerAccount.objects.create(
             marketplace=mp,
@@ -149,7 +149,7 @@ class TestMarketplaceRules:
             api_key_prefix="kmp_sb2",
             is_sandbox=True,
         )
-        from apps.partners.models import MarketplaceSellerAccount
+        from apps.core.partners.models import MarketplaceSellerAccount
 
         MarketplaceSellerAccount.objects.create(
             marketplace=mp,
@@ -172,7 +172,7 @@ class TestWebhookDeliveryLog:
             api_key_prefix="kmp_log",
             webhook_url="https://example.com/hook",
         )
-        from apps.partners.webhooks import _log_delivery
+        from apps.core.partners.webhooks import _log_delivery
 
         _log_delivery(mp, "product.synced", {"created": 1}, status="success", response_code=200)
         assert WebhookDeliveryLog.objects.filter(marketplace=mp, event="product.synced").exists()
@@ -183,7 +183,7 @@ class TestSellerBulkProvision:
     def test_bulk_provision_sellers(self, user):
         from rest_framework.test import APIClient
 
-        from apps.partners.models import hash_api_key
+        from apps.core.partners.models import hash_api_key
 
         partner = Partner.objects.create(user=user, referral_code="KOVA-TEST-GGGG")
         raw_key = "kmp_testbulkkey123456789012345678901234"

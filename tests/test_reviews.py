@@ -17,13 +17,13 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.bookings.models import Booking, BookingLink
-from apps.leads.models import Lead
-from apps.reviews.models import ReviewRequest
-from apps.reviews.sentiment import classify
-from apps.reviews.services import process_response, send_review_request
-from apps.reviews.tasks import send_due_review_requests
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.bookings.models import Booking, BookingLink
+from apps.commerce.leads.models import Lead
+from apps.commerce.reviews.models import ReviewRequest
+from apps.commerce.reviews.sentiment import classify
+from apps.commerce.reviews.services import process_response, send_review_request
+from apps.commerce.reviews.tasks import send_due_review_requests
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────

@@ -13,25 +13,25 @@
 | Location | `apps/campaigns/` |
 | Status | **DEPRECATED** — models removed, migrations-only |
 | Evidence | `models.py` contains only a docstring: "Legacy Campaign removed; use content.MarketingCampaign" |
-| Action | Remove from `INSTALLED_APPS`. Keep migration files for history unless squashed. |
-| Risk if removed | None to application; ensure no FK references from other app migrations |
+| Action | **Keep in `INSTALLED_APPS` until migrations are squashed.** `bookings`, `qr_attribution`, and `content` migrations historically FK to `campaigns.campaign`. |
+| Risk if removed now | Fresh `migrate` fails resolving historical dependencies |
 
 ### 2. `media_queue` References
 
 | Attribute | Detail |
 |-----------|--------|
-| Status | **REMOVED** — app no longer exists |
-| Evidence | `media/tasks.py` contains a deprecated no-op task `media_queue.process_queues`. README historically mentioned it. |
-| Action | Remove the no-op task from `media/tasks.py`. Remove Celery Beat schedule entry if one exists. |
+| Status | **CLEANED** (July 2026) |
+| Evidence | App removed; no-op Celery task removed from `media/tasks.py`. |
+| Action | Done. `prune_stale_beat_tasks` still disables leftover DB beat rows named `media_queue.process_queues`. |
 | Risk if removed | None |
 
 ### 3. `memes` App References
 
 | Attribute | Detail |
 |-----------|--------|
-| Status | **REMOVED** — app no longer exists |
-| Evidence | README historically mentioned this app |
-| Action | Remove any remaining references in documentation |
+| Status | **CLEANED** (July 2026) |
+| Evidence | App removed; README + system map entry removed |
+| Action | Done |
 | Risk if removed | None |
 
 ---
@@ -42,21 +42,23 @@
 
 | Attribute | Detail |
 |-----------|--------|
-| `kova_page` | Templates at `templates/kova_page/` (13 templates), `salesperson.py`, `urls.py` → `/p/<slug>/` |
-| `links` | `KovaPage` model, `KovaLink`, forms, templates at `templates/links/` → `/k/<slug>/` |
-| Overlap | Both serve as public business pages with product showcases |
-| Distinction | `kova_page` renders the full business profile (hero, catalog, services, reviews, salesperson); `links` is link-in-bio with forms |
-| Action | These serve different purposes but naming is confusing. Rename: `kova_page` → "Business Hub" (public conversion page), `links` → "Link Pages" (link-in-bio). The AI Salesperson should stay with `kova_page` as it's tied to the public business page. |
+| Status | **CONSOLIDATED** (July 2026) |
+| Survivor | `apps.commerce.links` — link-in-bio at `/k/` plus Business Hub at `/p/` via `apps.commerce.links.hub` |
+| Evidence | `apps.kova_page` removed from INSTALLED_APPS; hub/salesperson/views live under `apps/links/hub/` |
+| URLs | Both `/p/<slug>/` and `/k/<slug>/` preserved; `{% url 'kova_page:...' %}` still works via hub urls `app_name` |
+| Action | Done |
 
 ### 5. Three Inbox Implementations
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| WhatsApp Inbox | `whatsapp/views.py` + `templates/whatsapp/inbox.html` | WhatsApp conversations |
-| Unified Inbox | `engage/` + `templates/engage/unified_inbox.html` | All platform interactions |
-| DM Inbox | `engage/dm_inbox.py` + `templates/engage/dm_inbox.html` | Facebook/IG DMs only |
-
-| Action | Consolidate into one inbox view with channel filters |
+| Attribute | Detail |
+|-----------|--------|
+| Status | **PARTIALLY CONSOLIDATED** (July 2026) |
+| Survivor hub | `engage:unified_inbox` (Needs reply) — deep-links to specialists |
+| WhatsApp | Kept as workspace (`whatsapp:conversation`); DM WhatsApp filter redirects here |
+| Comments | `engage:inbox` with `?highlight=` for deep-links |
+| Messages | `engage:dm_inbox` for FB/IG only |
+| Billing | Plan gate covers unified + DM + auto-sent routes |
+| Action | Remaining: optional UI merge of Comments+DM tabs into one Interaction filter view |
 
 ### 6. Two Weekly Digest Models
 
@@ -103,16 +105,16 @@
 | `photoroom_composition.py` | Multi-product hero | Keep (V1.1) |
 | `photoroom_virtual_models.py` | Virtual model shots | V1.1 |
 | `photoroom_video.py` | Video animation | V1.1 |
-| `photoroom_batch.py` | Bulk processing | Keep |
-| `photoroom_create_any.py` | Promo banners | V1.1 |
-| `photoroom_visual_qa.py` | Quality audit | V2 |
+| `photoroom_batch.py` | Bulk processing | **Deleted** (unused stub) |
+| `photoroom_create_any.py` | Promo banners | **Deleted** (unused stub) |
+| `photoroom_visual_qa.py` | Quality audit | **Deleted** (unused stub) |
 | `photoroom_review.py` | Human review flags | V1.1 |
 | `photoroom_brand_template.py` | Brand presets | Keep |
 | `photoroom_food.py` | Food presets | V1.1 |
 | `photoroom_local.py` | Local fallbacks | Keep |
 | `media/photoroom_brief.py` | Brief → variants | V1.1 |
 
-**Recommendation:** For V1, active files should be: `photoroom.py`, `photoroom_preflight.py`, `photoroom_photofix.py`, `photoroom_batch.py`, `photoroom_brand_template.py`, `photoroom_local.py`. The rest can be feature-flagged or deferred.
+**Recommendation:** Active Photoroom modules: `photoroom.py`, `photoroom_api.py`, `photoroom_plus.py`, `photoroom_basic.py`, `photoroom_preflight.py`, `photoroom_photofix.py`, `photoroom_brand_template.py`, `photoroom_local.py`, `photoroom_guard.py`, `photoroom_review.py`, plus feature modules (`composition`, `video`, `virtual_models`, `food`).
 
 ### 10. Partner/Marketplace System (10 Models)
 
@@ -157,12 +159,11 @@ Plus: full API (`api/partner_views.py`), management command (`import_unimart_ven
 | Status | Stub — OAuth flow exists but integration untested |
 | Action | Defer to V2. African SME target is unlikely to use Shopify. |
 
-### 15. Remotion Video Rendering
+### 15. Remotion Video Rendering — REMOVED
 
-| Location | `media_render/` (React/TypeScript subproject) |
-| Purpose | Programmatic product reel video rendering |
-| Status | Exists but unclear usage in production pipeline |
-| Action | Assess whether `media/reel_bridge.py` actually invokes Remotion or if it's been superseded by Fal/Kling. If unused, archive. |
+| Location | Was `media_render/` |
+| Status | **REMOVED** (July 2026). Reels use FFmpeg (`REEL_RENDER_BACKEND=ffmpeg`). |
+| Note | `apps/create/media/remotion_bridge.py` remains as a no-op fallback if env is set to `remotion`. |
 
 ---
 
@@ -191,12 +192,12 @@ Sales brochure HTML/PDF assets.
 
 | Action | Items | Priority |
 |--------|-------|----------|
-| **Remove from INSTALLED_APPS** | `campaigns` | P0 |
-| **Remove dead code** | `media_queue` no-op task, `memes` references | P0 |
+| **Keep until migration squash** | `campaigns` in INSTALLED_APPS | P2 |
+| **Remove dead code** | `media_queue` no-op, `memes` system map, unused Photoroom stubs | **Done** |
 | **Rename for clarity** | Duplicate model names (4 pairs) | P1 |
 | **Consolidate** | 3 inbox views → 1 | P1 |
 | **Feature-flag/hide** | Partners, QR, competitors, A/B, Shopify, reviews | P1 |
-| **Simplify** | Photoroom (18 → 6 active files) | P1 |
-| **Move out of repo** | `fundraising/`, `marketing/` | P2 |
+| **Simplify** | Photoroom (deleted 3 unused stubs; remaining are live) | **Partial** |
+| **Move out of repo** | `fundraising/`, `marketing/` | **Done** |
 | **Assess and potentially archive** | Remotion, competitor screenshots | P2 |
 | **Rename apps** | `kova_page` → clarify purpose | P2 |

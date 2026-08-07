@@ -3,9 +3,9 @@
 import pytest
 from django.urls import reverse
 
-from apps.accounts.models import UserProfile
-from apps.products.models import Product, ProductCategory
-from apps.products.storefront import (
+from apps.core.accounts.models import UserProfile
+from apps.commerce.products.models import Product, ProductCategory
+from apps.commerce.products.storefront import (
     about_blurb,
     catalog_section_label,
     featured_products,

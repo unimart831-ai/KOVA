@@ -1,6 +1,6 @@
 """Tests for reel image curation."""
 
-from apps.products.reel_curation import curate_reel_image_urls
+from apps.commerce.products.reel_curation import curate_reel_image_urls
 
 
 def test_curate_orders_story_then_ai():

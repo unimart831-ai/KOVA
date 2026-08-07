@@ -5,15 +5,15 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.agents.models import AgentAction
-from apps.products.gallery_preferences import (
+from apps.create.agents.models import AgentAction
+from apps.commerce.products.gallery_preferences import (
     build_gallery_scenes,
     set_hero_image,
     set_scene_included,
     set_variant_review_status,
 )
-from apps.products.models import Product
-from apps.products.photoroom_review import summarize_review_state
+from apps.commerce.products.models import Product
+from apps.commerce.products.photoroom_review import summarize_review_state
 
 
 def _studio_url(product_id, variant="studio_white", suffix="abc123"):
@@ -203,7 +203,7 @@ def test_review_variant_approve_view(auth_client, user):
 
 @override_settings(PHOTOROOM_REVIEW_ALTERATIONS=True)
 def test_snap_pipeline_gates_carousel_on_pending_review(db, user):
-    from apps.products.snap_pipeline import build_snap_pipeline_status
+    from apps.commerce.products.snap_pipeline import build_snap_pipeline_status
 
     pid = "66666666-6666-6666-6666-666666666666"
     ghost = _ghost_url(pid)

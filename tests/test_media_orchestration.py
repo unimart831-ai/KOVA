@@ -2,12 +2,12 @@
 
 import pytest
 
-from apps.accounts.models import UserProfile
-from apps.media.asset_intelligence import recommend_media_plan
-from apps.media.brand_dna import resolve_brand_dna
-from apps.media.content_types import ContentFormat, MediaPlan, ReelBackend
-from apps.media.router import pick_carousel_backend, pick_reel_backend
-from apps.products.models import BusinessAsset, Product
+from apps.core.accounts.models import UserProfile
+from apps.create.media.asset_intelligence import recommend_media_plan
+from apps.create.media.brand_dna import resolve_brand_dna
+from apps.create.media.content_types import ContentFormat, MediaPlan, ReelBackend
+from apps.create.media.router import pick_carousel_backend, pick_reel_backend
+from apps.commerce.products.models import BusinessAsset, Product
 
 
 @pytest.mark.django_db

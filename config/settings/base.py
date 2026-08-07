@@ -76,36 +76,33 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "apps.accounts",
-    "apps.platforms",
-    "apps.profile_audit",
-    "apps.content",
-    "apps.agents",
-    "apps.analytics",
-    "apps.briefs",
-    "apps.calendar_intel",
-    "apps.media",
-    "apps.engage",
-    "apps.billing",
-    "apps.notifications",
-    "apps.emails",
-    "apps.admin_dashboard",
-    "apps.help",
-    "apps.teams",
-    "apps.partners",
-    "apps.links",
-    "apps.leads",
-    "apps.products",
+    "apps.core.accounts",
+    "apps.core.platforms",
+    "apps.create.content",
+    "apps.create.agents",
+    "apps.insight.analytics",
+    "apps.create.briefs",
+    "apps.create.media",
+    "apps.messaging.engage",
+    "apps.core.billing",
+    "apps.messaging.notifications",
+    "apps.messaging.emails",
+    "apps.core.admin_dashboard",
+    "apps.insight.help",
+    "apps.core.teams",
+    "apps.core.partners",
+    "apps.commerce.links",
+    "apps.commerce.leads",
+    "apps.commerce.products",
     # Legacy app — models removed, kept installed ONLY so its migration
     # history stays loadable (bookings/qr_attribution/content migrations
     # depend on campaigns.0002). Safe to drop after squashing migrations.
-    "apps.campaigns",
-    "apps.whatsapp",
-    "apps.qr_attribution",
-    "apps.bookings",
-    "apps.reviews",
-    "apps.kova_page",
-    "apps.api",
+    "apps.core.campaigns",
+    "apps.messaging.whatsapp",
+    "apps.commerce.qr_attribution",
+    "apps.commerce.bookings",
+    "apps.commerce.reviews",
+    "apps.insight.api",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -113,21 +110,21 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "apps.accounts.middleware.HealthCheckMiddleware",
+    "apps.core.accounts.middleware.HealthCheckMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "apps.accounts.middleware.ProfilePrefetchMiddleware",
-    "apps.accounts.middleware.RequirePhoneMiddleware",
+    "apps.core.accounts.middleware.ProfilePrefetchMiddleware",
+    "apps.core.accounts.middleware.RequirePhoneMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
-    "apps.accounts.middleware.OnboardingMiddleware",
-    "apps.billing.middleware.PlanEnforcementMiddleware",
-    "apps.partners.middleware.ReferralMiddleware",
-    "apps.analytics.middleware.FeatureUsageMiddleware",
+    "apps.core.accounts.middleware.OnboardingMiddleware",
+    "apps.core.billing.middleware.PlanEnforcementMiddleware",
+    "apps.core.partners.middleware.ReferralMiddleware",
+    "apps.insight.analytics.middleware.FeatureUsageMiddleware",
 ]
 
 # ─── URLS ────────────────────────────────────────────────────────────────────
@@ -147,15 +144,16 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "apps.products.context_processors.product_nav",
-                "apps.billing.context_processors.plan_limit_notice",
-                "apps.billing.context_processors.user_plan_sidebar",
-                "apps.accounts.context_processors.nav_badges",
-                "apps.accounts.context_processors.platforms_summary",
-                "apps.accounts.context_processors.kova_voice",
-                "apps.teams.context_processors.agency_theme",
-                "apps.admin_dashboard.context_processors.admin_nav",
-                "apps.media.context_processors.media_capabilities",
+                "apps.commerce.products.context_processors.product_nav",
+                "apps.core.billing.context_processors.plan_limit_notice",
+                "apps.core.billing.context_processors.user_plan_sidebar",
+                "apps.core.accounts.context_processors.nav_badges",
+                "apps.core.accounts.context_processors.platforms_summary",
+                "apps.core.accounts.context_processors.kova_voice",
+                "apps.core.teams.context_processors.agency_theme",
+                "apps.core.admin_dashboard.context_processors.admin_nav",
+                "apps.create.media.context_processors.media_capabilities",
+                "apps.core.features.kova_features_context",
             ],
         },
     },
@@ -279,14 +277,6 @@ CELERY_BEAT_SCHEDULE = {
     "check-mpesa-subscriptions": {
         "task": "billing.check_mpesa_subscriptions",
         "schedule": 24 * 3600.0,  # daily — expiry checks, grace period, renewals
-    },
-    "calculate-partner-commissions": {
-        "task": "partners.calculate_monthly_commissions",
-        "schedule": 24 * 3600.0,  # daily — no-ops except when previous month not yet billed
-    },
-    "check-partner-milestones": {
-        "task": "partners.check_partner_milestones",
-        "schedule": 24 * 3600.0,  # daily — award milestone bonuses when thresholds hit
     },
     "measure-agent-outcomes": {
         "task": "agents.measure_agent_outcomes",
@@ -438,10 +428,10 @@ AUTHENTICATION_BACKENDS = [
 
 # django-allauth config
 SITE_ID = 1
-ACCOUNT_ADAPTER = "apps.accounts.adapter.AsyncEmailAccountAdapter"
+ACCOUNT_ADAPTER = "apps.core.accounts.adapter.AsyncEmailAccountAdapter"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "phone_number*", "password1*", "password2*"]
-ACCOUNT_SIGNUP_FORM_CLASS = "apps.accounts.forms.KovaSignupForm"
+ACCOUNT_SIGNUP_FORM_CLASS = "apps.core.accounts.forms.KovaSignupForm"
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
@@ -450,7 +440,7 @@ LOGIN_REDIRECT_URL = "/brief/"
 LOGOUT_REDIRECT_URL = "/"
 LOGIN_URL = "/accounts/login/"
 
-SOCIALACCOUNT_ADAPTER = "apps.accounts.adapter.KovaSocialAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "apps.core.accounts.adapter.KovaSocialAccountAdapter"
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
@@ -555,7 +545,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
-        "apps.api.throttling.PlanBasedThrottle",
+        "apps.insight.api.throttling.PlanBasedThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "20/minute",
@@ -798,9 +788,6 @@ PHOTOROOM_BASIC_ROUTING_ENABLED = env.bool("PHOTOROOM_BASIC_ROUTING_ENABLED", de
 PHOTOROOM_HD_CUTOUT_ENABLED = env.bool("PHOTOROOM_HD_CUTOUT_ENABLED", default=True)
 PHOTOROOM_IRONING_ENABLED = env.bool("PHOTOROOM_IRONING_ENABLED", default=True)
 PHOTOROOM_VIDEO_CREDITS_ENABLED = env.bool("PHOTOROOM_VIDEO_CREDITS_ENABLED", default=True)
-PHOTOROOM_BATCH_API_ENABLED = env.bool("PHOTOROOM_BATCH_API_ENABLED", default=False)
-PHOTOROOM_CREATE_ANY_ENABLED = env.bool("PHOTOROOM_CREATE_ANY_ENABLED", default=False)
-PHOTOROOM_VISUAL_QA_ENABLED = env.bool("PHOTOROOM_VISUAL_QA_ENABLED", default=False)
 PHOTOROOM_REVIEW_ALTERATIONS = env.bool("PHOTOROOM_REVIEW_ALTERATIONS", default=True)
 PHOTOROOM_AI_SHADOWS_MODEL_ENABLED = env.bool("PHOTOROOM_AI_SHADOWS_MODEL_ENABLED", default=True)
 BEAUTIFY_SEED_DEFAULT = 117879368
@@ -809,6 +796,30 @@ EDIT_WITH_AI_SEED_DEFAULT = 2016886668
 # Phase 5: Platform engagement expansion
 ENGAGE_DM_INBOX_ENABLED = env.bool("ENGAGE_DM_INBOX_ENABLED", default=True)
 TIKTOK_RESEARCH_API_ENABLED = env.bool("TIKTOK_RESEARCH_API_ENABLED", default=False)
+
+# Optional product surfaces (apps stay installed; URLs/nav/beat gated)
+KOVA_FEATURES = {
+    "bookings": env.bool("FEATURE_BOOKINGS", default=True),
+    "qr_attribution": env.bool("FEATURE_QR_ATTRIBUTION", default=True),
+    "reviews": env.bool("FEATURE_REVIEWS", default=True),
+    "partners": env.bool("FEATURE_PARTNERS", default=True),
+}
+
+if KOVA_FEATURES.get("partners", True):
+    CELERY_BEAT_SCHEDULE["calculate-partner-commissions"] = {
+        "task": "partners.calculate_monthly_commissions",
+        "schedule": 24 * 3600.0,
+    }
+    CELERY_BEAT_SCHEDULE["check-partner-milestones"] = {
+        "task": "partners.check_partner_milestones",
+        "schedule": 24 * 3600.0,
+    }
+else:
+    MIDDLEWARE = [
+        m for m in MIDDLEWARE
+        if "partners.middleware.ReferralMiddleware" not in m
+    ]
+
 
 # Legacy — also used by media orchestration (Fal.ai Flux + Kling)
 FAL_KEY = env("FAL_KEY", default="")

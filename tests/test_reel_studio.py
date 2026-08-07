@@ -1,10 +1,10 @@
 """Professional reel studio — curation, role-aware copy, sanitization."""
 
-from apps.content.reel_studio import (
+from apps.create.content.reel_studio import (
     filter_reel_sources,
     sanitize_hooks_for_roles,
 )
-from apps.products.reel_curation import curate_reel_image_urls
+from apps.commerce.products.reel_curation import curate_reel_image_urls
 
 
 def test_filter_reel_sources_excludes_carousels():

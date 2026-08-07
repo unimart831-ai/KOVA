@@ -1,7 +1,7 @@
 """Tests for 9:16 beat-frame studio and beat-sync pacing."""
 
-from apps.content.reel_beat_sync import align_durations_to_beats, bpm_for_mood
-from apps.content.reel_director import (
+from apps.create.content.reel_beat_sync import align_durations_to_beats, bpm_for_mood
+from apps.create.content.reel_director import (
     CATEGORY_PACING,
     SLIDE_ROLE_CTA,
     SLIDE_ROLE_DESIRE,
@@ -10,7 +10,7 @@ from apps.content.reel_director import (
     build_hook_texts,
     build_slide_durations,
 )
-from apps.content.reel_frame_studio import (
+from apps.create.content.reel_frame_studio import (
     BeatFrameBrand,
     parse_cta_text,
     render_cta_beat_frame,

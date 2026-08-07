@@ -257,7 +257,7 @@ completed bookings count as **realized**. The dashboard shows both.
 | W7.19 | `templates/layouts/app.html` | "Bookings" sub-link under Customers |
 | W7.20 | `apps/whatsapp/templates.py` | Two new templates |
 | W7.21 | `tests/test_bookings.py` | ~20 tests |
-| W7.22 | `docs/KOVA_MASTER_PLAN.md` | Tick W7.1-22 |
+| W7.22 | `docs/DEVELOPMENT_ROADMAP.md` | Tick W7.1-22 |
 
 W7.8 (Calendly OAuth provider) — punted to a Phase 3 backlog item.
 v2 ships Kova-hosted bookings; Calendly users already have a flow.

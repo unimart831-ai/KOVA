@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import pytest
 
-from apps.accounts.models import User
-from apps.content.approval import (
+from apps.core.accounts.models import User
+from apps.create.content.approval import (
     approve_pending_posts,
     reject_pending_posts,
     republish_post_for_user,
 )
-from apps.content.models import Post
-from apps.platforms.models import SocialAccount
+from apps.create.content.models import Post
+from apps.core.platforms.models import SocialAccount
 
 
 @pytest.fixture
@@ -94,7 +94,7 @@ class TestRepublishPostForUser:
         )
         calls = []
         monkeypatch.setattr(
-            "apps.utils.fire_task",
+            "apps.core.utils.fire_task",
             lambda task, *args: calls.append((task, args)),
         )
         result = republish_post_for_user(owner, post, schedule_intent="post_now")

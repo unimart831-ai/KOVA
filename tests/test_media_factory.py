@@ -2,24 +2,24 @@
 
 import pytest
 
-from apps.media.campaign_visual_brief import (
+from apps.create.media.campaign_visual_brief import (
     CampaignVisualBrief,
     build_campaign_visual_brief,
     DEFAULT_SCENE_ROLES,
 )
-from apps.media.carousel_strategy import (
+from apps.create.media.carousel_strategy import (
     build_carousel_strategy,
     select_carousel_template,
     CarouselStrategy,
 )
-from apps.media.media_provider_config import MediaProviderConfig
-from apps.media.media_factory import prepare_campaign_media_factory
-from apps.media.orchestrator import PROFESSIONAL_PHOTOROOM_SCENES_PER_CAMPAIGN, cap_photoroom_scenes_for_plan
-from apps.media.reel_strategy import build_reel_strategy, ReelStrategy
-from apps.media.text_overlay import TextOverlayPass
-from apps.content.platform_fit import score_platform_fit, PLATFORM_FIT_MIN_SCORE, platform_fit_gate
-from apps.content.models import ContentSeed
-from apps.content.campaigns import ensure_campaign_for_seed
+from apps.create.media.media_provider_config import MediaProviderConfig
+from apps.create.media.media_factory import prepare_campaign_media_factory
+from apps.create.media.orchestrator import PROFESSIONAL_PHOTOROOM_SCENES_PER_CAMPAIGN, cap_photoroom_scenes_for_plan
+from apps.create.media.reel_strategy import build_reel_strategy, ReelStrategy
+from apps.create.media.text_overlay import TextOverlayPass
+from apps.create.content.platform_fit import score_platform_fit, PLATFORM_FIT_MIN_SCORE, platform_fit_gate
+from apps.create.content.models import ContentSeed
+from apps.create.content.campaigns import ensure_campaign_for_seed
 
 
 @pytest.mark.django_db

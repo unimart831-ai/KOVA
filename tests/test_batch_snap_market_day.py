@@ -4,7 +4,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
-from apps.products.batch_snap_intelligence import (
+from apps.commerce.products.batch_snap_intelligence import (
     build_batch_identification_prompt,
     build_market_day_composition_prompt,
     build_stall_brand_lock,
@@ -89,7 +89,7 @@ class TestBatchVisionPrompt:
 @pytest.mark.django_db
 class TestBatchPriceResolution:
     def test_voice_default_applied(self, user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         product = Product.objects.create(
             user=user,
@@ -107,7 +107,7 @@ class TestBatchPriceResolution:
         assert source == "voice_default_price"
 
     def test_tag_price_wins(self, user):
-        from apps.products.models import Product
+        from apps.commerce.products.models import Product
 
         product = Product.objects.create(user=user, name="Item", price=None, currency="KES")
         price, source = resolve_batch_item_price(
@@ -123,7 +123,7 @@ class TestBatchPriceResolution:
 @pytest.mark.django_db
 class TestBatchSnapLaunchView:
     def test_launch_creates_session_and_products(self, client, user, monkeypatch):
-        from apps.products.models import BatchSnapSession, Product
+        from apps.commerce.products.models import BatchSnapSession, Product
 
         user.onboarding_completed = True
         user.phone_number = "0712345678"
@@ -135,7 +135,7 @@ class TestBatchSnapLaunchView:
         def fake_fire_task(*args):
             calls.append(args)
 
-        monkeypatch.setattr("apps.utils.fire_task", fake_fire_task)
+        monkeypatch.setattr("apps.core.utils.fire_task", fake_fire_task)
 
         photo = SimpleUploadedFile(
             "dress.jpg",
@@ -221,10 +221,10 @@ class TestStallBrandLock:
 @pytest.mark.django_db
 class TestBatchPipelineGalleryPayload:
     def test_batch_status_exposes_gallery_scenes(self, user):
-        from apps.products.batch_snap_pipeline import build_batch_snap_pipeline_status
-        from apps.products.models import BatchSnapSession, Product
+        from apps.commerce.products.batch_snap_pipeline import build_batch_snap_pipeline_status
+        from apps.commerce.products.models import BatchSnapSession, Product
         from django.utils import timezone
-        from apps.agents.models import AgentAction
+        from apps.create.agents.models import AgentAction
 
         session = BatchSnapSession.objects.create(
             user=user,

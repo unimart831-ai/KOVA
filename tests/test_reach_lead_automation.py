@@ -6,12 +6,12 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from apps.accounts.models import User, UserProfile
-from apps.leads.bridges import create_lead_from_walkin
-from apps.leads.defaults import WELCOME_SEQUENCE_NAME, ensure_default_nurture_sequences
-from apps.leads.models import Lead, LeadEnrollment, NurtureSequence, NurtureStep
-from apps.leads.tasks import enroll_lead_in_sequences, enroll_stale_lead_in_winback
-from apps.qr_attribution.models import WalkInEvent
+from apps.core.accounts.models import User, UserProfile
+from apps.commerce.leads.bridges import create_lead_from_walkin
+from apps.commerce.leads.defaults import WELCOME_SEQUENCE_NAME, ensure_default_nurture_sequences
+from apps.commerce.leads.models import Lead, LeadEnrollment, NurtureSequence, NurtureStep
+from apps.commerce.leads.tasks import enroll_lead_in_sequences, enroll_stale_lead_in_winback
+from apps.commerce.qr_attribution.models import WalkInEvent
 
 
 @pytest.fixture
@@ -138,7 +138,7 @@ class TestCompositeScoringInTask:
             activity_type="form_submitted",
             description="Test",
         )
-        from apps.leads.tasks import score_all_leads
+        from apps.commerce.leads.tasks import score_all_leads
 
         score_all_leads()
         lead.refresh_from_db()
@@ -154,7 +154,7 @@ class TestStaleReengage:
             priority=Lead.Priority.LOW,
             last_activity_at=timezone.now() - timedelta(days=10),
         )
-        from apps.leads.tasks import reengage_stale_leads
+        from apps.commerce.leads.tasks import reengage_stale_leads
 
         reengage_stale_leads()
         lead.refresh_from_db()

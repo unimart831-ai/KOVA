@@ -1,6 +1,6 @@
 """Tests for product copy enrichment."""
 
-from apps.products.product_copy import (
+from apps.commerce.products.product_copy import (
     build_product_carousel_plan,
     build_snap_fallback_analysis,
     description_sentence_count,
@@ -61,7 +61,7 @@ def test_format_description_as_paragraphs():
 
 
 def test_format_description_expands_short_ai_output():
-    from apps.products.product_copy import description_sentence_count
+    from apps.commerce.products.product_copy import description_sentence_count
 
     analysis = {
         "description_sentences": [
@@ -93,14 +93,14 @@ def test_format_feature_bullets_differs_by_platform():
 
 
 def test_strip_feature_bullet():
-    from apps.products.product_copy import strip_feature_bullet
+    from apps.commerce.products.product_copy import strip_feature_bullet
 
     assert strip_feature_bullet("✅ Fast charging") == "Fast charging"
     assert strip_feature_bullet("✓ Magnetic mount") == "Magnetic mount"
 
 
 def test_clean_description_sentence_removes_labels():
-    from apps.products.product_copy import clean_description_sentence, format_product_description
+    from apps.commerce.products.product_copy import clean_description_sentence, format_product_description
 
     assert clean_description_sentence(
         "Sentence 1: This is a VON microwave that provides effective cooking."

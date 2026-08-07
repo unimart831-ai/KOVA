@@ -2,15 +2,15 @@
 
 import pytest
 
-from apps.agents.models import AgentAction
-from apps.billing.visual_credits import (
+from apps.create.agents.models import AgentAction
+from apps.core.billing.visual_credits import (
     STUDIO_POLISH_ACTION,
     check_visual_credit_limit,
     get_platform_photoroom_usage,
     get_visual_credit_usage,
     record_studio_polish,
 )
-from apps.products.photoroom import pick_background_color_hex
+from apps.commerce.products.photoroom import pick_background_color_hex
 
 
 @pytest.mark.django_db

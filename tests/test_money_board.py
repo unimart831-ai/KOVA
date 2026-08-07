@@ -6,12 +6,12 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from apps.briefs.dashboard import get_money_board_stats
-from apps.content.models import Post
-from apps.engage.models import Interaction
-from apps.leads.models import Lead
-from apps.platforms.models import SocialAccount
-from apps.whatsapp.models import WhatsAppConversation
+from apps.create.briefs.dashboard import get_money_board_stats
+from apps.create.content.models import Post
+from apps.messaging.engage.models import Interaction
+from apps.commerce.leads.models import Lead
+from apps.core.platforms.models import SocialAccount
+from apps.messaging.whatsapp.models import WhatsAppConversation
 
 
 @pytest.mark.django_db

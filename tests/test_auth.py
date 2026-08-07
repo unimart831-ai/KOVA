@@ -5,8 +5,8 @@ Tests for authentication, access control, and admin decorators.
 import pytest
 from django.test import RequestFactory
 
-from apps.accounts.models import User
-from apps.admin_dashboard.decorators import superuser_required, senior_staff_required
+from apps.core.accounts.models import User
+from apps.core.admin_dashboard.decorators import superuser_required, senior_staff_required
 
 
 @pytest.mark.django_db

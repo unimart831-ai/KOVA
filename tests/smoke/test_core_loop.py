@@ -23,10 +23,10 @@ class TestCriticalRoutes:
 
 class TestBlueprintPipeline:
     def test_attach_blueprint_to_seed(self, db):
-        from apps.accounts.models import User
-        from apps.content.blueprint_pipeline import attach_blueprint_to_seed, blueprint_prompt_section
-        from apps.content.models import ContentSeed
-        from apps.products.models import BusinessAsset, Product
+        from apps.core.accounts.models import User
+        from apps.create.content.blueprint_pipeline import attach_blueprint_to_seed, blueprint_prompt_section
+        from apps.create.content.models import ContentSeed
+        from apps.commerce.products.models import BusinessAsset, Product
 
         user = User.objects.create_user(username="smoke", email="smoke@kova.ai", password="x")
         product = Product.objects.create(
@@ -54,10 +54,10 @@ class TestBlueprintPipeline:
 
 class TestServiceBookingSetup:
     def test_ensure_booking_link_for_service_business(self, db):
-        from apps.accounts.models import User, UserProfile
-        from apps.bookings.models import BookingLink
-        from apps.bookings.service_setup import ensure_primary_booking_link, sync_service_asset_to_booking_link
-        from apps.products.models import BusinessAsset
+        from apps.core.accounts.models import User, UserProfile
+        from apps.commerce.bookings.models import BookingLink
+        from apps.commerce.bookings.service_setup import ensure_primary_booking_link, sync_service_asset_to_booking_link
+        from apps.commerce.products.models import BusinessAsset
 
         user = User.objects.create_user(
             username="salon", email="salon@kova.ai", password="x", phone_number="0711222333",

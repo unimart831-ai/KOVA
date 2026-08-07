@@ -5,9 +5,9 @@ from datetime import date
 
 import pytest
 
-from apps.accounts.models import User
-from apps.briefs.models import DailyBrief
-from apps.briefs.standup import (
+from apps.core.accounts.models import User
+from apps.create.briefs.models import DailyBrief
+from apps.create.briefs.standup import (
     build_standup_context,
     enrich_decisions,
     format_standup_whatsapp_message,

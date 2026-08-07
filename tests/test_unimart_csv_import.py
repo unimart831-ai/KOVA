@@ -4,14 +4,14 @@ import io
 
 import pytest
 
-from apps.partners.marketplace_csv_import import (
+from apps.core.partners.marketplace_csv_import import (
     import_sellers_csv,
     parse_campus_codes,
     provision_vendor_self_serve,
     row_to_seller_payload,
     validate_usk_format,
 )
-from apps.partners.models import MarketplacePartner, MarketplaceSellerAccount, Partner
+from apps.core.partners.models import MarketplacePartner, MarketplaceSellerAccount, Partner
 
 
 @pytest.fixture

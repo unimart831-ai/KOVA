@@ -7,10 +7,10 @@ All assertions use deterministic paths (no LLM/network).
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.briefs.opportunities import build_opportunity_cards, format_opportunity_cards_message
-from apps.kova_page.salesperson import business_knowledge_block
-from apps.products.models import Product
-from apps.whatsapp.memory import (
+from apps.create.briefs.opportunities import build_opportunity_cards, format_opportunity_cards_message
+from apps.commerce.links.hub.salesperson import business_knowledge_block
+from apps.commerce.products.models import Product
+from apps.messaging.whatsapp.memory import (
     memory_context_block,
     recall_customer_memory,
     remember_customer_interaction,
@@ -70,9 +70,9 @@ class TestBusinessMemory:
 @pytest.mark.django_db
 class TestGroundedWhatsAppPrompt:
     def test_system_prompt_grounds_catalog_and_memory(self, owner):
-        from apps.platforms.models import SocialAccount
-        from apps.whatsapp.models import WhatsAppConversation
-        from apps.whatsapp.tasks import _build_system_prompt
+        from apps.core.platforms.models import SocialAccount
+        from apps.messaging.whatsapp.models import WhatsAppConversation
+        from apps.messaging.whatsapp.tasks import _build_system_prompt
 
         _product(owner, "Dell Laptop", price=60000)
         acct = SocialAccount.objects.create(

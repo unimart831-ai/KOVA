@@ -3,7 +3,7 @@
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
-from apps.billing.seed_quota import get_effective_seed_max, get_seed_period_start
+from apps.core.billing.seed_quota import get_effective_seed_max, get_seed_period_start
 
 
 def test_effective_max_with_override_and_bonus():
@@ -25,7 +25,7 @@ def test_effective_max_plan_only():
     assert get_effective_seed_max(user, {"max_seeds_per_month": 30}) == 30
 
 
-@patch("apps.billing.seed_quota.timezone")
+@patch("apps.core.billing.seed_quota.timezone")
 def test_period_start_uses_reset_at(mock_tz):
     from django.utils import timezone as dj_tz
 

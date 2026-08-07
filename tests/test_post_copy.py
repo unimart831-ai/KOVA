@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from apps.content.post_copy import (
+from apps.create.content.post_copy import (
     build_commerce_caption,
     build_quick_post_caption,
     normalize_caption_spacing,
@@ -90,7 +90,7 @@ def test_build_quick_post_avoids_raw_url_on_instagram():
 
 
 def test_adapt_caption_keeps_line_breaks():
-    from apps.content.campaign_bundle import _adapt_caption
+    from apps.create.content.campaign_bundle import _adapt_caption
 
     text = "Line one\n\nLine two\n\nLine three"
     out = _adapt_caption(text, "instagram", 2200)

@@ -3,8 +3,8 @@
 import pytest
 from django.utils import timezone
 
-from apps.agents.models import AgentAction
-from apps.briefs.operations_report import build_operations_report, enrich_overnight_work
+from apps.create.agents.models import AgentAction
+from apps.create.briefs.operations_report import build_operations_report, enrich_overnight_work
 
 
 @pytest.mark.django_db

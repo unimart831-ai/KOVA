@@ -12,9 +12,9 @@ User = get_user_model()
 
 
 def _patch_async(monkeypatch):
-    monkeypatch.setattr("apps.emails.tasks.send_welcome_email.delay", lambda pk: None)
-    monkeypatch.setattr("apps.emails.automation.bootstrap_email_automation", lambda user: None)
-    monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
+    monkeypatch.setattr("apps.messaging.emails.tasks.send_welcome_email.delay", lambda pk: None)
+    monkeypatch.setattr("apps.messaging.emails.automation.bootstrap_email_automation", lambda user: None)
+    monkeypatch.setattr("apps.core.utils.fire_task", lambda task, pk: None)
 
 
 def _user_with_phone(username, email):

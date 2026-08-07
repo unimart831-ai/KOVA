@@ -1,7 +1,6 @@
 """Tests for the onboarding automation layer:
 
 - industry_packs.apply_pack — fills empty profile fields based on industry
-- magic_fill._infer_industry — maps platform category strings to Industry choices
 - KovaSignupForm.signup — saves phone at signup (required field)
 - SSRF protection — blocks private/reserved IP URLs in URL inference
 
@@ -12,15 +11,13 @@ any of them regress, new users get a worse first-run experience.
 import pytest
 from unittest.mock import patch
 
-from apps.accounts.models import User, UserProfile
-from apps.accounts.industry_packs import apply_pack, get_pack, PACKS
-from apps.accounts.magic_fill import _infer_industry
-from apps.accounts.forms import OnboardingExpressStep1Form, OnboardingStep1Form, KovaSignupForm, PhoneCaptureForm
-from apps.accounts.onboarding_flow import apply_url_inference_to_profile, finish_onboarding
-from apps.accounts.brand_preview import build_brand_preview
-from apps.accounts.onboarding_express import ensure_brand_defaults, record_intent
-from apps.accounts.setup_mission import build_setup_mission, is_commerce_industry
-from apps.utils.url_safety import validate_url_for_ssrf
+from apps.core.accounts.models import User, UserProfile
+from apps.core.accounts.industry_packs import apply_pack, get_pack, PACKS
+from apps.core.accounts.forms import OnboardingExpressStep1Form, OnboardingStep1Form, KovaSignupForm, PhoneCaptureForm
+from apps.core.accounts.onboarding_flow import apply_url_inference_to_profile, finish_onboarding
+from apps.core.accounts.onboarding_express import ensure_brand_defaults, record_intent
+from apps.core.accounts.setup_mission import build_setup_mission, is_commerce_industry
+from apps.core.utils.url_safety import validate_url_for_ssrf
 
 
 # ── industry_packs ──────────────────────────────────────────────────────────
@@ -105,34 +102,6 @@ class TestApplyPack:
         assert p.default_cta_type != "none"
 
 
-# ── magic_fill industry inference ───────────────────────────────────────────
-
-class TestInferIndustry:
-    @pytest.mark.parametrize("category,expected", [
-        ("Hair Salon", "salon_beauty"),
-        ("Beauty, Cosmetic & Personal Care", "salon_beauty"),
-        ("Nail Bar", "salon_beauty"),
-        ("Restaurant", "food_restaurant"),
-        ("Coffee Shop", "food_restaurant"),
-        ("Bakery", "food_restaurant"),
-        ("Hotel & Lodge", "travel_tourism"),
-        ("Safari Tours", "travel_tourism"),
-        ("Health Clinic", "health"),
-        ("Dental Practice", "health"),
-        ("Law Firm", "legal"),
-        ("Marketing Agency", "agency"),
-        ("Software Company", "saas"),
-        ("Boutique", "wholesale_retail"),
-        ("Fashion Designer", "fashion_beauty"),
-        ("School", "education"),
-        ("NGO", "nonprofit"),
-        ("", None),
-        ("Random gibberish", None),
-    ])
-    def test_inference(self, category, expected):
-        assert _infer_industry(category) == expected
-
-
 # ── onboarding Step 1 phone ─────────────────────────────────────────────────
 
 @pytest.mark.django_db
@@ -201,15 +170,15 @@ class TestFinishOnboarding:
             username="fin", email="fin@b.com", password="P1!",
         )
         monkeypatch.setattr(
-            "apps.emails.tasks.send_welcome_email.delay",
+            "apps.messaging.emails.tasks.send_welcome_email.delay",
             lambda pk: None,
         )
         monkeypatch.setattr(
-            "apps.emails.automation.bootstrap_email_automation",
+            "apps.messaging.emails.automation.bootstrap_email_automation",
             lambda user: None,
         )
         monkeypatch.setattr(
-            "apps.utils.fire_task",
+            "apps.core.utils.fire_task",
             lambda task, pk: None,
         )
 
@@ -260,7 +229,7 @@ class TestLegacyReviewForm:
         return u, u.profile
 
     def test_form_renders_with_all_section_fields(self):
-        from apps.accounts.forms import OnboardingStep2ReviewForm
+        from apps.core.accounts.forms import OnboardingStep2ReviewForm
         u, p = self._user_with_profile()
         form = OnboardingStep2ReviewForm(instance=p, user=u)
 
@@ -282,7 +251,7 @@ class TestLegacyReviewForm:
         assert expected_fields <= set(form.fields)
 
     def test_form_saves_voice_and_goals_in_one_pass(self):
-        from apps.accounts.forms import OnboardingStep2ReviewForm
+        from apps.core.accounts.forms import OnboardingStep2ReviewForm
         u, p = self._user_with_profile()
 
         data = {
@@ -324,7 +293,7 @@ class TestLegacyReviewForm:
         assert p.default_cta_type == "whatsapp"
 
     def test_form_preserves_user_pillars_on_redisplay(self):
-        from apps.accounts.forms import OnboardingStep2ReviewForm
+        from apps.core.accounts.forms import OnboardingStep2ReviewForm
         u, p = self._user_with_profile()
         p.content_pillars = ["Pillar A", "Pillar B"]
         p.tone_attributes = ["bold"]
@@ -337,7 +306,7 @@ class TestLegacyReviewForm:
     def test_field_order_is_review_friendly(self):
         """Voice should appear before goals, autonomy before CTA — so the
         reviewer scrolls in a logical reading order."""
-        from apps.accounts.forms import OnboardingStep2ReviewForm
+        from apps.core.accounts.forms import OnboardingStep2ReviewForm
         u, p = self._user_with_profile()
         form = OnboardingStep2ReviewForm(instance=p, user=u)
         names = list(form.fields.keys())
@@ -361,7 +330,7 @@ class TestInstrumentation:
         )
 
     def test_industry_pack_apply_records_marker(self):
-        from apps.accounts.industry_packs import apply_pack
+        from apps.core.accounts.industry_packs import apply_pack
         u = self._fresh_user()
         p = u.profile
         p.industry = "salon_beauty"
@@ -375,7 +344,7 @@ class TestInstrumentation:
         ), p.onboarding_step_timestamps
 
     def test_industry_pack_marker_includes_industry_key(self):
-        from apps.accounts.industry_packs import apply_pack
+        from apps.core.accounts.industry_packs import apply_pack
         u = self._fresh_user()
         p = u.profile
         p.industry = "food_restaurant"
@@ -385,33 +354,6 @@ class TestInstrumentation:
 
         p.refresh_from_db()
         assert "industry_pack_applied:food_restaurant" in (p.onboarding_step_timestamps or {})
-
-    def test_magic_fill_records_marker_with_platform(self, monkeypatch):
-        """Magic Fill should record `magic_fill_applied:<platform>` when at
-        least one field is populated. This is what powers the provider
-        breakdown panel."""
-        from apps.accounts.magic_fill import apply_magic_fill
-        from apps.platforms.models import SocialAccount
-
-        u = self._fresh_user()
-
-        account = SocialAccount.objects.create(
-            user=u, platform="instagram", platform_user_id="123",
-            username="testbiz", display_name="Test Biz",
-            access_token="dummy", is_active=True,
-            metadata={
-                "bio": "We make great coffee in Nairobi.",
-                "website": "https://testbiz.co.ke",
-                "category": "Coffee Shop",
-            },
-        )
-
-        applied = apply_magic_fill(u, account)
-        assert applied, "Magic Fill should have populated at least one field"
-
-        u.profile.refresh_from_db()
-        stamps = u.profile.onboarding_step_timestamps or {}
-        assert "magic_fill_applied:instagram" in stamps
 
 
 @pytest.mark.django_db
@@ -435,23 +377,6 @@ class TestExpressOnboardingHelpers:
         assert not (p.brand_voice or "").strip()
         assert p.goals
         assert p.default_cta_type == "link"
-
-    def test_build_brand_preview(self):
-        u = User.objects.create_user(
-            username="prev", email="p@b.com", password="P1!", full_name="Pat",
-        )
-        p = u.profile
-        p.company_name = "Pat's Boutique"
-        p.industry = "fashion_beauty"
-        p.brand_voice = "Warm and stylish."
-        p.tone_attributes = ["approachable", "confident"]
-        p.content_pillars = ["New arrivals", "Style tips"]
-        p.save()
-
-        preview = build_brand_preview(p, u)
-        assert preview["company_name"] == "Pat's Boutique"
-        assert preview["is_commerce"] is True
-        assert preview["tones"]
 
     def test_setup_mission_includes_commerce_items(self):
         u = User.objects.create_user(username="miss", email="m@b.com", password="P1!")
@@ -495,11 +420,11 @@ class TestWhatsappOnboardingPing:
                 return {"success": True}
 
         monkeypatch.setattr(
-            "apps.platforms.providers.whatsapp.WhatsAppProvider",
+            "apps.core.platforms.providers.whatsapp.WhatsAppProvider",
             FakeProvider,
         )
 
-        from apps.agents.onboarding_tasks import _send_completion_whatsapp_ping
+        from apps.create.agents.onboarding_tasks import _send_completion_whatsapp_ping
 
         assert _send_completion_whatsapp_ping(u) is True
         params = captured["components"][0]["parameters"]
@@ -527,11 +452,11 @@ class TestWhatsappOnboardingPing:
                 return {"success": True}
 
         monkeypatch.setattr(
-            "apps.platforms.providers.whatsapp.WhatsAppProvider",
+            "apps.core.platforms.providers.whatsapp.WhatsAppProvider",
             FakeProvider,
         )
 
-        from apps.agents.onboarding_tasks import _send_completion_whatsapp_ping
+        from apps.create.agents.onboarding_tasks import _send_completion_whatsapp_ping
 
         assert _send_completion_whatsapp_ping(u) is True
         assert captured["components"][0]["parameters"][1]["text"] == "https://app.kovaagent.com/products/snap/"
@@ -553,14 +478,14 @@ class TestExpressOnboardingViews:
         u = self._user_with_phone(username="fast", email="fast@b.com")
         self._login_client(client, u)
         monkeypatch.setattr(
-            "apps.emails.tasks.send_welcome_email.delay",
+            "apps.messaging.emails.tasks.send_welcome_email.delay",
             lambda pk: None,
         )
         monkeypatch.setattr(
-            "apps.emails.automation.bootstrap_email_automation",
+            "apps.messaging.emails.automation.bootstrap_email_automation",
             lambda user: None,
         )
-        monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
+        monkeypatch.setattr("apps.core.utils.fire_task", lambda task, pk: None)
 
         resp = client.post(
             "/accounts/onboarding/start/",
@@ -654,14 +579,14 @@ class TestExpressOnboardingViews:
         p.save()
 
         monkeypatch.setattr(
-            "apps.emails.tasks.send_welcome_email.delay",
+            "apps.messaging.emails.tasks.send_welcome_email.delay",
             lambda pk: None,
         )
         monkeypatch.setattr(
-            "apps.emails.automation.bootstrap_email_automation",
+            "apps.messaging.emails.automation.bootstrap_email_automation",
             lambda user: None,
         )
-        monkeypatch.setattr("apps.utils.fire_task", lambda task, pk: None)
+        monkeypatch.setattr("apps.core.utils.fire_task", lambda task, pk: None)
 
         self._login_client(client, u)
         resp = client.get("/accounts/onboarding/?step=3", follow=False)
@@ -738,7 +663,7 @@ class TestSSRFValidation:
         ("0.0.0.0", "unspecified"),
     ])
     def test_blocks_private_ipv4(self, ip, label):
-        with patch("apps.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
+        with patch("apps.core.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
             err = validate_url_for_ssrf(f"https://evil.example.com/")
             assert err is not None, f"Expected block for {label} ({ip})"
 
@@ -751,7 +676,7 @@ class TestSSRFValidation:
     def test_blocks_private_ipv6(self, ip, label):
         def _getaddrinfo(host, port, **kwargs):
             return [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip, 0, 0, 0))]
-        with patch("apps.utils.url_safety.socket.getaddrinfo", _getaddrinfo):
+        with patch("apps.core.utils.url_safety.socket.getaddrinfo", _getaddrinfo):
             err = validate_url_for_ssrf(f"https://evil.example.com/")
             assert err is not None, f"Expected block for {label} ({ip})"
 
@@ -761,7 +686,7 @@ class TestSSRFValidation:
         "104.21.32.1",     # Cloudflare
     ])
     def test_allows_public_ips(self, ip):
-        with patch("apps.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
+        with patch("apps.core.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
             err = validate_url_for_ssrf(f"https://example.com/")
             assert err is None, f"Public IP {ip} should be allowed"
 
@@ -775,7 +700,7 @@ class TestSSRFValidation:
         assert err is not None
 
     def test_unresolvable_hostname(self):
-        with patch("apps.utils.url_safety.socket.getaddrinfo", side_effect=socket.gaierror):
+        with patch("apps.core.utils.url_safety.socket.getaddrinfo", side_effect=socket.gaierror):
             err = validate_url_for_ssrf("https://this-host-does-not-exist-xyz.example/")
             assert err is not None
             assert "resolve" in err.lower()
@@ -787,7 +712,7 @@ class TestSSRFValidation:
                 (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("93.184.216.34", 0)),
                 (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("127.0.0.1", 0)),
             ]
-        with patch("apps.utils.url_safety.socket.getaddrinfo", _getaddrinfo):
+        with patch("apps.core.utils.url_safety.socket.getaddrinfo", _getaddrinfo):
             err = validate_url_for_ssrf("https://sneaky.example.com/")
             assert err is not None
 
@@ -813,7 +738,7 @@ class TestSSRFInferEndpoint:
             email=f"ssrf-{ip.replace('.', '')}@b.com",
         )
         client.force_login(u)
-        with patch("apps.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
+        with patch("apps.core.utils.url_safety.socket.getaddrinfo", _fake_getaddrinfo(ip)):
             resp = client.post(
                 "/accounts/api/infer-from-url/",
                 {"url": f"http://{url_host}/latest/meta-data/"},

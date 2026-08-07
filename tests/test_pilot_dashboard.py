@@ -10,13 +10,13 @@ from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import PilotMetricsSnapshot, User, UserProfile
-from apps.accounts.pilot_metrics import compute_pilot_metrics, compute_pilot_readiness
-from apps.accounts.tasks import snapshot_pilot_metrics
-from apps.accounts.test_businesses import TEST_BUSINESS_REGISTRY, TEST_BUSINESS_SLUGS
-from apps.leads.models import Lead
-from apps.platforms.models import SocialAccount
-from apps.products.models import Product
+from apps.core.accounts.models import PilotMetricsSnapshot, User, UserProfile
+from apps.core.accounts.pilot_metrics import compute_pilot_metrics, compute_pilot_readiness
+from apps.core.accounts.tasks import snapshot_pilot_metrics
+from apps.core.accounts.test_businesses import TEST_BUSINESS_REGISTRY, TEST_BUSINESS_SLUGS
+from apps.commerce.leads.models import Lead
+from apps.core.platforms.models import SocialAccount
+from apps.commerce.products.models import Product
 
 
 @pytest.mark.django_db

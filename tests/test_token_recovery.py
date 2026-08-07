@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.utils import timezone
 
-from apps.platforms.models import SocialAccount
-from apps.platforms.token_recovery import try_recover_meta_token
+from apps.core.platforms.models import SocialAccount
+from apps.core.platforms.token_recovery import try_recover_meta_token
 
 
 @pytest.fixture
@@ -32,8 +32,8 @@ def facebook_account(django_user_model):
     )
 
 
-@patch("apps.platforms.providers.instagram_facebook.refresh_facebook_page_tokens")
-@patch("apps.platforms.providers.registry.get_provider")
+@patch("apps.core.platforms.providers.instagram_facebook.refresh_facebook_page_tokens")
+@patch("apps.core.platforms.providers.registry.get_provider")
 def test_try_recover_meta_token_reactivates_account(
     mock_get_provider, mock_refresh_pages, facebook_account,
 ):

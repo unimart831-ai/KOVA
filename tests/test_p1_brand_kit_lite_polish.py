@@ -8,16 +8,16 @@ import pytest
 from django.test import override_settings
 from django.urls import reverse
 
-from apps.accounts.forms import PhotoroomBrandKitForm
-from apps.products.photoroom_brand_template import build_photoroom_brand_template
-from apps.products.polish_mode import (
+from apps.core.accounts.forms import PhotoroomBrandKitForm
+from apps.commerce.products.photoroom_brand_template import build_photoroom_brand_template
+from apps.commerce.products.polish_mode import (
     POLISH_MODE_LITE,
     POLISH_MODE_STUDIO,
     resolve_polish_mode,
     store_product_polish_mode,
 )
-from apps.products.models import Product
-from apps.products.photo_variations import expand_product_photos
+from apps.commerce.products.models import Product
+from apps.commerce.products.photo_variations import expand_product_photos
 
 
 @pytest.fixture
@@ -73,15 +73,15 @@ class TestLitePolishRouting:
     def test_resolve_lite_when_photoroom_missing(self, user):
         assert resolve_polish_mode(user, POLISH_MODE_STUDIO) == POLISH_MODE_LITE
 
-    @patch("apps.products.polish_mode.studio_polish_unavailable", return_value=True)
+    @patch("apps.commerce.products.polish_mode.studio_polish_unavailable", return_value=True)
     def test_resolve_lite_when_platform_throttled(self, _mock, user):
         assert resolve_polish_mode(user, POLISH_MODE_STUDIO) == POLISH_MODE_LITE
 
     def test_explicit_lite_honored_when_studio_available(self, user):
-        with patch("apps.products.polish_mode.studio_polish_unavailable", return_value=False):
+        with patch("apps.commerce.products.polish_mode.studio_polish_unavailable", return_value=False):
             assert resolve_polish_mode(user, POLISH_MODE_LITE) == POLISH_MODE_LITE
 
-    @patch("apps.products.photo_variations._expand_lite_polish")
+    @patch("apps.commerce.products.photo_variations._expand_lite_polish")
     def test_expand_routes_to_lite(self, mock_lite, user, product):
         mock_lite.return_value = {"variations_created": 2, "mode": "lite"}
         store_product_polish_mode(product, POLISH_MODE_LITE)
@@ -92,8 +92,8 @@ class TestLitePolishRouting:
         mock_lite.assert_called_once()
         assert result["mode"] == "lite"
 
-    @patch("apps.products.photo_variations._expand_studio_polish")
-    @patch("apps.products.polish_mode.studio_polish_unavailable", return_value=False)
+    @patch("apps.commerce.products.photo_variations._expand_studio_polish")
+    @patch("apps.commerce.products.polish_mode.studio_polish_unavailable", return_value=False)
     def test_expand_routes_to_studio(self, _mock, mock_studio, user, product):
         mock_studio.return_value = {"variations_created": 3, "mode": "pro_scene"}
         result = expand_product_photos(product, polish_mode=POLISH_MODE_STUDIO)
@@ -103,15 +103,15 @@ class TestLitePolishRouting:
 
 @pytest.mark.django_db
 class TestSnapLaunchPolishMode:
-    @patch("apps.utils.fire_task")
-    @patch("apps.products.views.normalize_uploaded_image")
+    @patch("apps.core.utils.fire_task")
+    @patch("apps.commerce.products.views.normalize_uploaded_image")
     def test_snap_launch_stores_lite_mode(self, mock_norm, mock_fire, auth_client, user):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
         mock_norm.side_effect = lambda f: f
         img = SimpleUploadedFile("snap.jpg", b"fake-image-bytes", content_type="image/jpeg")
         url = reverse("products:snap_launch")
-        with patch("apps.content.safety.check_uploaded_images_safe") as mock_safe:
+        with patch("apps.create.content.safety.check_uploaded_images_safe") as mock_safe:
             mock_safe.return_value = MagicMock(safe=True)
             resp = auth_client.post(
                 url,
