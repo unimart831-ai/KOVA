@@ -660,7 +660,7 @@ class OnboardingStartForm(forms.Form):
         max_length=255,
         label="Business name",
         widget=forms.TextInput(attrs={
-            "class": "input text-base",
+            "class": "input",
             "placeholder": "e.g. Glow Salon, Mama Njeri's Kitchen",
             "autocomplete": "organization",
         }),
@@ -669,16 +669,12 @@ class OnboardingStartForm(forms.Form):
         max_length=2000,
         label="What do you do?",
         widget=forms.Textarea(attrs={
-            "class": "input text-base",
-            "rows": 4,
+            "class": "input",
+            "rows": 3,
             "placeholder": (
                 "e.g. I run a small salon specializing in braids for university students."
             ),
         }),
-        help_text=(
-            "Describe your brand in your own words — what you sell, who you serve, "
-            "and how you talk to customers. Kova learns from this, not a generic template."
-        ),
     )
     why_started = forms.CharField(
         required=False,
@@ -686,10 +682,9 @@ class OnboardingStartForm(forms.Form):
         label="Why did you start this business?",
         widget=forms.Textarea(attrs={
             "class": "input",
-            "rows": 3,
+            "rows": 2,
             "placeholder": "e.g. I wanted affordable, quality hair care for students.",
         }),
-        help_text="This becomes your brand story — it makes every campaign authentic.",
     )
     success_vision = forms.CharField(
         required=False,
@@ -713,7 +708,7 @@ class OnboardingStartForm(forms.Form):
         label="Example post",
         widget=forms.Textarea(attrs={
             "class": "input",
-            "rows": 3,
+            "rows": 2,
             "placeholder": "Optional — paste a caption you've published before.",
         }),
     )

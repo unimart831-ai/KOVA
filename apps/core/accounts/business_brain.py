@@ -76,7 +76,7 @@ def _has_value(value) -> bool:
         return False
     if isinstance(value, str):
         return bool(value.strip())
-    if isinstance(value, (list | dict | tuple | set)):
+    if isinstance(value, (list, dict, tuple, set)):
         return len(value) > 0
     return bool(value)
 

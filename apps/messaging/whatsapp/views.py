@@ -23,7 +23,6 @@ from apps.messaging.whatsapp.models import (
     ChannelPost,
     SequenceEnrollment,
     StatusContent,
-    StatusTemplate,
     WeeklyDigest,
     WhatsAppAnalytics,
     WhatsAppBroadcast,
@@ -497,9 +496,7 @@ def status_studio(request):
         scheduled_for__lte=week_ahead,
     ).order_by("scheduled_for")[:20]
 
-    # Status templates
-    templates = StatusTemplate.objects.filter(is_active=True)[:10]
-
+    # StatusTemplate gallery archived — campaign narrative uses Template Families
     paginator = Paginator(statuses, 20)
     page = paginator.get_page(request.GET.get("page", 1))
 
@@ -507,7 +504,7 @@ def status_studio(request):
         "page_obj": page,
         "stats": stats,
         "upcoming": upcoming,
-        "templates": templates,
+        "templates": [],
         "state_filter": state_filter,
         "category_filter": category_filter,
         "categories": StatusContent.ContentCategory.choices,

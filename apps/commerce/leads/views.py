@@ -13,12 +13,13 @@ from apps.commerce.leads.models import Lead, LeadActivity
 @login_required
 def lead_list(request):
     """Lead inbox with filters."""
-    leads = Lead.objects.filter(user=request.user)
+    leads = Lead.objects.filter(user=request.user).select_related("marketing_campaign")
 
     # Filters
     status = request.GET.get("status")
     priority = request.GET.get("priority")
     source = request.GET.get("source")
+    campaign = request.GET.get("campaign", "").strip()
     q = request.GET.get("q", "").strip()
 
     if status:
@@ -27,9 +28,11 @@ def lead_list(request):
         leads = leads.filter(priority=priority)
     if source:
         leads = leads.filter(source_type=source)
+    if campaign:
+        leads = leads.filter(marketing_campaign_id=campaign)
     if q:
         from apps.core.utils.search import full_text_search
-        leads = full_text_search(leads, q, ["email", "first_name", "last_name", "notes"])
+        leads = full_text_search(leads, q, ["email", "name", "notes"])
 
     leads = leads.annotate(activity_count=Count("activities"))[:100]
 

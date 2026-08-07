@@ -266,10 +266,6 @@ CELERY_BEAT_SCHEDULE = {
         "task": "agents.run_daily_research",
         "schedule": 12 * 3600.0,  # every 12 hours — trend data for daily briefs
     },
-    "run-engage-cycle": {
-        "task": "agents.run_engage_cycle",
-        "schedule": 30 * 60.0,  # every 30 minutes — fetch, analyze, reply
-    },
     "run-strategy-cycle": {
         "task": "agents.run_strategy_cycle",
         "schedule": 8 * 3600.0,  # every 8 hours — proactive content + strategy
@@ -314,16 +310,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "content.archive_expired_campaigns",
         "schedule": 24 * 3600.0,  # daily — archive campaigns past offer expiry
     },
-    "detect-top-performers-email": {
-        "task": "analytics.detect_top_performers",
-        "schedule": 24 * 3600.0,  # daily — find top posts → generate email campaign drafts
-    },
-    # Adapt Agent v2 — the autonomous learning loop. Reads each user's
-    # last 30 days of post performance and mutates their UserProfile to
-    # bias future content toward winners. Spec: docs/specs/ADAPT_AGENT_V2_SPEC.md.
+    # Adapt Agent v2 — the autonomous learning loop.
     "run-adapt-cycle": {
         "task": "agents.run_adapt_cycle",
-        "schedule": 12 * 3600.0,  # every 12h — match Engage / Strategist drum
+        "schedule": 12 * 3600.0,  # every 12h — match Strategist drum
     },
     "track-audience-growth": {
         "task": "agents.track_audience_growth",
@@ -341,31 +331,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "briefs.send_weekly_smm_whatsapp",
         "schedule": 7 * 24 * 3600.0,  # weekly — owner WhatsApp scorecard
     },
-    "process-email-sequences": {
-        "task": "emails.process_email_sequences",
-        "schedule": 30 * 60.0,  # every 30 min — advance sequence enrollments
-    },
-    "sync-leads-to-subscribers": {
-        "task": "emails.sync_leads_to_subscribers_all",
-        "schedule": 24 * 3600.0,  # daily — backfill email subscribers from leads
-    },
-    "retry-pending-auto-campaigns": {
-        "task": "emails.retry_pending_auto_campaigns",
-        "schedule": 6 * 3600.0,  # every 6h — send AI drafts once lists have subscribers
-    },
-    "process-scheduled-email-campaigns": {
-        "task": "emails.process_scheduled_campaigns",
-        "schedule": 15 * 60.0,  # every 15 min — dispatch scheduled campaigns
-    },
-    # WhatsApp Sprint 5C — Status Studio
+    # WhatsApp Status Studio
     "generate-status-queue": {
         "task": "whatsapp.generate_status_queue",
         "schedule": 24 * 3600.0,  # daily
-    },
-    # WhatsApp Sprint 5D — Broadcasts + Analytics
-    "process-sequence-steps": {
-        "task": "whatsapp.process_sequence_steps",
-        "schedule": 30 * 60.0,  # every 30 minutes
     },
     "whatsapp-followup-nudges": {
         "task": "whatsapp.send_followup_nudges",
@@ -379,29 +348,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "whatsapp.generate_weekly_digest",
         "schedule": 7 * 24 * 3600.0,  # weekly
     },
-    # WhatsApp Sprint 5E — Channels
-    "curate-channel-content": {
-        "task": "whatsapp.curate_channel_content",
-        "schedule": 6 * 3600.0,  # every 6 hours
-    },
-    # Monthly attribution report emails
-    "send-monthly-reports": {
-        "task": "emails.send_monthly_reports_all",
-        "schedule": 30 * 24 * 3600.0,  # monthly — full attribution report emails
-    },
-    # Lead nurture sequence processing
-    "process-lead-nurture": {
-        "task": "leads.process_nurture_steps",
-        "schedule": 30 * 60.0,  # every 30 min — advance nurture enrollments
-    },
-    # Lead priority scoring
+    # Lead priority scoring (nurture / email-marketing / WA broadcast beats removed for V1)
     "score-all-leads": {
         "task": "leads.score_all_leads",
-        "schedule": 24 * 3600.0,  # daily — composite scoring, auto-enroll high-priority leads
-    },
-    "reengage-stale-leads": {
-        "task": "leads.reengage_stale_leads",
-        "schedule": 24 * 3600.0,  # daily — win-back enrollments for 7+ day inactive leads
+        "schedule": 24 * 3600.0,  # daily — composite scoring
     },
     # Educator agent — platform-level content authoring
     "educator-draft-weekly-article": {
@@ -430,7 +380,7 @@ AUTHENTICATION_BACKENDS = [
 SITE_ID = 1
 ACCOUNT_ADAPTER = "apps.core.accounts.adapter.AsyncEmailAccountAdapter"
 ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "phone_number*", "password1*", "password2*"]
+ACCOUNT_SIGNUP_FIELDS = ["email*", "phone_number*", "password1*"]
 ACCOUNT_SIGNUP_FORM_CLASS = "apps.core.accounts.forms.KovaSignupForm"
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = "none"
@@ -797,12 +747,29 @@ EDIT_WITH_AI_SEED_DEFAULT = 2016886668
 ENGAGE_DM_INBOX_ENABLED = env.bool("ENGAGE_DM_INBOX_ENABLED", default=True)
 TIKTOK_RESEARCH_API_ENABLED = env.bool("TIKTOK_RESEARCH_API_ENABLED", default=False)
 
-# Optional product surfaces (apps stay installed; URLs/nav/beat gated)
+# Optional product surfaces (apps stay installed; URLs/nav/beat gated).
+# V1 growth-loop defaults: only the five core capabilities are ON.
+# Re-enable postponed surfaces with FEATURE_* env vars.
 KOVA_FEATURES = {
-    "bookings": env.bool("FEATURE_BOOKINGS", default=True),
-    "qr_attribution": env.bool("FEATURE_QR_ATTRIBUTION", default=True),
-    "reviews": env.bool("FEATURE_REVIEWS", default=True),
-    "partners": env.bool("FEATURE_PARTNERS", default=True),
+    # Postponed / archived for V1 (default OFF)
+    "bookings": env.bool("FEATURE_BOOKINGS", default=False),
+    "qr_attribution": env.bool("FEATURE_QR_ATTRIBUTION", default=False),
+    "reviews": env.bool("FEATURE_REVIEWS", default=False),
+    "partners": env.bool("FEATURE_PARTNERS", default=False),
+    "commerce_nav": env.bool("FEATURE_COMMERCE_NAV", default=False),
+    "engage_inbox": env.bool("FEATURE_ENGAGE_INBOX", default=False),
+    "email_marketing": env.bool("FEATURE_EMAIL_MARKETING", default=False),
+    "competitors": env.bool("FEATURE_COMPETITORS", default=False),
+    "teams": env.bool("FEATURE_TEAMS", default=False),
+    "tiktok": env.bool("FEATURE_TIKTOK", default=False),
+    "linkedin": env.bool("FEATURE_LINKEDIN", default=False),
+    "whatsapp_broadcasts": env.bool("FEATURE_WHATSAPP_BROADCASTS", default=False),
+    "whatsapp_channels": env.bool("FEATURE_WHATSAPP_CHANNELS", default=False),
+    "nurture": env.bool("FEATURE_NURTURE", default=False),
+    "ab_tests": env.bool("FEATURE_AB_TESTS", default=False),
+    # V1 keep
+    "whatsapp_status": env.bool("FEATURE_WHATSAPP_STATUS", default=True),
+    "leads_nav": env.bool("FEATURE_LEADS_NAV", default=True),
 }
 
 if KOVA_FEATURES.get("partners", True):

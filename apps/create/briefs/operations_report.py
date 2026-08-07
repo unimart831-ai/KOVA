@@ -43,7 +43,7 @@ def _category_defs():
         "engage": {
             "label": "Engagement",
             "description": "Comments, messages, and inbox activity",
-            "url_name": "engage:inbox",
+            "url_name": "whatsapp:inbox",
         },
         "reviews": {
             "label": "Reviews",

@@ -180,6 +180,13 @@ class TestAuditCampaignBundle:
             post_format=Post.PostFormat.TEXT, content_text="FB post",
             content_dna={"bundle_role": "fb_feed"},
         ))
+        posts.append(Post.objects.create(
+            user=user, seed=seed, social_account=fb_account, platform="facebook",
+            post_format=Post.PostFormat.CAROUSEL, content_text="FB carousel",
+            carousel_slides=carousel_slides,
+            media_urls=["/m/1.jpg"] * 6, media_status=Post.MediaStatus.GENERATED,
+            content_dna={"bundle_role": "fb_carousel"},
+        ))
 
         audit = audit_campaign_bundle(posts, {"instagram", "facebook"})
         assert audit["complete"]

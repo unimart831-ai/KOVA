@@ -26,6 +26,13 @@ class ContentSeed(models.Model):
     )
     idea = models.TextField(help_text="Your raw idea, topic, or content seed.")
     notes = models.TextField(blank=True, help_text="Additional context or instructions for the AI.")
+    template_family = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Canonical Template Family key (e.g. offer, booking_cta). See template_families.py.",
+    )
     target_platforms = models.JSONField(
         default=list, blank=True,
         help_text='Platforms to generate for, e.g. ["twitter", "linkedin"]. Empty = all connected.',
@@ -117,6 +124,13 @@ class MarketingCampaign(models.Model):
     slug = models.SlugField(max_length=80, blank=True)
     objective = models.CharField(
         max_length=20, choices=Objective.choices, default=Objective.SALES,
+    )
+    template_family = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Canonical Template Family key selected for this campaign.",
     )
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True,

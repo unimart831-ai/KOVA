@@ -162,12 +162,10 @@ urlpatterns = [
     path("profile-audit/", include("apps.core.platforms.audit_urls")),
     path("agents/", include("apps.create.agents.urls")),
     path("analytics/", include("apps.insight.analytics.urls")),
-    path("engage/", include("apps.messaging.engage.urls")),
     path("billing/", include("apps.core.billing.urls")),
     path("notifications/", include("apps.messaging.notifications.urls")),
     path("emails/", include("apps.messaging.emails.urls")),
     path("help/", include("apps.insight.help.urls")),
-    path("teams/", include("apps.core.teams.urls")),
     path("links/", include("apps.commerce.links.urls")),
     path("leads/", include("apps.commerce.leads.urls")),
     path("products/", include("apps.commerce.products.urls")),
@@ -213,24 +211,37 @@ urlpatterns = [
 
 from apps.core.features import feature_enabled
 
-if feature_enabled("partners"):
+# V1: partners / QR / bookings / reviews / engage / teams UI routes removed.
+# Apps stay in INSTALLED_APPS for FK + migration history. Re-enable via feature
+# flags only after restoring templates and mounting routes again.
+if feature_enabled("teams", default=False):
+    urlpatterns += [
+        path("teams/", include("apps.core.teams.urls")),
+    ]
+
+if feature_enabled("engage_inbox", default=False):
+    urlpatterns += [
+        path("engage/", include("apps.messaging.engage.urls")),
+    ]
+
+if feature_enabled("partners", default=False):
     urlpatterns += [
         path("partners/", include("apps.core.partners.urls")),
         path("r/<str:referral_code>/", referral_redirect, name="referral_redirect"),
         path("api/v1/partner/", include("apps.insight.api.partner_urls")),
     ]
 
-if feature_enabled("qr_attribution"):
+if feature_enabled("qr_attribution", default=False):
     urlpatterns += [
         path("", include("apps.commerce.qr_attribution.urls")),
     ]
 
-if feature_enabled("bookings"):
+if feature_enabled("bookings", default=False):
     urlpatterns += [
         path("", include("apps.commerce.bookings.urls")),
     ]
 
-if feature_enabled("reviews"):
+if feature_enabled("reviews", default=False):
     urlpatterns += [
         path("", include("apps.commerce.reviews.urls")),
     ]

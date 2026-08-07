@@ -4,6 +4,15 @@ register = template.Library()
 
 
 @register.filter
+def humanize_slug(value):
+    """Turn snake_case / kebab-case labels into Title Case words."""
+    if value is None:
+        return ""
+    text = str(value).replace("_", " ").replace("-", " ").strip()
+    return text.title() if text else ""
+
+
+@register.filter
 def dedupe_messages(messages):
     """Show each distinct message text once (OAuth failures sometimes duplicate)."""
     if not messages:

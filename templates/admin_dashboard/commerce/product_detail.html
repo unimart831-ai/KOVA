@@ -34,7 +34,7 @@
         <div><dt class="text-gray-400 uppercase text-[10px]">Category</dt><dd>{{ product.category.name|default:"—" }}</dd></div>
         <div><dt class="text-gray-400 uppercase text-[10px]">External ID</dt><dd class="font-mono">{{ product.external_id|default:"—" }}</dd></div>
         {% if product.marketplace_partner %}
-        <div><dt class="text-gray-400 uppercase text-[10px]">Marketplace</dt><dd><a href="{% url 'admin_dashboard:marketplace_detail' product.marketplace_partner.pk %}" class="text-kova-600 hover:underline">{{ product.marketplace_partner.name }}</a></dd></div>
+        <div><dt class="text-gray-400 uppercase text-[10px]">Marketplace</dt><dd>{{ product.marketplace_partner.name }}</dd></div>
         {% endif %}
         {% if product.last_synced_at %}
         <div><dt class="text-gray-400 uppercase text-[10px]">Last synced</dt><dd>{{ product.last_synced_at|timesince }} ago</dd></div>

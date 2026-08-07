@@ -459,7 +459,10 @@ class StatusContent(models.Model):
 
 class StatusTemplate(models.Model):
     """
-    Reusable Status content templates for common business scenarios.
+    Archived: WhatsApp Status text snippets (not campaign Template Families).
+
+    Kept for admin/data compatibility. V1 Status Studio no longer surfaces these;
+    campaign structure uses apps.create.content.template_families instead.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

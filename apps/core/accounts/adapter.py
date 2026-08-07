@@ -88,7 +88,9 @@ class AsyncEmailAccountAdapter(DefaultAccountAdapter):
                 # Convert non-serializable objects to strings
                 safe_context[key] = str(value)
 
-        send_allauth_email.delay(template_prefix, email, safe_context)
+        from apps.core.utils import fire_task
+
+        fire_task(send_allauth_email, template_prefix, email, safe_context)
 
 
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter

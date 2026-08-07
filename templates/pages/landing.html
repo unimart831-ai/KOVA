@@ -1,408 +1,294 @@
 {% extends "layouts/marketing.html" %}
+{% load static %}
 
 {% block extra_head %}
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.14.8/dist/cdn.min.js"></script>
+<style>
+  /* Critical join-hero — guaranteed even if output.css is stale-cached */
+  .kova-join-hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    min-height: calc(100svh - 3.5rem);
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  @media (min-width: 640px) {
+    .kova-join-hero { min-height: calc(100svh - 4rem); }
+  }
+  .kova-join-hero__media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.05);
+  }
+  .kova-join-hero__veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15,23,42,.55) 0%, rgba(15,23,42,.62) 45%, rgba(0,102,255,.45) 100%);
+  }
+  .kova-join-hero__content {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .kova-join-hero__brand {
+    margin: 0;
+    font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(0,0,0,.25);
+  }
+  .kova-join-hero__lead {
+    margin: 1.25rem 0 0;
+    max-width: 36rem;
+    font-size: clamp(1rem, 2.2vw, 1.25rem);
+    font-weight: 500;
+    line-height: 1.6;
+    color: rgba(255,255,255,.92);
+  }
+  .kova-join-cta {
+    margin-top: 2.25rem;
+    display: flex;
+    width: 100%;
+    max-width: 36rem;
+    align-items: center;
+    gap: .5rem;
+    padding: .375rem;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 20px 40px rgba(15,23,42,.25);
+  }
+  .kova-join-cta__icon { display: none; color: #94a3b8; padding-left: .75rem; }
+  @media (min-width: 640px) { .kova-join-cta__icon { display: flex; } }
+  .kova-join-cta__input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent !important;
+    padding: .75rem .75rem;
+    font-size: 1rem;
+    color: #0f172a !important;
+    outline: none;
+    box-shadow: none !important;
+  }
+  .kova-join-cta__input::placeholder { color: #94a3b8; }
+  .kova-join-cta__btn {
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: #0066FF;
+    color: #fff;
+    font-weight: 700;
+    font-size: .95rem;
+    padding: .75rem 1.5rem;
+    cursor: pointer;
+  }
+  .kova-join-cta__btn:hover { background: #0052CC; }
+  .kova-join-hero__secondary { margin-top: 1.5rem; font-size: .875rem; color: rgba(255,255,255,.85); }
+  .kova-join-hero__secondary a { color: #BFDBFE; font-weight: 600; text-decoration: none; }
+  .kova-join-hero__secondary a:hover { color: #fff; text-decoration: underline; }
+  .kova-join-hero__hint { margin-top: 2.5rem; font-size: .8rem; color: rgba(255,255,255,.7); }
+  .kova-join-band {
+    background: #0066FF;
+    color: #fff;
+    padding: 5rem 1rem;
+    text-align: center;
+  }
+  .kova-join-band__brand {
+    font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.8);
+  }
+  .kova-join-band__title {
+    margin: .75rem 0 0;
+    font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .kova-join-band__lead { margin: 1rem auto 0; max-width: 36rem; color: rgba(255,255,255,.9); }
+  .kova-join-band__btn {
+    margin-top: 2rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    border-radius: 9999px;
+    background: #fff;
+    color: #0066FF;
+    font-weight: 700;
+    padding: .875rem 2rem;
+    text-decoration: none;
+  }
+  .kova-join-band__hint { margin-top: 1rem; font-size: .875rem; color: rgba(255,255,255,.75); }
+</style>
 {% endblock %}
 
-{% block title %}Kova Agent — More Customers. Less Work.{% endblock %}
+{% block title %}KOVA — More customers. Less work.{% endblock %}
 
-{% block meta_description %}The AI marketing employee for African businesses. Send a photo on WhatsApp — Kova creates content, captures leads, and helps you get paid. Approve in 5 minutes.{% endblock %}
+{% block meta_description %}{{ marketing_category }} Send a photo on WhatsApp — Kova creates campaigns, captures leads, and helps you get paid. Join free · 7-day trial.{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="brand-atmosphere relative overflow-hidden" id="how-it-works">
-  <div class="marketing-hero-grid">
-    <div class="marketing-hero-copy text-left">
-      {% include "components/brand/_agent_loop_badge.html" %}
+{# ── Immersive join hero (brand + one line + CTA) ── #}
+<section class="kova-join-hero" aria-label="Join KOVA">
+  <img
+    class="kova-join-hero__media"
+    src="{% static 'img/kova-hero-bg.jpg' %}"
+    alt=""
+    width="1920"
+    height="1080"
+    decoding="async"
+    fetchpriority="high"
+  >
+  <div class="kova-join-hero__veil" aria-hidden="true"></div>
+  <div class="kova-join-hero__content">
+    <p class="kova-join-hero__brand reveal">KOVA</p>
+    <p class="kova-join-hero__lead reveal reveal-delay-1">{{ marketing_hero_subhead }}</p>
 
-      <h1 class="reveal reveal-delay-1">
-        {% include "components/brand/_north_star_tagline.html" %}
-      </h1>
-      <p class="hero-lead reveal reveal-delay-2">{{ marketing_hero_subhead }}</p>
-      <p class="hero-body reveal reveal-delay-2">{{ marketing_hero_body }}</p>
+    <form class="kova-join-cta reveal reveal-delay-2" action="{% url 'account_signup' %}" method="get">
+      <label class="sr-only" for="kova-join-email">Work email</label>
+      <span class="kova-join-cta__icon" aria-hidden="true">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      </span>
+      <input
+        id="kova-join-email"
+        type="email"
+        name="email"
+        autocomplete="email"
+        placeholder="Enter your work email…"
+        class="kova-join-cta__input"
+      >
+      <button type="submit" class="kova-join-cta__btn">{{ marketing_hero_cta }}</button>
+    </form>
 
-      <div class="marketing-hero-actions reveal reveal-delay-3">
-        <a href="{% url 'account_signup' %}" class="btn-primary-pill btn-lg inline-flex items-center gap-2">
-          Start free trial
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-          </svg>
-        </a>
-        <span class="marketing-hero-note">No credit card · 7-day trial · KSh {{ kova_plan.price_kes }}/mo</span>
-      </div>
-
-      {% include "components/brand/_landing_hero_strip.html" %}
-    </div>
-
-    <div class="hidden lg:block">
-      {% include "components/brand/_landing_product_preview.html" %}
-    </div>
-  </div>
-
-  <div class="lg:hidden px-4 pb-12 max-w-xl mx-auto">
-    {% include "components/brand/_landing_product_preview.html" %}
-  </div>
-</section>
-
-{% include "components/brand/_landing_whatsapp_flow.html" %}
-{% include "components/brand/_landing_snap_sell.html" %}
-{% include "components/brand/_landing_business_types.html" %}
-{% include "components/brand/_landing_revenue_proof.html" %}
-
-<!-- Social proof -->
-<section class="marketing-stats-strip">
-  <div class="max-w-5xl mx-auto px-4">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-      <div class="reveal">
-        <p class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">5 min</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Your daily approve ritual</p>
-      </div>
-      <div class="reveal reveal-delay-1">
-        <p class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">WhatsApp</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Send assets · get briefs · reply MONEY</p>
-      </div>
-      <div class="reveal reveal-delay-2">
-        <p class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">M-Pesa</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Checkout built for Kenyan SMEs</p>
-      </div>
-      <div class="reveal reveal-delay-3">
-        <p class="text-2xl sm:text-3xl font-extrabold text-growth-600 dark:text-growth-400">KSh {{ kova_plan.price_kes }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">One plan · {{ kova_plan.max_seeds_per_month }} campaigns/mo</p>
-      </div>
-    </div>
+    <p class="kova-join-hero__secondary reveal reveal-delay-3">
+      Try:
+      <a href="#how-it-works">{{ marketing_hero_secondary }}</a>
+    </p>
+    <p class="kova-join-hero__hint reveal reveal-delay-3">{{ marketing_hero_cta_hint }}</p>
   </div>
 </section>
 
-<!-- The Problem -->
-<section class="py-20 marketing-section-default">
-  <div class="max-w-5xl mx-auto px-4">
-    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white text-center reveal">Other tools give you a blank screen.<br>Kova gives you a running start.</h2>
-    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="text-center reveal reveal-delay-1">
-        <div class="w-12 h-12 mx-auto bg-red-100 dark:bg-red-950/40 rounded-xl flex items-center justify-center mb-3">
-          <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-        </div>
-        <h3 class="font-semibold text-gray-900 dark:text-white">With other tools</h3>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">You stare at a blank screen. Write everything yourself. Schedule manually. Hope it works. Check analytics. Repeat.</p>
-      </div>
-      <div class="text-center reveal reveal-delay-2">
-        <div class="w-12 h-12 mx-auto bg-gold-100 dark:bg-gold-950/40 rounded-xl flex items-center justify-center mb-3">
-          <svg class="w-6 h-6 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <h3 class="font-semibold text-gray-900 dark:text-white">With generic AI tools</h3>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">You get generic AI writing that sounds like everyone else. No learning. No strategy. No engagement. Same output forever.</p>
-      </div>
-      <div class="text-center reveal reveal-delay-3">
-        <div class="w-12 h-12 mx-auto bg-growth-100 dark:bg-growth-950/50 rounded-xl flex items-center justify-center mb-3 ring-1 ring-growth-200/80 dark:ring-growth-800/60">
-          <svg class="w-6 h-6 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        </div>
-        <h3 class="font-semibold text-growth-700 dark:text-growth-400">With Kova</h3>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">More customers show up. Content is already written. Leads get follow-up drafts. You see what made money yesterday. Approve in 5 minutes.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-{% include "components/brand/_landing_magic_features.html" %}
-
-{% include "components/brand/_landing_stories.html" %}
-
-<!-- Connected Agent Network -->
-<section id="agent-network" class="py-20 marketing-section-muted overflow-hidden">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-16 reveal">
-      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">One loop. Smarter every week.</h2>
-      <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Six capabilities behind the scenes — you only see customers, content, and cash.</p>
+{# ── One loop: photo → customers → paid ── #}
+<section id="how-it-works" class="py-20 sm:py-24 bg-white">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-2xl mx-auto reveal">
+      <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">From one photo to paying customers</h2>
+      <p class="mt-4 text-lg text-slate-600">WhatsApp-first. You approve in five minutes. Nothing goes live without you.</p>
     </div>
 
-    <!-- Desktop: Circular network visualization -->
-    <div class="hidden lg:block reveal reveal-delay-1">
-      <div class="relative mx-auto" style="width: 720px; height: 620px;">
-        <!-- SVG Connection Lines -->
-        <svg class="absolute inset-0 w-full h-full text-gray-300 dark:text-gray-700" viewBox="0 0 720 620" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Outer ring connections (agent to agent) -->
-          <path d="M360 72 L588 192" class="agent-connection" stroke="url(#grad-blue-green)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M588 192 L516 468" class="agent-connection" stroke="url(#grad-green-gold)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M516 468 L204 468" class="agent-connection-reverse" stroke="url(#grad-gold-blue)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M204 468 L132 192" class="agent-connection-reverse" stroke="url(#grad-blue-growth)" stroke-width="1.5" opacity="0.5"/>
-          <path d="M132 192 L360 72" class="agent-connection" stroke="url(#grad-growth-blue)" stroke-width="1.5" opacity="0.5"/>
-          <!-- Spokes to center (each agent to strategist) -->
-          <path d="M360 72 L360 280" class="agent-connection" stroke="currentColor" stroke-width="1" opacity="0.15"/>
-          <path d="M588 192 L360 280" class="agent-connection-reverse" stroke="currentColor" stroke-width="1" opacity="0.15"/>
-          <path d="M516 468 L360 280" class="agent-connection" stroke="currentColor" stroke-width="1" opacity="0.15"/>
-          <path d="M204 468 L360 280" class="agent-connection-reverse" stroke="currentColor" stroke-width="1" opacity="0.15"/>
-          <path d="M132 192 L360 280" class="agent-connection" stroke="currentColor" stroke-width="1" opacity="0.15"/>
-          <!-- Gradient definitions -->
-          <defs>
-            <linearGradient id="grad-blue-green" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#0066FF"/><stop offset="100%" stop-color="#3385FF"/></linearGradient>
-            <linearGradient id="grad-green-gold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0066FF"/><stop offset="100%" stop-color="#64748B"/></linearGradient>
-            <linearGradient id="grad-gold-blue" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#64748B"/><stop offset="100%" stop-color="#0066FF"/></linearGradient>
-            <linearGradient id="grad-blue-growth" x1="100%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="#0066FF"/><stop offset="100%" stop-color="#3385FF"/></linearGradient>
-            <linearGradient id="grad-growth-blue" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3385FF"/><stop offset="100%" stop-color="#0066FF"/></linearGradient>
-          </defs>
-        </svg>
+    <ol class="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-6">
+      {% for title, detail in marketing_hero_strip %}
+      <li class="reveal text-center {% if not forloop.first %}reveal-delay-{{ forloop.counter0 }}{% endif %}">
+        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-kova-500 text-white text-sm font-bold font-display">{{ forloop.counter }}</span>
+        <h3 class="mt-4 text-base font-semibold text-slate-900">{{ title }}</h3>
+        <p class="mt-1.5 text-sm text-slate-500 leading-relaxed">{{ detail }}</p>
+      </li>
+      {% endfor %}
+    </ol>
 
-        <!-- Center: Chief Strategist (hub) -->
-        <div class="absolute left-1/2 -translate-x-1/2" style="top: 230px;">
-          <div class="relative">
-            <div class="absolute -inset-3 bg-growth-400/10 rounded-full motion-hub-ring" aria-hidden="true"></div>
-            <div class="agent-node relative bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-lg dark:shadow-xl dark:shadow-black/25 border-2 border-growth-400 dark:border-growth-500 w-56 text-center z-10 ring-1 ring-growth-100 dark:ring-growth-900/50">
-              <div class="w-12 h-12 mx-auto bg-growth-500 rounded-xl flex items-center justify-center mb-3 shadow-growth">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-              </div>
-              <h3 class="font-bold text-gray-900 dark:text-white">Chief Strategist</h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Orchestrates all agents<br>& delivers your daily brief</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Agent 1: Research (top center) -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-0">
-          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-blue-200 dark:border-blue-900 w-48 text-center hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-700 transition-all">
-            <div class="w-10 h-10 mx-auto bg-blue-100 dark:bg-blue-950/50 rounded-lg flex items-center justify-center mb-2">
-              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            </div>
-            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Research Agent</h4>
-            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Finds trending topics &<br>content opportunities</p>
-          </div>
-        </div>
-
-        <!-- Agent 2: Content Creator (top right) -->
-        <div class="absolute" style="right: 28px; top: 148px;">
-          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-kova-200 dark:border-kova-900 w-48 text-center hover:shadow-lg hover:border-kova-400 dark:hover:border-kova-700 transition-all">
-            <div class="w-10 h-10 mx-auto bg-kova-100 dark:bg-kova-950/50 rounded-lg flex items-center justify-center mb-2">
-              <svg class="w-5 h-5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            </div>
-            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Content Creator</h4>
-            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Writes original posts<br>in your brand voice</p>
-          </div>
-        </div>
-
-        <!-- Agent 3: Platform Adapter (bottom right) -->
-        <div class="absolute" style="right: 100px; bottom: 60px;">
-          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-growth-200 dark:border-growth-900 w-48 text-center hover:shadow-lg hover:border-growth-400 dark:hover:border-growth-700 transition-all">
-            <div class="w-10 h-10 mx-auto bg-growth-100 dark:bg-growth-950/50 rounded-lg flex items-center justify-center mb-2">
-              <svg class="w-5 h-5 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-            </div>
-            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Platform Adapter</h4>
-            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Tailors each post for<br>every platform natively</p>
-          </div>
-        </div>
-
-        <!-- Agent 4: Engagement (bottom left) -->
-        <div class="absolute" style="left: 100px; bottom: 60px;">
-          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-gold-200 dark:border-gold-900 w-48 text-center hover:shadow-lg hover:border-gold-400 dark:hover:border-gold-700 transition-all">
-            <div class="w-10 h-10 mx-auto bg-gold-100 dark:bg-gold-950/50 rounded-lg flex items-center justify-center mb-2">
-              <svg class="w-5 h-5 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-            </div>
-            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Engagement Agent</h4>
-            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Monitors & replies to<br>comments and mentions</p>
-          </div>
-        </div>
-
-        <!-- Agent 5: Analytics (top left) -->
-        <div class="absolute" style="left: 28px; top: 148px;">
-          <div class="agent-node bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border border-rose-200 dark:border-rose-900 w-48 text-center hover:shadow-lg hover:border-rose-400 dark:hover:border-rose-700 transition-all">
-            <div class="w-10 h-10 mx-auto bg-rose-100 dark:bg-rose-950/50 rounded-lg flex items-center justify-center mb-2">
-              <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            </div>
-            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Analytics Agent</h4>
-            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Tracks performance &<br>feeds insights back</p>
-          </div>
-        </div>
-
-        <!-- Flow labels on connections -->
-        <div class="absolute text-[10px] font-medium text-blue-500/70 dark:text-blue-400/50" style="top: 108px; left: 470px;">trends →</div>
-        <div class="absolute text-[10px] font-medium text-kova-500/70 dark:text-kova-400/50" style="top: 360px; right: 115px;">content →</div>
-        <div class="absolute text-[10px] font-medium text-growth-500/70 dark:text-growth-400/50" style="bottom: 56px; left: 50%; transform: translateX(-50%);">← engagement</div>
-        <div class="absolute text-[10px] font-medium text-gold-500/70 dark:text-gold-400/50" style="top: 360px; left: 80px;">← insights</div>
-        <div class="absolute text-[10px] font-medium text-rose-500/70 dark:text-rose-400/50" style="top: 108px; left: 175px;">← data</div>
-      </div>
-    </div>
-
-    <!-- Mobile: Vertical flow -->
-    <div class="lg:hidden space-y-3 max-w-sm mx-auto">
-      <!-- Strategist at top -->
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-md border-2 border-kova-400 dark:border-kova-600 text-center reveal">
-        <div class="w-10 h-10 mx-auto bg-kova-800 rounded-lg flex items-center justify-center mb-2">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-        </div>
-        <h4 class="font-bold text-sm text-gray-900 dark:text-white">Chief Strategist</h4>
-        <p class="text-[11px] text-gray-400 mt-0.5">Orchestrates everything</p>
-      </div>
-
-      <div class="flex justify-center"><svg class="w-5 h-10 text-gray-300 dark:text-gray-700" viewBox="0 0 20 40"><path d="M10 0 L10 30 L5 25 M10 30 L15 25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-
-      <!-- Flow: Research → Create → Adapt → Engage → Analyze -->
-      {% with agents="Research Agent|Finds trends|blue|M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z,Content Creator|Writes posts|purple|M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z,Platform Adapter|Tailors per platform|green|M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4,Engagement Agent|Replies & monitors|amber|M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z,Analytics Agent|Tracks & learns|rose|M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" %}
-      {% endwith %}
-
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-blue-200 dark:border-blue-900 flex items-center gap-3 reveal reveal-delay-1">
-        <div class="w-9 h-9 bg-blue-100 dark:bg-blue-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
-        <div><h4 class="font-semibold text-xs text-gray-900 dark:text-white">Research Agent</h4><p class="text-[11px] text-gray-400">Finds trending topics & opportunities</p></div>
-      </div>
-      <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-kova-200 dark:border-kova-900 flex items-center gap-3 reveal reveal-delay-2">
-        <div class="w-9 h-9 bg-kova-100 dark:bg-kova-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></div>
-        <div><h4 class="font-semibold text-xs text-gray-900 dark:text-white">Content Creator</h4><p class="text-[11px] text-gray-400">Writes original posts in your voice</p></div>
-      </div>
-      <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-growth-200 dark:border-growth-900 flex items-center gap-3 reveal reveal-delay-3">
-        <div class="w-9 h-9 bg-growth-100 dark:bg-growth-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg></div>
-        <div><h4 class="font-semibold text-xs text-gray-900 dark:text-white">Platform Adapter</h4><p class="text-[11px] text-gray-400">Tailors for each platform natively</p></div>
-      </div>
-      <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-gold-200 dark:border-gold-900 flex items-center gap-3 reveal reveal-delay-4">
-        <div class="w-9 h-9 bg-gold-100 dark:bg-gold-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
-        <div><h4 class="font-semibold text-xs text-gray-900 dark:text-white">Engagement Agent</h4><p class="text-[11px] text-gray-400">Monitors & replies to comments</p></div>
-      </div>
-      <div class="flex justify-center"><svg class="w-5 h-6 text-gray-300 dark:text-gray-700" viewBox="0 0 20 24"><path d="M10 0 L10 18 L6 14 M10 18 L14 14" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm border border-rose-200 dark:border-rose-900 flex items-center gap-3 reveal reveal-delay-5">
-        <div class="w-9 h-9 bg-rose-100 dark:bg-rose-950/50 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-        <div><h4 class="font-semibold text-xs text-gray-900 dark:text-white">Analytics Agent</h4><p class="text-[11px] text-gray-400">Tracks what works & feeds it back</p></div>
-      </div>
-
-      <!-- Loop-back indicator -->
-      <div class="flex justify-center pt-2">
-        <div class="inline-flex items-center gap-1.5 text-[11px] text-kova-600 dark:text-kova-400 font-medium">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          Insights loop back — every cycle gets smarter
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Daily Brief -->
-<section class="py-20 marketing-section-default">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-      <div class="reveal">
-        <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-          Your marketing is already done.<br>
-          <span class="text-gold-600 dark:text-gold-400">Approve in 5 minutes.</span>
-        </h2>
-        <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
-          Every morning: what made money, who's waiting for a reply, and which posts are ready to go live. Nothing publishes until you say so.
-        </p>
-        <ul class="mt-6 space-y-3">
-          <li class="flex items-start space-x-3">
-            <svg class="w-5 h-5 icon-check-success mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-            <span class="text-gray-600 dark:text-gray-400">Review and approve AI-generated posts</span>
-          </li>
-          <li class="flex items-start space-x-3">
-            <svg class="w-5 h-5 icon-check-success mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-            <span class="text-gray-600 dark:text-gray-400">See trending topics in your industry</span>
-          </li>
-          <li class="flex items-start space-x-3">
-            <svg class="w-5 h-5 icon-check-success mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-            <span class="text-gray-600 dark:text-gray-400">Track performance improvements week over week</span>
-          </li>
-          <li class="flex items-start space-x-3">
-            <svg class="w-5 h-5 icon-check-success mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-            <span class="text-gray-600 dark:text-gray-400">5 minutes to manage what used to take hours</span>
-          </li>
-        </ul>
-      </div>
-      <div class="reveal reveal-delay-2 bg-gray-100 dark:bg-gray-800/60 rounded-2xl p-6 sm:p-8 shadow-inner border border-gray-200/50 dark:border-gray-700">
-        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-md p-5 sm:p-6 space-y-4 border border-gray-100 dark:border-gray-800" x-data="{ show: false }" x-intersect.once="show = true">
-          <div class="flex items-center space-x-3 pb-4 border-b border-gray-100 dark:border-gray-800">
-            <div class="w-9 h-9 bg-kova-800 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-            </div>
-            <div>
-              <p class="font-semibold text-gray-900 dark:text-white">Good morning! Here's your brief.</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Today — 9:00 AM</p>
-            </div>
-          </div>
-          <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><p>Yesterday: <strong>+23% engagement</strong> vs. last week</p></div>
-            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-kova-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><p><strong>2 campaigns</strong> ready for your review</p></div>
-            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg><p>Trending: <strong>#AIProductivity</strong> in your niche</p></div>
-            <div class="flex items-center gap-2"><svg class="w-4 h-4 text-gold-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg><p><strong>12 comments</strong> replied to (5 flagged for you)</p></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Pricing -->
-{% include "pages/_landing_pricing.html" %}
-
-<!-- Why Kova Is Different -->
-<section class="py-20 marketing-section-muted">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-14 reveal">
-      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Not another scheduling tool.</h2>
-      <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">Three things no other platform does.</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-      <!-- 1: Gets Smarter -->
-      <div class="marketing-card-elevated reveal reveal-delay-1 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
-        <div class="w-14 h-14 bg-growth-500 rounded-xl flex items-center justify-center mb-5">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Gets smarter with every post</h3>
-        <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-          Content DNA tracks which attributes drive engagement — tone, format, hooks, CTAs. The Analyst Agent feeds this back into content generation. Post #50 is dramatically better than post #1.
-        </p>
-        <p class="mt-4 text-xs font-semibold text-growth-600 dark:text-growth-400 uppercase tracking-wider">Compounding intelligence</p>
-      </div>
-      <!-- 2: Different angle per platform -->
-      <div class="marketing-card-elevated reveal reveal-delay-2 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
-        <div class="w-14 h-14 bg-kova-800 rounded-xl flex items-center justify-center mb-5">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Different angle per platform</h3>
-        <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-          One idea becomes a bold take on X, a storytelling post on LinkedIn, a visual caption on Instagram, and a conversational post on Facebook. Not reformatted — rethought.
-        </p>
-        <p class="mt-4 text-xs font-semibold text-kova-800 dark:text-kova-300 uppercase tracking-wider">Platform-native strategy</p>
-      </div>
-      <!-- 3: Kenya pricing -->
-      <div class="marketing-card-elevated reveal reveal-delay-3 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/20 transition-shadow">
-        <div class="w-14 h-14 bg-growth-500 rounded-xl flex items-center justify-center mb-5">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Built for Africa, priced for Africa</h3>
-        <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-          Buffer starts at $6. FeedHive at $19. Hootsuite at $99. Kova is KSh {{ kova_plan.price_kes }} (~${{ kova_plan.price_usd }}) for your full AI marketing department. Same power, priced for the businesses that actually need it most.
-        </p>
-        <p class="mt-4 text-xs font-semibold text-growth-600 dark:text-growth-400 uppercase tracking-wider">10x more affordable</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA Section -->
-<section class="brand-atmosphere py-24 relative overflow-hidden">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative max-w-4xl mx-auto px-4 text-center reveal">
-    <p class="text-sm font-medium text-growth-600 dark:text-growth-400 mb-2">{{ marketing_badge }}</p>
-    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mt-2 leading-tight">
-      {% include "components/brand/_north_star_tagline.html" %}
-    </h2>
-    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400 font-medium">{{ marketing_hero_subhead }}</p>
-    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">KSh {{ kova_plan.price_kes }}/mo · {{ trial_days }}-day trial · {{ trial_campaigns }} campaigns · M-Pesa or card</p>
-    <div class="mt-8">
-      <a href="{% url 'account_signup' %}" class="btn-primary text-lg px-10 py-3.5 shadow-growth">
-        Start your free trial
-        <svg class="inline w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+    <div class="mt-12 text-center reveal">
+      <a href="{% url 'account_signup' %}" class="btn-primary-pill btn-lg inline-flex items-center gap-2">
+        {{ marketing_hero_cta }}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
       </a>
     </div>
+  </div>
+</section>
+
+{# ── Built for African SMEs ── #}
+<section class="py-20 sm:py-24 bg-kova-50/60 border-y border-kova-100">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-2xl mx-auto reveal">
+      <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">Built for how you already sell</h2>
+      <p class="mt-4 text-lg text-slate-600">{{ marketing_category }}</p>
+    </div>
+    <ul class="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-8">
+      {% for title, detail in built_for_types %}
+      <li class="reveal {% if not forloop.first %}reveal-delay-{{ forloop.counter0 }}{% endif %}">
+        <h3 class="text-base font-semibold text-slate-900">{{ title }}</h3>
+        <p class="mt-1.5 text-sm text-slate-500 leading-relaxed">{{ detail }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+{# ── Outcomes ── #}
+<section class="py-20 sm:py-24 bg-white">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-2xl mx-auto reveal">
+      <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">Your AI marketing employee</h2>
+      <p class="mt-4 text-lg text-slate-600">One system — campaigns, publishing, leads, and revenue — not another blank calendar.</p>
+    </div>
+    <ul class="mt-14 space-y-0 max-w-2xl mx-auto border-t border-slate-200">
+      {% for title, detail in outcome_capabilities %}
+      <li class="reveal py-5 border-b border-slate-200 flex gap-4 items-start">
+        <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-kova-500" aria-hidden="true"></span>
+        <div>
+          <h3 class="text-base font-semibold text-slate-900">{{ title }}</h3>
+          <p class="mt-1 text-sm text-slate-500 leading-relaxed">{{ detail }}</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+{# ── Trust strip ── #}
+<section class="py-14 bg-white border-y border-slate-100">
+  <div class="max-w-5xl mx-auto px-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <div class="reveal">
+        <p class="text-2xl sm:text-3xl font-extrabold text-kova-600 font-display">5 min</p>
+        <p class="text-xs text-slate-500 mt-1">Daily approve ritual</p>
+      </div>
+      <div class="reveal reveal-delay-1">
+        <p class="text-2xl sm:text-3xl font-extrabold text-kova-600 font-display">WhatsApp</p>
+        <p class="text-xs text-slate-500 mt-1">Send photos · get campaigns</p>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <p class="text-2xl sm:text-3xl font-extrabold text-kova-600 font-display">M-Pesa</p>
+        <p class="text-xs text-slate-500 mt-1">Checkout for Kenyan SMEs</p>
+      </div>
+      <div class="reveal reveal-delay-3">
+        <p class="text-2xl sm:text-3xl font-extrabold text-kova-600 font-display">KSh {{ kova_plan.price_kes }}</p>
+        <p class="text-xs text-slate-500 mt-1">One plan · full department</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Pricing ── #}
+{% include "pages/_landing_pricing.html" %}
+
+{# ── Closing CTA band ── #}
+<section class="kova-join-band">
+  <div class="max-w-3xl mx-auto px-4 text-center reveal">
+    <p class="kova-join-band__brand">KOVA</p>
+    <h2 class="kova-join-band__title">{{ marketing_badge }}</h2>
+    <p class="kova-join-band__lead">{{ marketing_hero_subhead }}</p>
+    <a href="{% url 'account_signup' %}" class="kova-join-band__btn">
+      Start your free trial
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+    </a>
+    <p class="kova-join-band__hint">KSh {{ kova_plan.price_kes }}/mo · {{ trial_days }}-day trial · M-Pesa or card</p>
   </div>
 </section>
 {% endblock %}

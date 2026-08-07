@@ -66,13 +66,26 @@ ACTIVE_PLATFORMS = [
     },
 ]
 
-# Kova supports 5 channels: WhatsApp, Facebook, Instagram, TikTok, LinkedIn.
+# Catalog of platforms Kova can connect (filtered at runtime by V1 feature flags).
 COMING_SOON_PLATFORMS = []
 
-# Flat set used for filtering throughout the app (Create Agent, content forms, etc.)
-ACTIVE_PLATFORM_KEYS = {p["key"] for p in ACTIVE_PLATFORMS}
+# Keep full catalog for already-connected accounts; connect UI filters via flags.
+_PLATFORM_CATALOG = ACTIVE_PLATFORMS
 
-# Keep backward-compat name — code that imports AVAILABLE_PLATFORMS still works
+
+def get_available_platforms() -> list[dict]:
+    """Platforms exposed for new connections (V1: WA + FB + IG by default)."""
+    from apps.core.features import platform_connect_allowed
+
+    return [p for p in _PLATFORM_CATALOG if platform_connect_allowed(p["key"])]
+
+
+def get_active_platform_keys() -> set[str]:
+    return {p["key"] for p in get_available_platforms()}
+
+
+# Flat set — evaluated lazily via helpers; module-level kept for import compat.
+ACTIVE_PLATFORM_KEYS = {p["key"] for p in ACTIVE_PLATFORMS}
 AVAILABLE_PLATFORMS = ACTIVE_PLATFORMS
 
 # Wedge GTM priority: WhatsApp → Instagram → Facebook first on connect page
@@ -87,7 +100,7 @@ PLATFORM_ORDER_BY_MODEL = {
 RECOMMENDED_BY_MODEL = {
     "product": frozenset({"whatsapp", "instagram", "facebook"}),
     "service": frozenset({"whatsapp", "instagram", "facebook"}),
-    "professional": frozenset({"linkedin", "instagram"}),
+    "professional": frozenset({"whatsapp", "instagram", "facebook"}),
 }
 
 
@@ -122,7 +135,7 @@ def platform_list(request):
     )
 
     platforms = []
-    for p in AVAILABLE_PLATFORMS:
+    for p in get_available_platforms():
         platforms.append({
             **p,
             "connected": p["key"] in connected_platforms,
@@ -176,8 +189,8 @@ def platform_list(request):
 @ratelimit(key="user", rate="10/m", block=True)
 def connect_platform(request, platform):
     """Start OAuth flow for a platform."""
-    if platform not in ACTIVE_PLATFORM_KEYS:
-        messages.error(request, f"{platform.title()} is not available yet. Stay tuned!")
+    if platform not in get_active_platform_keys():
+        messages.error(request, f"{platform.title()} is not available in Kova V1 yet.")
         return redirect("platforms:list")
 
     provider = get_provider(platform)

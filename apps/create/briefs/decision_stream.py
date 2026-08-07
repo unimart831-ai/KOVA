@@ -54,18 +54,39 @@ def build_decision_stream(user, brief=None) -> list[StreamItem]:
 
 
 def _build_decision_stream_uncached(user, brief=None) -> list[StreamItem]:
-    stream: list[StreamItem] = []
+    """V1 ranking: critical failures first, then growth coaching, then ops triage."""
+    from apps.core.features import feature_enabled
 
-    stream += _failed_posts(user)
-    stream += _flagged_interactions(user)
-    stream += _pending_posts(user)
-    stream += _needs_reply_interactions(user)
-    stream += _escalated_whatsapp(user)
-    stream += _new_leads(user)
-    stream += _pending_bookings(user)
-    stream += _strategic_decisions(brief)
-    stream += _connect_platform_nudge(user)
-    stream += _onboarding_next_step(user)
+    critical: list[StreamItem] = []
+    growth: list[StreamItem] = []
+    ops: list[StreamItem] = []
+
+    critical += _failed_posts(user)
+    growth += _strategic_decisions(brief)
+    growth += _new_leads(user)
+    ops += _pending_posts(user)
+
+    if feature_enabled("engage_inbox", default=False):
+        ops += _flagged_interactions(user)
+        ops += _needs_reply_interactions(user)
+        ops += _escalated_whatsapp(user)
+
+    if feature_enabled("bookings", default=False):
+        ops += _pending_bookings(user)
+
+    ops += _connect_platform_nudge(user)
+    ops += _onboarding_next_step(user)
+
+    # Prefer at least one growth item in the top half when nothing is on fire.
+    stream: list[StreamItem] = []
+    if critical:
+        stream += critical
+        stream += growth[:2]
+        stream += ops
+        stream += growth[2:]
+    else:
+        stream += growth
+        stream += ops
 
     return stream[:STREAM_CAP]
 
@@ -116,7 +137,7 @@ def _flagged_interactions(user) -> list[StreamItem]:
                 urgency="critical",
                 title=f"Flagged: {i.author_name} — {(i.content or '')[:40]}",
                 subtitle=f"{platform} · {i.get_interaction_type_display()}",
-                action_url=reverse("engage:inbox"),
+                action_url=reverse("whatsapp:inbox"),
                 source_id=str(i.id),
                 meta={"platform": i.platform, "sentiment": getattr(i, "sentiment", "")},
             ))
@@ -180,7 +201,7 @@ def _needs_reply_interactions(user) -> list[StreamItem]:
                 urgency="today",
                 title=f"{first.author_name}: {(first.content or '')[:40]}",
                 subtitle=f"{platform} · {first.get_interaction_type_display()}",
-                action_url=reverse("engage:inbox"),
+                action_url=reverse("whatsapp:inbox"),
                 source_id=str(first.id),
                 meta={"count": 1},
             )]
@@ -189,7 +210,7 @@ def _needs_reply_interactions(user) -> list[StreamItem]:
             urgency="today",
             title=f"{count} messages need your reply",
             subtitle=f"Latest from {first.author_name} on {platform}",
-            action_url=reverse("engage:inbox"),
+            action_url=reverse("whatsapp:inbox"),
             source_id="",
             meta={"count": count},
         )]
@@ -274,7 +295,7 @@ def _pending_bookings(user) -> list[StreamItem]:
             urgency="today",
             title=f"{count} booking{'s' if count != 1 else ''} to confirm today",
             subtitle="Clients waiting for confirmation",
-            action_url=reverse("bookings:list"),
+            action_url=reverse("leads:list"),
             meta={"count": count},
         )]
     except Exception:

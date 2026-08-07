@@ -336,11 +336,24 @@ def activate_proposal(
     product = getattr(asset, "product", None)
     _retire_snap_orphan_seeds(user, product)
 
+    from apps.create.content.template_families import resolve_template_family
+
     selected_types = sorted(normalize_content_types(content_types))
     meta = proposal.to_dict()
     idea = proposal.title
     if proposal.rationale:
         idea = f"{proposal.title}\n\nAngle: {proposal.rationale}"
+
+    profile = getattr(user, "profile", None)
+    bm = getattr(profile, "business_model", "") or ""
+    asset_type = getattr(asset, "asset_type", "") if asset is not None else ""
+    family = resolve_template_family(
+        objective=proposal.intent,
+        intent=proposal.intent,
+        business_model=bm,
+        asset_type=str(asset_type),
+    )
+    meta["template_family"] = family
 
     seed = ContentSeed.objects.create(
         user=user,
@@ -349,12 +362,15 @@ def activate_proposal(
         notes=f"Activated from proposal `{proposal.id}`",
         target_platforms=target_platforms or [],
         target_intent=_map_intent_to_seed(proposal.intent),
+        template_family=family,
         status=ContentSeed.SeedStatus.PROCESSING,
         blueprint={
             "proposal": meta,
             "suggested_formats": proposal.suggested_formats,
             "selected_content_types": selected_types,
             "objective": proposal.intent,
+            "template_family": family,
+            "metadata": {"template_family": family},
         },
     )
 

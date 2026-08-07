@@ -76,6 +76,26 @@
     <a href="{% url 'content:studio' %}?q={{ campaign.title|urlencode }}" class="btn-secondary text-sm px-4 py-2">Open in Studio</a>
   </div>
 
+  {% if named_leads %}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Named leads from this campaign</h3>
+      <a href="{% url 'leads:list' %}?campaign={{ campaign.pk }}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View all</a>
+    </div>
+    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+      {% for lead in named_leads %}
+      <a href="{% url 'leads:detail' lead.pk %}" class="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ lead.name|default:lead.email }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ lead.get_source_type_display }} · {{ lead.get_status_display }}</p>
+        </div>
+        <p class="text-[10px] text-gray-400 shrink-0 ml-4">{{ lead.first_seen_at|timesince }} ago</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if recent_conversions %}
   <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">

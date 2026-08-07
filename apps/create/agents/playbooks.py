@@ -16,6 +16,8 @@ Playbooks are loaded during onboarding when user selects their industry.
 They feed into the Create Agent's system prompt via _get_industry_intelligence().
 """
 
+from __future__ import annotations
+
 import logging
 
 logger = logging.getLogger(__name__)

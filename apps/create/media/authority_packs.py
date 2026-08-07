@@ -1,8 +1,15 @@
-"""Authority content packs — FAQ / myth / tip from Brand DNA."""
+"""Authority content packs — FAQ / myth / tip from Brand DNA + Template Families."""
 
 from __future__ import annotations
 
 from apps.create.media.brand_dna import resolve_brand_dna
+
+# Weekly pack type → Template Family
+PACK_TO_FAMILY = {
+    "faq": "faq",
+    "myth": "thought_leadership",
+    "tips": "educational",
+}
 
 
 def build_authority_pack(user, *, pack_type: str = "faq") -> list[dict]:
@@ -10,20 +17,25 @@ def build_authority_pack(user, *, pack_type: str = "faq") -> list[dict]:
     dna = resolve_brand_dna(user)
     industry = dna.industry or "your industry"
     brand = dna.brand_name or "your brand"
+    family_key = PACK_TO_FAMILY.get(pack_type, "faq")
     if pack_type == "myth":
-        return [
+        ideas = [
             {"title": f"Myth: {industry} is too crowded", "angle": "Debunk the myth with proof"},
             {"title": "What clients get wrong", "angle": "Educate with a contrarian take"},
         ]
-    if pack_type == "tips":
-        return [
+    elif pack_type == "tips":
+        ideas = [
             {"title": f"3 mistakes in {industry}", "angle": "Actionable tips"},
             {"title": f"How {brand} approaches results", "angle": "Authority positioning"},
         ]
-    return [
-        {"title": f"FAQ: How to choose in {industry}", "angle": "Answer the #1 buyer question"},
-        {"title": "Before you buy — read this", "angle": "Trust-building FAQ carousel"},
-    ]
+    else:
+        ideas = [
+            {"title": f"FAQ: How to choose in {industry}", "angle": "Answer the #1 buyer question"},
+            {"title": "Before you buy — read this", "angle": "Trust-building FAQ carousel"},
+        ]
+    for idea in ideas:
+        idea["template_family"] = family_key
+    return ideas
 
 
 def is_authority_business(user) -> bool:

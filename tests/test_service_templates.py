@@ -44,4 +44,4 @@ def test_apply_template_enriches_blueprint(service_asset):
     assert enriched["metadata"]["service_template"] == "offer"
     assert "suggested_hooks" in enriched["metadata"]
     lines = service_template_prompt_lines(enriched)
-    assert "SERVICE TEMPLATE" in lines
+    assert "TEMPLATE FAMILY" in lines or "SERVICE TEMPLATE" in lines

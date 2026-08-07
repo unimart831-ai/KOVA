@@ -53,8 +53,16 @@ CHANNEL_LAYERS = {
     }
 }
 
-# ─── CELERY (non-blocking in dev — fire_task() uses daemon threads when no Redis) ─
-CELERY_TASK_ALWAYS_EAGER = False
+# ─── CELERY ───────────────────────────────────────────────────────────────────
+# Local SQLite stack usually has REDIS_URL in .env but Redis may not be running.
+# Default: no broker → fire_task() uses daemon threads (never blocks onboarding).
+# Opt in to a real broker with CELERY_USE_REDIS=1 (Redis must be up on REDIS_URL).
+if env.bool("CELERY_USE_REDIS", default=False):  # noqa: F405
+    CELERY_TASK_ALWAYS_EAGER = False
+else:
+    CELERY_BROKER_URL = ""
+    CELERY_RESULT_BACKEND = ""
+    CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_EAGER_PROPAGATES = True
 
 # ─── LOGGING (INFO in dev — DEBUG floods I/O and slows every request) ────────

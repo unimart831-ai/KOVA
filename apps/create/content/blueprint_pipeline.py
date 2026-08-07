@@ -67,7 +67,21 @@ def attach_blueprint_to_seed(
         return {}
 
     resolved = asset or asset_for_product(product or getattr(seed, "product", None))
-    if resolved and resolved.asset_type == resolved.AssetType.SERVICE:
+    from apps.create.content.template_families import (
+        VALID_FAMILY_KEYS,
+        apply_family_to_blueprint,
+        resolve_template_family,
+    )
+
+    profile = getattr(seed.user, "profile", None)
+    bm = getattr(profile, "business_model", "") or ""
+    asset_type = getattr(resolved, "asset_type", "") if resolved else ""
+    forced_family = getattr(seed, "template_family", "") or ""
+
+    # Goal-first Studio family always wins over legacy rotation
+    if forced_family in VALID_FAMILY_KEYS:
+        data = apply_family_to_blueprint(data, forced_family)
+    elif resolved and resolved.asset_type == resolved.AssetType.SERVICE:
         from apps.create.content.service_templates import apply_service_template_to_blueprint, pick_service_template
 
         template_key = pick_service_template(resolved, seed=str(seed.id))
@@ -84,18 +98,30 @@ def attach_blueprint_to_seed(
 
         template_key = pick_professional_template(resolved, seed=str(seed.id))
         data = apply_professional_template_to_blueprint(data, template_key, resolved, seed.user)
-    elif getattr(seed.user.profile, "business_model", "") == "professional":
+    elif bm == "professional" and resolved:
         from apps.create.content.professional_templates import (
             apply_professional_template_to_blueprint,
             pick_professional_template,
         )
 
-        if resolved:
-            template_key = pick_professional_template(resolved, seed=str(seed.id))
-            data = apply_professional_template_to_blueprint(data, template_key, resolved, seed.user)
+        template_key = pick_professional_template(resolved, seed=str(seed.id))
+        data = apply_professional_template_to_blueprint(data, template_key, resolved, seed.user)
+    else:
+        family = resolve_template_family(
+            objective=objective or data.get("objective", ""),
+            business_model=bm,
+            asset_type=str(asset_type),
+            forced_family=forced_family,
+        )
+        data = apply_family_to_blueprint(data, family)
 
+    family = (data.get("template_family") or (data.get("metadata") or {}).get("template_family") or "")
     seed.blueprint = data
-    seed.save(update_fields=["blueprint", "updated_at"])
+    update_fields = ["blueprint", "updated_at"]
+    if family and getattr(seed, "template_family", "") != family:
+        seed.template_family = family
+        update_fields.append("template_family")
+    seed.save(update_fields=update_fields)
     return data
 
 
@@ -133,16 +159,22 @@ def blueprint_prompt_section(blueprint: dict) -> str:
     lines.append(
         "Match post_format to the blueprint format (carousel for IG product, reel for tiktok, etc.)."
     )
-    from apps.create.content.service_templates import service_template_prompt_lines
+    from apps.create.content.template_families import family_prompt_section
 
-    template_lines = service_template_prompt_lines(blueprint)
-    if template_lines:
+    family_lines = family_prompt_section(blueprint)
+    if family_lines:
         lines.append("")
-        lines.append(template_lines)
-    from apps.create.content.professional_templates import professional_template_prompt_lines
+        lines.append(family_lines)
+    else:
+        from apps.create.content.service_templates import service_template_prompt_lines
+        from apps.create.content.professional_templates import professional_template_prompt_lines
 
-    pro_lines = professional_template_prompt_lines(blueprint)
-    if pro_lines:
-        lines.append("")
-        lines.append(pro_lines)
+        template_lines = service_template_prompt_lines(blueprint)
+        if template_lines:
+            lines.append("")
+            lines.append(template_lines)
+        pro_lines = professional_template_prompt_lines(blueprint)
+        if pro_lines:
+            lines.append("")
+            lines.append(pro_lines)
     return "\n".join(lines)

@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% load nav_tags %}
 
 {% block title %}Business Brain — {{ profile.company_name|default:"Your Business" }}{% endblock %}
 {% block page_title %}Business Brain{% endblock %}
@@ -64,14 +65,63 @@
         <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Website</p>
         <p class="text-sm text-gray-900 dark:text-white truncate">{{ bd.website_url|default:"—" }}</p>
       </div>
-      {% if profile.key_offerings %}
+      {% if profile.key_offerings or catalog_count %}
       <div class="sm:col-span-2">
         <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Offerings</p>
+        {% if profile.key_offerings %}
         <div class="flex flex-wrap gap-1.5">
           {% for o in profile.key_offerings %}
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200">{{ o }}</span>
           {% endfor %}
         </div>
+        {% endif %}
+        {% if catalog_count %}
+        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          Live catalog: <span class="font-semibold text-gray-800 dark:text-gray-200">{{ catalog_count }}</span> item{{ catalog_count|pluralize }}
+          {% if catalog_names %} — {{ catalog_names|join:", " }}{% if catalog_count > catalog_names|length %}…{% endif %}{% endif %}
+        </p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}
+
+  {# ── Market DNA ── #}
+  {% with mk=snapshot.market %}
+  <div class="app-surface overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div class="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/30 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <h3 class="font-semibold text-gray-900 dark:text-white">Market DNA</h3>
+      <span class="ml-auto text-xs text-gray-400">Where you sell</span>
+    </div>
+    <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Country</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ mk.country|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">City</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ mk.city|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Content language</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ profile.get_content_language_display|default:"—" }}</p>
+      </div>
+      {% if connected_channels %}
+      <div class="sm:col-span-3">
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Connected channels</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for ch in connected_channels %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 capitalize">{{ ch }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="sm:col-span-3">
+        <p class="text-sm text-gray-400 italic">Connect Facebook, Instagram, or WhatsApp in <a href="{% url 'platforms:list' %}" class="text-kova-600 dark:text-kova-400 hover:underline">Settings → Channels</a>.</p>
       </div>
       {% endif %}
     </div>
@@ -190,7 +240,7 @@
           {% for goal in profile.goals %}
           <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-950 dark:text-kova-200">
             <svg class="w-3 h-3 text-kova-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            {{ goal|replace:"_":" "|title }}
+            {{ goal|humanize_slug }}
           </span>
           {% endfor %}
         </div>

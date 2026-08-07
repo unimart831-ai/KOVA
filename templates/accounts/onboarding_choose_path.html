@@ -1,97 +1,122 @@
-{% extends "layouts/app.html" %}
+{% extends "layouts/marketing.html" %}
 
-{% block title %}Welcome — Step {{ setup_step }} of {{ setup_total }}{% endblock %}
-{% block page_title %}Welcome to Kova{% endblock %}
-{% block page_subtitle %}
-<p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 hidden sm:block">One quick step — then Kova starts working in your voice.</p>
+{% block title %}About your business - KOVA{% endblock %}
+
+{% block extra_head %}
+{% include "account/_auth_styles.html" %}
+<style>
+  .kova-auth__panel--onboard { max-width: 24rem; }
+  .kova-auth__card textarea.input {
+    border-radius: 0.65rem;
+    min-height: 4.5rem;
+    resize: vertical;
+    line-height: 1.4;
+  }
+  .kova-onboard-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.06);
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.92);
+    transition: border-color .15s, background .15s;
+  }
+  .kova-onboard-chip:hover { border-color: rgba(147,197,253,0.7); }
+  .kova-onboard-chip:has(:checked) {
+    border-color: #93c5fd;
+    background: rgba(0,102,255,0.35);
+  }
+  .kova-onboard-chip input { accent-color: #0066FF; }
+  .kova-onboard-more {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #bfdbfe;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.25rem;
+    text-align: center;
+  }
+  .kova-onboard-more:hover { color: #fff; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="onboarding-flow relative max-w-xl mx-auto py-6 sm:py-8">
-  {% include "accounts/_onboarding_setup_progress.html" %}
+<section class="kova-auth">
+  {% include "account/_auth_visual.html" %}
 
-  <div class="text-center mb-8">
-    <p class="text-sm font-semibold text-kova-700 dark:text-kova-300 mb-2">You're hiring Kova</p>
-    <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Tell Kova about your business</h2>
-    <p class="mt-2 text-gray-600 dark:text-gray-400 text-sm sm:text-base max-w-md mx-auto">
-      Like a great new hire, Kova wants to understand your business before it starts —
-      not just collect your logo. This becomes your Business Brain.
-    </p>
+  <div class="kova-auth__panel kova-auth__panel--onboard">
+    <div class="kova-auth__card" x-data="{ more: false }">
+      <h1 class="kova-auth__title">About your business</h1>
+
+      <form method="post"
+            class="kova-auth__form"
+            data-kova-busy="instant"
+            data-kova-busy-message="Building your Business Brain…">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="rounded-xl px-3 py-2.5 text-sm bg-red-50 border border-red-200 text-red-700">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div>
+          <label for="id_company_name" class="label">Business name</label>
+          {{ form.company_name }}
+          {% for error in form.company_name.errors %}
+          <p class="text-xs mt-1" style="color:#fecaca">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div>
+          <label for="id_brand_voice" class="label">What do you do?</label>
+          {{ form.brand_voice }}
+          {% for error in form.brand_voice.errors %}
+          <p class="text-xs mt-1" style="color:#fecaca">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div>
+          <p class="label mb-1.5">How do you make money?</p>
+          <div class="grid grid-cols-1 gap-1.5">
+            {% for radio in form.business_model %}
+            {% if radio.choice_label != "—" %}
+            <label class="kova-onboard-chip">
+              {{ radio.tag }}
+              <span>{{ radio.choice_label }}</span>
+            </label>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <button type="button" class="kova-onboard-more" @click="more = !more"
+                x-text="more ? 'Hide optional details' : 'Add optional details'"></button>
+
+        <div class="space-y-3" x-show="more" x-cloak>
+          <div>
+            <label for="id_why_started" class="label">Why did you start?</label>
+            {{ form.why_started }}
+          </div>
+          <div>
+            <label for="id_success_vision" class="label">Success in one year?</label>
+            {{ form.success_vision }}
+          </div>
+          <div>
+            <label for="id_example_1" class="label">Example post</label>
+            {{ form.example_1 }}
+          </div>
+        </div>
+
+        <button type="submit" class="kova-auth__submit">Continue</button>
+      </form>
+    </div>
   </div>
-
-  <form method="post" class="app-surface p-5 sm:p-6 space-y-5"
-        data-kova-busy="instant"
-        data-kova-busy-message="Building your Business Brain…">
-    {% csrf_token %}
-
-    {% if form.non_field_errors %}
-    <div class="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-sm text-red-700 dark:text-red-300">
-      {{ form.non_field_errors }}
-    </div>
-    {% endif %}
-
-    <div>
-      <label for="id_company_name" class="label">{{ form.company_name.label }}</label>
-      {{ form.company_name }}
-      {% for error in form.company_name.errors %}
-      <p class="text-xs text-red-600 mt-1">{{ error }}</p>
-      {% endfor %}
-    </div>
-
-    <div>
-      <label for="id_brand_voice" class="label">{{ form.brand_voice.label }}</label>
-      {{ form.brand_voice }}
-      {% if form.brand_voice.help_text %}
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{{ form.brand_voice.help_text }}</p>
-      {% endif %}
-      {% for error in form.brand_voice.errors %}
-      <p class="text-xs text-red-600 mt-1">{{ error }}</p>
-      {% endfor %}
-    </div>
-
-    <div>
-      <label class="label">{{ form.business_model.label }}</label>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-        {% for radio in form.business_model %}
-        <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-kova-400 dark:hover:border-kova-500 has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/30 text-sm">
-          {{ radio.tag }}
-          <span class="text-gray-800 dark:text-gray-200">{{ radio.choice_label }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div>
-      <label for="id_why_started" class="label">{{ form.why_started.label }}</label>
-      {{ form.why_started }}
-      {% if form.why_started.help_text %}
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{{ form.why_started.help_text }}</p>
-      {% endif %}
-    </div>
-
-    <div>
-      <label for="id_success_vision" class="label">{{ form.success_vision.label }}</label>
-      {{ form.success_vision }}
-    </div>
-
-    <div>
-      <label for="id_example_1" class="label">{{ form.example_1.label }} <span class="text-gray-400 font-normal">(optional)</span></label>
-      {{ form.example_1 }}
-      {% for error in form.example_1.errors %}
-      <p class="text-xs text-red-600 mt-1">{{ error }}</p>
-      {% endfor %}
-    </div>
-
-    <button type="submit" class="btn-primary w-full py-3.5 text-base shadow-growth">
-      Build my Business Brain
-      <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-      </svg>
-    </button>
-  </form>
-
-  <p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
-    Email and phone on your account are for login, briefs, and support only.
-  </p>
-</div>
+</section>
 {% endblock %}

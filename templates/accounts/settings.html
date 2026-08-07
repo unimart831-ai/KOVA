@@ -453,9 +453,6 @@
                 </select>
                 {% if field.help_text %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
                 {% for error in field.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Recent auto-sent replies → <a href="{% url 'engage:auto_sent_list' %}" class="text-kova-600 dark:text-kova-400 underline">view + correct</a>
-                </p>
               </div>
             {% endif %}
           {% endfor %}

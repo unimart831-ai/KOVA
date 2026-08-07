@@ -61,6 +61,14 @@ class Lead(models.Model):
     source_submission = models.ForeignKey(
         "links.FormSubmission", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
+    marketing_campaign = models.ForeignKey(
+        "content.MarketingCampaign",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="leads",
+        help_text="Campaign that generated this lead (direct attribution).",
+    )
 
     # CRM-lite
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
@@ -91,6 +99,7 @@ class Lead(models.Model):
             models.Index(fields=["user", "priority", "-first_seen_at"]),
             models.Index(fields=["user", "source_type"]),
             models.Index(fields=["user", "temperature", "-first_seen_at"]),
+            models.Index(fields=["user", "marketing_campaign", "-first_seen_at"]),
             models.Index(fields=["email"]),
         ]
 

@@ -263,7 +263,7 @@ def finish_onboarding(user, *, skipped_platform_connect=False):
         profile.subscription_status = "trialing"
         profile.save(update_fields=["trial_ends_at", "current_period_end", "subscription_status"])
 
-    send_welcome_email.delay(str(user.pk))
+    fire_task(send_welcome_email, str(user.pk))
     bootstrap_email_automation(user)
 
     if getattr(profile, "business_model", "") == "service":

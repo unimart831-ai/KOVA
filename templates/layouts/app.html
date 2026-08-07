@@ -36,7 +36,7 @@
           <span class="text-lg font-bold text-gray-900 dark:text-white">Kova Agent</span>
         </a>
       </div>
-      {% if agency_brands|length > 1 %}
+      {% if agency_brands|length > 1 and kova_features.teams %}
       <form method="post" action="{% url 'teams:switch_brand' %}" class="pb-3">
         {% csrf_token %}
         <label for="agency-brand-select" class="sr-only">Active client</label>
@@ -47,136 +47,119 @@
           {% endfor %}
         </select>
       </form>
-      {% elif agency_brands|length == 1 %}
+      {% elif agency_brands|length == 1 and kova_features.teams %}
       <p class="pb-3 text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">{{ agency_brands.0.name }}</p>
       {% endif %}
     </div>
 
-    <!-- Navigation — 6 CGO sections: Today / Customers / Campaigns / Commerce / Growth / Business -->
+    <!-- Navigation — V1 growth loop: Business · Campaigns · Publishing · Growth · Settings -->
     <nav class="sidebar-scroll flex-1 px-3 py-4 overflow-y-auto" aria-label="Primary">
 
-      {# ── 1. Today ── #}
-      <a href="{% url 'brief:home' %}" data-nav-group="home"
-         {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}aria-current="page"{% endif %}
-         class="{% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      {# ── 1. Business (Brain) ── #}
+      {% nav_active request.path '/accounts/business-brain' as business_active %}
+      <a href="{% url 'accounts:business_brain' %}" data-nav-group="business"
+         {% if business_active %}aria-current="page"{% endif %}
+         class="{% if business_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if business_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
         </svg>
-        Today
+        Business
       </a>
 
-      {# ── 2. Customers — leads, inbox, WhatsApp ── #}
-      {% nav_active request.path '/engage/' '/whatsapp/' '/leads/' as customers_active %}
-      <details class="group mb-0.5" {% if customers_active %}open{% endif %}>
+      {# ── 2. Campaigns (Studio) ── #}
+      {% nav_active request.path '/content/studio' '/content/edit/' '/content/archive' as campaigns_active %}
+      <a href="{% url 'content:studio' %}" data-nav-group="campaigns"
+         {% if campaigns_active %}aria-current="page"{% endif %}
+         class="{% if campaigns_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if campaigns_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Campaigns
+      </a>
+
+      {# ── 3. Publishing (Queue + Calendar) ── #}
+      {% nav_active request.path '/content/queue' '/content/calendar' as publishing_active %}
+      <a href="{% url 'content:queue' %}" data-nav-group="publishing"
+         {% if publishing_active %}aria-current="page"{% endif %}
+         class="{% if publishing_active %}nav-link-active{% else %}nav-link{% endif %}">
+        <svg class="mr-3 h-5 w-5 {% if publishing_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Publishing
+        {% if nav_badge_queue %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_queue }}</span>{% endif %}
+      </a>
+
+      {# ── 4. Growth (Coach home + results + leads) ── #}
+      {% nav_active request.path '/brief/' '/analytics/' '/leads/' as growth_active %}
+      <details class="group mb-0.5" {% if growth_active %}open{% endif %}>
         <summary class="nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
-          <svg class="mr-3 h-5 w-5 {% if customers_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %} group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <svg class="mr-3 h-5 w-5 {% if growth_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %} group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
           </svg>
-          <span class="flex-1">Customers</span>
-          {% if nav_badge_inbox or nav_badge_whatsapp or nav_badge_leads %}
-          <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_inbox|add:nav_badge_whatsapp|add:nav_badge_leads }}</span>
+          <span class="flex-1">Growth</span>
+          {% if nav_badge_leads %}
+          <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_leads }}</span>
           {% endif %}
           <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </summary>
         <div class="ml-8 mt-1 space-y-0.5">
-          <a href="{% if request.plan_limits.engagement_agent or request.plan_limits.engage_trial_enabled %}{% url 'engage:unified_inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
-             class="block text-xs py-1.5 px-2 rounded {% if '/engage/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            Inbox {% if nav_badge_inbox %}<span class="text-red-500 font-bold">({{ nav_badge_inbox }})</span>{% endif %}
-            {% if not request.plan_limits.engagement_agent %}<span class="text-[10px] text-gold-600 dark:text-gold-400">PRO</span>{% endif %}
+          <a href="{% url 'brief:home' %}"
+             class="block text-xs py-1.5 px-2 rounded {% if request.resolver_match.url_name == 'home' and request.resolver_match.namespace == 'brief' %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            Coach
           </a>
-          <a href="{% if request.plan_limits.whatsapp_enabled or request.plan_limits.whatsapp_inbox_enabled %}{% url 'whatsapp:inbox' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
-             class="block text-xs py-1.5 px-2 rounded {% if '/whatsapp/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            WhatsApp {% if nav_badge_whatsapp %}<span class="text-red-500 font-bold">({{ nav_badge_whatsapp }})</span>{% endif %}
+          <a href="{% url 'analytics:revenue' %}"
+             class="block text-xs py-1.5 px-2 rounded {% if '/analytics/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            Results
           </a>
+          {% if kova_features.leads_nav %}
           <a href="{% url 'leads:list' %}"
              class="block text-xs py-1.5 px-2 rounded {% if '/leads/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
             Leads {% if nav_badge_leads %}<span class="text-red-500 font-bold">({{ nav_badge_leads }})</span>{% endif %}
           </a>
+          {% endif %}
+          {% if kova_features.whatsapp_status %}
+          <a href="{% if request.plan_limits.whatsapp_enabled or request.plan_limits.whatsapp_inbox_enabled %}{% url 'whatsapp:status_studio' %}{% else %}{% url 'billing:pricing' %}{% endif %}"
+             class="block text-xs py-1.5 px-2 rounded {% if '/whatsapp/status' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            WA Status
+          </a>
+          {% endif %}
         </div>
       </details>
 
-      {# ── 3. Campaigns — create, queue, calendar ── #}
-      {% nav_active request.path '/content/studio' '/content/queue' '/content/calendar' '/content/edit/' as create_active %}
-      <a href="{% url 'content:studio' %}" data-nav-group="create"
-         {% if create_active %}aria-current="page"{% endif %}
-         class="{% if create_active %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if create_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-        </svg>
-        Campaigns
-        {% if nav_badge_queue %}<span class="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{{ nav_badge_queue }}</span>{% endif %}
-      </a>
-
-      {# ── 4. Commerce — products, bookings, links ── #}
-      {% nav_active request.path '/products/' '/bookings/' '/links/' as commerce_active %}
-      <details class="group mb-0.5" {% if commerce_active %}open{% endif %}>
-        <summary class="nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
-          <svg class="mr-3 h-5 w-5 {% if commerce_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %} group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-          </svg>
-          <span class="flex-1">Commerce</span>
-          <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </summary>
-        <div class="ml-8 mt-1 space-y-0.5">
-          {% with bm=request.user.profile.business_model %}
-          <a href="{% url 'products:list' %}"
-             class="block text-xs py-1.5 px-2 rounded {% if '/products/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            {% if bm == 'professional' %}Portfolio{% elif bm == 'service' %}Services{% elif bm == 'digital' %}Products{% else %}Shop{% endif %}
-          </a>
-          {% endwith %}
-          {% if kova_features.bookings %}
-          {% if request.user.profile.business_model == 'service' or request.user.profile.business_model == '' %}
-          <a href="{% url 'bookings:list' %}"
-             class="block text-xs py-1.5 px-2 rounded {% if '/bookings/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            Bookings
-          </a>
-          {% endif %}
-          {% endif %}
-          <a href="{% url 'links:list' %}"
-             class="block text-xs py-1.5 px-2 rounded {% if '/links/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            Hub page
-          </a>
-        </div>
-      </details>
-
-      {# ── 5. Growth — revenue, analytics ── #}
-      {% nav_active request.path '/analytics/revenue' '/analytics/' as results_active %}
-      <a href="{% url 'analytics:revenue' %}" data-nav-group="growth"
-         {% if results_active %}aria-current="page"{% endif %}
-         class="{% if results_active %}nav-link-active{% else %}nav-link{% endif %}">
-        <svg class="mr-3 h-5 w-5 {% if results_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-        </svg>
-        Growth
-      </a>
-
-      {# ── 6. Business — brand, platforms, settings, billing ── #}
-      {% nav_active request.path '/accounts/settings' '/billing/' '/agents/' '/platforms/' '/accounts/business-brain' as settings_active %}
+      {# ── 5. Settings ── #}
+      {% nav_active request.path '/accounts/settings' '/billing/' '/platforms/' as settings_active %}
       <details class="group mt-2" {% if settings_active %}open{% endif %}>
         <summary class="nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
           <svg class="mr-3 h-5 w-5 {% if settings_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-400 dark:text-gray-500{% endif %} group-open:text-kova-600 dark:group-open:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
           </svg>
-          <span class="flex-1">Business</span>
+          <span class="flex-1">Settings</span>
+          {% if platforms_need_attention %}<span class="text-red-500 font-bold text-xs">!</span>{% endif %}
           <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </summary>
         <div class="ml-8 mt-1 space-y-0.5">
-          <a href="{% url 'accounts:business_brain' %}"
-             class="block text-xs py-1.5 px-2 rounded {% if '/accounts/business-brain' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            🧠 Business Brain
-          </a>
           <a href="{% url 'platforms:list' %}"
              class="block text-xs py-1.5 px-2 rounded {% if '/platforms/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
             Channels {% if platforms_need_attention %}<span class="text-red-500 font-bold">(!)</span>{% endif %}
           </a>
           <a href="{% url 'accounts:settings' %}"
              class="block text-xs py-1.5 px-2 rounded {% if '/accounts/settings' in request.path and '/accounts/business-brain' not in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-            Settings
+            Account
           </a>
           <a href="{% url 'billing:overview' %}"
              class="block text-xs py-1.5 px-2 rounded {% if '/billing/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
             Billing
           </a>
+          {% if kova_features.commerce_nav %}
+          <a href="{% url 'products:list' %}"
+             class="block text-xs py-1.5 px-2 rounded {% if '/products/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            Catalog
+          </a>
+          <a href="{% url 'links:list' %}"
+             class="block text-xs py-1.5 px-2 rounded {% if '/links/' in request.path %}text-kova-700 dark:text-kova-400 font-medium bg-kova-50 dark:bg-kova-950/30{% else %}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+            Hub page
+          </a>
+          {% endif %}
         </div>
       </details>
     </nav>

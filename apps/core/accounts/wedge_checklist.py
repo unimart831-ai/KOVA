@@ -70,7 +70,7 @@ def build_wedge_checklist(user, stats: dict | None = None) -> dict | None:
             ("wedge_instagram", "Connect Instagram", stats.get("has_instagram"), "platforms:list"),
             ("wedge_snap", "Add portfolio item", stats.get("has_snap_product"), "products:snap"),
             ("wedge_publish_link", "First publish with CTA", stats.get("has_publish_with_link"), "content:studio"),
-            ("wedge_automation", "First lead or nurture", stats.get("has_automation_or_lead"), "leads:nurture_list"),
+            ("wedge_automation", "First lead or nurture", stats.get("has_automation_or_lead"), "leads:list"),
         ]
     elif bm == "service":
         step_defs = [
@@ -78,7 +78,7 @@ def build_wedge_checklist(user, stats: dict | None = None) -> dict | None:
             ("wedge_instagram", "Connect Instagram", stats.get("has_instagram"), "platforms:list"),
             ("wedge_snap", "Add a service offer", stats.get("has_snap_product"), "products:snap"),
             ("wedge_publish_link", "First publish with booking link", stats.get("has_publish_with_link"), "content:studio"),
-            ("wedge_automation", "First lead or booking", stats.get("has_automation_or_lead"), "leads:nurture_list"),
+            ("wedge_automation", "First lead or booking", stats.get("has_automation_or_lead"), "leads:list"),
         ]
     else:
         step_defs = [
@@ -86,7 +86,7 @@ def build_wedge_checklist(user, stats: dict | None = None) -> dict | None:
             ("wedge_instagram", "Connect Instagram", stats.get("has_instagram"), "platforms:list"),
             ("wedge_snap", "First Snap listing", stats.get("has_snap_product"), "products:snap"),
             ("wedge_publish_link", "First publish with shop link", stats.get("has_publish_with_link"), "content:studio"),
-            ("wedge_automation", "First automation or lead", stats.get("has_automation_or_lead"), "leads:nurture_list"),
+            ("wedge_automation", "First automation or lead", stats.get("has_automation_or_lead"), "leads:list"),
         ]
 
     items = [

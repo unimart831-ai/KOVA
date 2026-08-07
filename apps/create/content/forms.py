@@ -1,10 +1,32 @@
 from django import forms
 
-from apps.create.content.models import ContentSeed, Post
+from apps.create.content.models import ContentSeed, MarketingCampaign, Post
+
+OBJECTIVE_IDEA_DEFAULTS = {
+    MarketingCampaign.Objective.SALES: (
+        "Drive sales this week — highlight our best offer and make it easy to buy."
+    ),
+    MarketingCampaign.Objective.LEADS: (
+        "Generate new leads — invite people to enquire and start a conversation."
+    ),
+    MarketingCampaign.Objective.AWARENESS: (
+        "Grow awareness — introduce the business and why customers choose us."
+    ),
+    MarketingCampaign.Objective.BOOKINGS: (
+        "Get more bookings — push people to reserve a slot this week."
+    ),
+}
 
 
 class ContentSeedForm(forms.ModelForm):
-    """Form for dropping a content idea."""
+    """Goal-first campaign form — objective is primary; idea can be auto-filled."""
+
+    objective = forms.ChoiceField(
+        choices=MarketingCampaign.Objective.choices,
+        initial=MarketingCampaign.Objective.SALES,
+        required=True,
+        widget=forms.RadioSelect(attrs={"class": "sr-only"}),
+    )
 
     class Meta:
         model = ContentSeed
@@ -12,7 +34,7 @@ class ContentSeedForm(forms.ModelForm):
         widgets = {
             "idea": forms.Textarea(attrs={
                 "rows": 3,
-                "placeholder": "Drop your idea here... e.g. 'AI is changing how small businesses do marketing'",
+                "placeholder": "Optional details — offer, product, audience, or angle…",
                 "class": "input",
             }),
             "notes": forms.Textarea(attrs={
@@ -23,6 +45,10 @@ class ContentSeedForm(forms.ModelForm):
             "target_platforms": forms.HiddenInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["idea"].required = False
+
     def clean_target_platforms(self):
         val = self.cleaned_data.get("target_platforms")
         if isinstance(val, str):
@@ -32,6 +58,17 @@ class ContentSeedForm(forms.ModelForm):
             except json.JSONDecodeError:
                 val = []
         return val or []
+
+    def clean(self):
+        cleaned = super().clean()
+        idea = (cleaned.get("idea") or "").strip()
+        objective = cleaned.get("objective") or MarketingCampaign.Objective.SALES
+        if not idea:
+            cleaned["idea"] = OBJECTIVE_IDEA_DEFAULTS.get(
+                objective,
+                OBJECTIVE_IDEA_DEFAULTS[MarketingCampaign.Objective.SALES],
+            )
+        return cleaned
 
 
 class PostEditForm(forms.ModelForm):

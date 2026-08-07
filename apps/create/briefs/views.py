@@ -118,7 +118,7 @@ def _build_quick_actions(user, brief):
         if unanswered > 0:
             actions.append({
                 "label": f"Reply to {unanswered} comment{'s' if unanswered != 1 else ''}",
-                "url_name": "engage:inbox",
+                "url_name": "whatsapp:inbox",
                 "icon": "chat",
                 "priority": 2,
             })
@@ -161,7 +161,7 @@ def _build_quick_actions(user, brief):
         if bookings_today > 0:
             actions.append({
                 "label": f"Confirm {bookings_today} booking{'s' if bookings_today != 1 else ''} today",
-                "url_name": "bookings:list",
+                "url_name": "leads:list",
                 "icon": "user",
                 "priority": 2,
             })
@@ -196,7 +196,7 @@ def _build_customer_pulse(user):
         pulse.append({
             "label": "Social inbox",
             "detail": f"{inbox_waiting} waiting for reply",
-            "url_name": "engage:inbox",
+            "url_name": "whatsapp:inbox",
             "tone": "amber" if inbox_waiting >= 3 else "blue",
         })
 
@@ -218,7 +218,7 @@ def _build_customer_pulse(user):
         pulse.append({
             "label": "Bookings",
             "detail": f"{bookings_today} today",
-            "url_name": "bookings:list",
+            "url_name": "leads:list",
             "tone": "green",
         })
 

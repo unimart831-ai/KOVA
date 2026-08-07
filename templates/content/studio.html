@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Studio{% endblock %}
+{% block page_title %}Campaigns{% endblock %}
 {% block page_subtitle %}
 <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
   {% if approve_first %}
@@ -155,12 +155,34 @@
             class="space-y-4 group/form" x-data="seedForm()"{% if at_seed_limit %} data-seed-limit="1"{% endif %}>
         {% csrf_token %}
         <div>
-          <label for="idea-input" class="label">What's your campaign about?</label>
+          <p class="label">What are you trying to achieve?</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2" x-data="{ objective: 'sales' }">
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="sales" class="peer sr-only" checked x-model="objective">
+              <span class="block text-center text-xs font-semibold px-3 py-2.5 rounded-lg border peer-checked:bg-kova-600 peer-checked:text-white peer-checked:border-kova-600 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-kova-300 transition-colors">Sales</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="leads" class="peer sr-only" x-model="objective">
+              <span class="block text-center text-xs font-semibold px-3 py-2.5 rounded-lg border peer-checked:bg-kova-600 peer-checked:text-white peer-checked:border-kova-600 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-kova-300 transition-colors">Leads</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="bookings" class="peer sr-only" x-model="objective">
+              <span class="block text-center text-xs font-semibold px-3 py-2.5 rounded-lg border peer-checked:bg-kova-600 peer-checked:text-white peer-checked:border-kova-600 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-kova-300 transition-colors">Bookings</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="awareness" class="peer sr-only" x-model="objective">
+              <span class="block text-center text-xs font-semibold px-3 py-2.5 rounded-lg border peer-checked:bg-kova-600 peer-checked:text-white peer-checked:border-kova-600 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-kova-300 transition-colors">Awareness</span>
+            </label>
+          </div>
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Kova builds a full campaign from this goal — captions, visuals, and CTAs.</p>
+        </div>
+        <div>
+          <label for="idea-input" class="label">Details <span class="text-gray-400 font-normal">(optional)</span></label>
           <div class="relative">
-            <textarea id="idea-input" name="idea" rows="4" required
+            <textarea id="idea-input" name="idea" rows="3"
                       x-ref="ideaInput"
-                      placeholder="e.g. How small teams are using AI for marketing without losing their voice…"
-                      class="input text-base min-h-[120px] resize-y pr-14"></textarea>
+                      placeholder="Offer, product, audience, or angle — leave blank and Kova will use your Business Brain…"
+                      class="input text-base min-h-[96px] resize-y pr-14"></textarea>
             {# ── Voice memo button (overlaid on textarea) ── #}
             <div class="absolute right-2 bottom-2" x-data="voiceRecorder()" @voice-transcribed.window="$refs.ideaInput.value = $event.detail.text; $refs.ideaInput.dispatchEvent(new Event('input'))">
               {# Idle state — mic button #}

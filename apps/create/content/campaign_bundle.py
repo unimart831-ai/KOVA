@@ -82,7 +82,26 @@ def _resolve_business_model(seed) -> str:
 
 
 def get_bundle_profile(seed) -> dict[str, Any]:
-    return dict(BUNDLE_PROFILES[_resolve_business_model(seed)])
+    """Business-model base profile enriched by canonical Template Family."""
+    bm = _resolve_business_model(seed)
+    base = dict(BUNDLE_PROFILES.get(bm, BUNDLE_PROFILES["product"]))
+    try:
+        from apps.create.content.template_families import get_family, resolve_family_for_seed
+
+        family_key = getattr(seed, "template_family", "") or ""
+        if not family_key:
+            family_key = resolve_family_for_seed(seed)
+        if family_key:
+            fam = get_family(family_key)
+            base["cta_primary"] = fam.cta_primary or base["cta_primary"]
+            base["cta_whatsapp"] = fam.cta_whatsapp or base["cta_whatsapp"]
+            base["cta_story"] = fam.cta_story or base["cta_story"]
+            base["include_shop_link"] = fam.include_shop_link
+            base["reel_style"] = fam.reel_style or base["reel_style"]
+            base["template_family"] = fam.key
+    except Exception:
+        logger.exception("template family enrich failed for bundle profile")
+    return base
 
 
 # Content-type filters selected by the merchant after product upload.

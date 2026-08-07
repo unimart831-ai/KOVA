@@ -19,9 +19,6 @@
     <p class="text-xl font-bold text-kova-600">{{ marketplace_active }}</p>
     <p class="text-[10px] text-gray-500 uppercase">Marketplaces</p>
   </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center">
-    <a href="{% url 'admin_dashboard:marketplace_create' %}" class="text-xs text-kova-600 hover:underline">+ New marketplace</a>
-  </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -66,7 +63,6 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
       <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Marketplace Partners</h2>
-      <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-xs text-kova-600 hover:underline">Manage all →</a>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -82,7 +78,7 @@
           {% for mp in marketplaces %}
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
             <td class="px-4 py-2.5">
-              <a href="{% url 'admin_dashboard:marketplace_detail' mp.pk %}" class="text-xs font-medium text-kova-600 hover:underline">{{ mp.name }}</a>
+              <span class="text-xs font-medium text-gray-900 dark:text-white">{{ mp.name }}</span>
               <p class="text-[10px] text-gray-400">{{ mp.slug }}</p>
             </td>
             <td class="px-4 py-2.5 text-right text-xs">{{ mp.active_sellers }}</td>

@@ -21,13 +21,18 @@ APPROVE_FIRST = "Nothing publishes until you approve — you're the strategist, 
 
 # ── Marketing / landing (public) ─────────────────────────────────────────────
 MARKETING_BADGE = "More customers. Less work."
-MARKETING_CATEGORY = "The AI marketing employee for African businesses."
-MARKETING_HERO_SUBHEAD = "Your marketing for today is already done. Approve in 5 minutes."
+MARKETING_CATEGORY = "The AI Growth OS for African SMEs."
+MARKETING_HERO_SUBHEAD = (
+    "Send a photo — Kova creates campaigns, captures leads, and helps you get paid."
+)
 MARKETING_HERO_BODY = (
     "Send a product, service, or portfolio item on WhatsApp. Kova creates content, "
     "publishes it, follows up with leads, and helps you get paid through M-Pesa — "
     "while you run your business."
 )
+MARKETING_HERO_CTA = "Join free"
+MARKETING_HERO_CTA_HINT = "No credit card · 7-day trial · cancel anytime"
+MARKETING_HERO_SECONDARY = "See how WhatsApp starts it"
 MARKETING_HERO_STRIP = (
     ("Send a photo", "On WhatsApp or in the app"),
     ("Get content", "Posts, reels, carousels"),
@@ -72,6 +77,9 @@ def marketing_voice_context() -> dict:
         "marketing_category": MARKETING_CATEGORY,
         "marketing_hero_subhead": MARKETING_HERO_SUBHEAD,
         "marketing_hero_body": MARKETING_HERO_BODY,
+        "marketing_hero_cta": MARKETING_HERO_CTA,
+        "marketing_hero_cta_hint": MARKETING_HERO_CTA_HINT,
+        "marketing_hero_secondary": MARKETING_HERO_SECONDARY,
         "marketing_hero_strip": MARKETING_HERO_STRIP,
         "whatsapp_loop_steps": WHATSAPP_LOOP_STEPS,
         "built_for_types": BUILT_FOR_TYPES,

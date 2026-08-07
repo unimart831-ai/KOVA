@@ -614,11 +614,27 @@ def submit_seed(request):
         seed.save()
 
         from apps.create.content.campaigns import ensure_campaign_for_seed
+        from apps.create.content.models import MarketingCampaign
 
-        ensure_campaign_for_seed(seed, title=seed.idea[:200], objective="awareness")
+        objective = form.cleaned_data.get("objective") or MarketingCampaign.Objective.SALES
+        from apps.create.content.template_families import resolve_template_family
+
+        profile = getattr(request.user, "profile", None)
+        family = resolve_template_family(
+            objective=objective,
+            business_model=getattr(profile, "business_model", "") or "",
+        )
+        seed.template_family = family
+        seed.save(update_fields=["template_family", "updated_at"])
+        ensure_campaign_for_seed(
+            seed,
+            title=seed.idea[:200],
+            objective=objective,
+            proposal_meta={"template_family": family},
+        )
 
         from apps.create.agents.create_agent import log_gen_step
-        log_gen_step(seed, "queued", "Queued your idea.", seed.idea[:120])
+        log_gen_step(seed, "queued", f"Queued {objective} / {family} campaign.", seed.idea[:120])
 
         fire_task(generate_from_seed, str(seed.id))
 
@@ -628,16 +644,16 @@ def submit_seed(request):
             response["HX-Redirect"] = redirect_url
             return response
 
-        messages.success(request, "Your idea is being processed! Posts will appear below shortly.")
+        messages.success(request, "Your campaign is being built — assets will appear below shortly.")
         return redirect(redirect_url)
 
     if is_htmx:
         return HttpResponse(
-            '<div class="text-sm text-red-600 dark:text-red-400 px-4 py-3">Please enter your content idea.</div>',
+            '<div class="text-sm text-red-600 dark:text-red-400 px-4 py-3">Choose a growth goal to start your campaign.</div>',
             status=422,
         )
 
-    messages.error(request, "Please enter your content idea.")
+    messages.error(request, "Choose a growth goal to start your campaign.")
     return redirect("content:studio")
 
 

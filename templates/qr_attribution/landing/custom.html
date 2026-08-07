@@ -1,8 +1,0 @@
-{% extends "qr_attribution/landing/_base.html" %}
-{% block content %}
-  {% if payload.headline %}<h1>{{ payload.headline }}</h1>{% endif %}
-  {% if payload.body %}<p class="body-text">{{ payload.body|linebreaksbr }}</p>{% endif %}
-  {% if payload.cta_url and payload.cta_text %}
-    <a href="{{ payload.cta_url }}" class="cta">{{ payload.cta_text }}</a>
-  {% endif %}
-{% endblock %}

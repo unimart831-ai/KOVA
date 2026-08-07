@@ -1,0 +1,263 @@
+<style>
+  /* Auth: clear blueish photo + centered glass card */
+  .kova-auth {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100svh - 3.5rem);
+    padding: 1.5rem 1rem 2.5rem;
+    overflow: hidden;
+    background: #0052CC;
+  }
+  @media (min-width: 640px) {
+    .kova-auth {
+      min-height: calc(100svh - 4rem);
+      padding: 2.5rem 1.5rem 3rem;
+    }
+  }
+
+  .kova-auth__visual {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .kova-auth__media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Keep the scene readable — light blur only */
+    filter: blur(3px) saturate(1.15) brightness(0.95);
+    transform: scale(1.03);
+  }
+  .kova-auth__veil {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(155deg,
+        rgba(0, 102, 255, 0.58) 0%,
+        rgba(0, 102, 255, 0.38) 45%,
+        rgba(15, 23, 42, 0.42) 100%);
+  }
+  .kova-auth__brand { display: none !important; }
+
+  .kova-auth__panel {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 21rem;
+  }
+
+  .kova-auth__card {
+    width: 100%;
+    padding: 1.35rem 1.15rem 1.2rem;
+    border-radius: 1.25rem;
+    background: rgba(15, 23, 42, 0.42);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    backdrop-filter: blur(18px) saturate(1.15);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+      0 20px 48px -16px rgba(15, 23, 42, 0.55);
+    color: #fff;
+  }
+  @media (min-width: 640px) {
+    .kova-auth__card { padding: 1.5rem 1.35rem 1.35rem; }
+  }
+
+  .kova-auth__mobile-brand {
+    display: block;
+    margin: 0 0 0.75rem;
+    text-align: center;
+  }
+  .kova-auth__mobile-brand span {
+    display: block;
+    font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .kova-auth__eyebrow {
+    margin: 0 0 0.3rem;
+    font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #bfdbfe;
+    text-align: center;
+  }
+  .kova-auth__title {
+    margin: 0 0 0.15rem;
+    font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #fff;
+    text-align: center;
+  }
+
+  .kova-auth__form {
+    margin-top: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .kova-auth__step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .kova-auth__form .label {
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 600;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  .kova-auth__form .input {
+    border-radius: 0.65rem;
+    border: 0;
+    background: #fff !important;
+    padding: 0.6rem 0.85rem;
+    width: 100%;
+    color: #0f172a !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    font-size: 0.875rem;
+  }
+  .kova-auth__form .input::placeholder { color: #94a3b8; }
+  .kova-auth__form .input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), 0 0 0 4px rgba(0, 102, 255, 0.5);
+  }
+  .kova-auth__form .text-xs { color: rgba(255, 255, 255, 0.7) !important; font-size: 0.7rem !important; }
+  .kova-auth__form .text-sm,
+  .kova-auth__form label.ml-2 { color: rgba(255, 255, 255, 0.9) !important; font-size: 0.8rem !important; }
+  .kova-auth__form a.text-xs,
+  .kova-auth__form a.text-kova-600 { color: #bfdbfe !important; font-size: 0.7rem !important; }
+  .kova-auth__form a.text-kova-600:hover { color: #fff !important; }
+
+  .kova-auth__submit,
+  .kova-auth__next {
+    margin-top: 0.15rem;
+    width: 100%;
+    border: 0;
+    border-radius: 0.65rem;
+    background: #0066FF;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    box-shadow: 0 8px 20px -8px rgba(0, 102, 255, 0.65);
+  }
+  .kova-auth__submit:hover,
+  .kova-auth__next:hover { background: #0052CC; }
+
+  .kova-auth__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    margin-top: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.35rem;
+  }
+  .kova-auth__back:hover { color: #fff; }
+
+  .kova-auth__foot {
+    margin-top: 0.9rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .kova-auth__foot a {
+    color: #93c5fd;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .kova-auth__foot a:hover {
+    color: #fff;
+    text-decoration: underline;
+  }
+
+  .kova-auth__legal {
+    margin: 0;
+    text-align: center;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.65);
+    line-height: 1.45;
+  }
+  .kova-auth__legal a {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: underline;
+  }
+  .kova-auth__legal a:hover { color: #fff; }
+
+  .kova-auth__ref {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(0, 102, 255, 0.25);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: #fff;
+  }
+  .kova-auth__hint {
+    margin: 0;
+    text-align: center;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .kova-auth__card a[href*="facebook"],
+  .kova-auth__card a[href*="google"] {
+    border-radius: 0.65rem !important;
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.6rem !important;
+    font-size: 0.8rem !important;
+  }
+  .kova-auth__card .space-y-3 { gap: 0.5rem; }
+  .kova-auth__card .mb-5 { margin-bottom: 0.75rem !important; }
+  .kova-auth__card .relative.mb-5 span {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+  }
+  .kova-auth__card .relative.mb-5 .border-t {
+    border-color: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .kova-auth__card .bg-red-50 {
+    background: rgba(127, 29, 29, 0.55) !important;
+    border-color: rgba(252, 165, 165, 0.45) !important;
+    color: #fecaca !important;
+  }
+  .kova-auth__card .bg-kova-50 {
+    background: rgba(0, 102, 255, 0.28) !important;
+    border-color: rgba(147, 197, 253, 0.45) !important;
+    color: #eff6ff !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kova-auth__media {
+      filter: none;
+      transform: none;
+    }
+    .kova-auth__dot { transition: none; }
+  }
+</style>

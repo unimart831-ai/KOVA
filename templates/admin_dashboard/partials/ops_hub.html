@@ -115,17 +115,16 @@
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
     <div class="flex items-start justify-between gap-2 mb-3">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Marketplace Partners</h3>
-      <a href="{% url 'admin_dashboard:marketplace_list' %}" class="text-[10px] font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Marketplaces →</a>
     </div>
     <dl class="space-y-1.5 text-xs">
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Active integrations</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.active_marketplaces }}</dd></div>
       {% if ops_hub.unimart %}
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">UNIMART ({{ ops_hub.unimart.slug }})</dt><dd class="font-semibold {% if ops_hub.unimart.is_active %}text-growth-600 dark:text-growth-400{% else %}text-gray-400{% endif %}">{% if ops_hub.unimart.is_active %}Active{% else %}Inactive{% endif %}</dd></div>
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">UNIMART sellers</dt><dd class="font-semibold text-gray-900 dark:text-white"><a href="{% url 'admin_dashboard:marketplace_detail' pk=ops_hub.unimart.pk %}" class="hover:underline">{{ ops_hub.unimart_sellers }}</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">UNIMART sellers</dt><dd class="font-semibold text-gray-900 dark:text-white">{{ ops_hub.unimart_sellers }}</dd></div>
       {% else %}
       <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">UNIMART</dt><dd class="text-gray-400">Not configured</dd></div>
       {% endif %}
-      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Webhook failures (7d)</dt><dd class="font-semibold {% if ops_hub.webhook_failed_7d %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}"><a href="{% url 'admin_dashboard:partners_webhook_logs' %}" class="hover:underline">{{ ops_hub.webhook_failed_7d }}</a></dd></div>
+      <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Webhook failures (7d)</dt><dd class="font-semibold {% if ops_hub.webhook_failed_7d %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %}">{{ ops_hub.webhook_failed_7d }}</dd></div>
     </dl>
     <p class="mt-3 text-[10px] text-gray-400"><a href="{% url 'admin_dashboard:system_maps' %}" class="text-kova-600 dark:text-kova-400 hover:underline">System maps</a> · <a href="{% url 'admin_dashboard:system_health' %}" class="text-kova-600 dark:text-kova-400 hover:underline">System health</a></p>
   </div>

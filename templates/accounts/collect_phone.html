@@ -1,49 +1,40 @@
-{% extends "layouts/app.html" %}
+{% extends "layouts/marketing.html" %}
 
-{% block title %}Your phone number — Kova{% endblock %}
-{% block page_title %}One more thing{% endblock %}
-{% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">So we can reach you with setup updates and support</p>
+{% block title %}Your phone - KOVA{% endblock %}
+
+{% block extra_head %}
+{% include "account/_auth_styles.html" %}
 {% endblock %}
 
 {% block content %}
-<div class="brand-atmosphere relative">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative max-w-md mx-auto py-12">
-    <div class="card">
-      <div class="card-body">
-        {% if facebook_phone_signup %}
-        <div class="mb-4 rounded-lg px-4 py-3 text-sm bg-gold-50 border border-gold-200 text-gold-800 dark:bg-gold-950/30 dark:border-gold-800 dark:text-gold-200">
-          We couldn't get your email from Facebook — enter your phone to finish signing up.
-        </div>
-        {% endif %}
+<section class="kova-auth">
+  {% include "account/_auth_visual.html" %}
 
-        <div class="mb-6">
-          <h1 class="text-xl font-bold text-gray-900 dark:text-white">What's your phone number?</h1>
-          <p class="text-gray-600 dark:text-gray-400 mt-1 text-sm">
-            We use this for onboarding pings, support, and optional WhatsApp briefs. Required for all accounts.
-          </p>
-        </div>
+  <div class="kova-auth__panel">
+    <div class="kova-auth__card">
+      <h1 class="kova-auth__title">Your phone</h1>
 
-        <form method="post" class="space-y-5">
-          {% csrf_token %}
-          {% for error in form.non_field_errors %}
-            <p class="text-sm text-red-600">{{ error }}</p>
+      {% if facebook_phone_signup %}
+      <p class="kova-auth__hint mt-2" style="color:#fde68a">
+        We couldn't get your email from Facebook — enter your phone to finish.
+      </p>
+      {% endif %}
+
+      <form method="post" class="kova-auth__form">
+        {% csrf_token %}
+        {% for error in form.non_field_errors %}
+          <p class="text-sm" style="color:#fecaca">{{ error }}</p>
+        {% endfor %}
+        <div>
+          <label for="id_phone_number" class="label">Phone number</label>
+          {{ form.phone_number }}
+          {% for error in form.phone_number.errors %}
+            <p class="text-xs mt-1" style="color:#fecaca">{{ error }}</p>
           {% endfor %}
-          <div>
-            <label for="id_phone_number" class="label">{{ form.phone_number.label }}</label>
-            {{ form.phone_number }}
-            {% if form.phone_number.help_text %}
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.phone_number.help_text }}</p>
-            {% endif %}
-            {% for error in form.phone_number.errors %}
-              <p class="text-xs text-red-600 mt-1">{{ error }}</p>
-            {% endfor %}
-          </div>
-          <button type="submit" class="btn-primary w-full py-3">Continue to setup</button>
-        </form>
-      </div>
+        </div>
+        <button type="submit" class="kova-auth__submit">Continue</button>
+      </form>
     </div>
   </div>
-</div>
+</section>
 {% endblock %}

@@ -1,0 +1,17 @@
+{% load static %}
+{# Shared Pure Blue auth visual — brand-first panel #}
+<div class="kova-auth__visual" aria-hidden="true">
+  <img
+    class="kova-auth__media"
+    src="{% static 'img/kova-hero-bg.jpg' %}"
+    alt=""
+    width="960"
+    height="1280"
+    decoding="async"
+  >
+  <div class="kova-auth__veil"></div>
+  <div class="kova-auth__brand">
+    <p class="kova-auth__logo">KOVA</p>
+    <p class="kova-auth__tagline">{{ marketing_hero_subhead|default:"Send a photo — Kova creates campaigns, captures leads, and helps you get paid." }}</p>
+  </div>
+</div>

@@ -1,14 +1,10 @@
 {% extends "layouts/app.html" %}
 {% load humanize %}
 
-{% block page_title %}Today{% endblock %}
+{% block page_title %}Growth Coach{% endblock %}
 {% block page_subtitle %}
 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
-  {% if segment_surface.today_description %}
-  {{ segment_surface.today_description }}
-  {% else %}
-  {{ kova_today_subtitle }}
-  {% endif %}
+  What should you do next to grow your business?
 </p>
 {% endblock %}
 
@@ -202,7 +198,6 @@
         <div class="border-t border-gray-100 dark:border-gray-800 pt-5">
           <div class="flex items-center justify-between mb-3">
             <p class="text-[10px] font-bold uppercase tracking-widest text-kova-600 dark:text-kova-400">Superfans</p>
-            <a href="{% url 'engage:inbox' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">View inbox →</a>
           </div>
           <div class="flex flex-wrap gap-2">
             {% for fan in superfans %}
@@ -341,7 +336,7 @@
               {% endfor %}
             {% else %}
               <a href="{% url 'content:studio' %}" class="btn-primary">Create content</a>
-              <a href="{% url 'engage:inbox' %}" class="btn-secondary">Check inbox</a>
+              <a href="{% url 'leads:list' %}" class="btn-secondary">View leads</a>
             {% endif %}
           </div>
         {% endif %}

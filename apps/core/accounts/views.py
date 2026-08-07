@@ -1137,12 +1137,32 @@ def business_brain_view(request):
         user=request.user, agent_type__in=["adapt", "research", "analyst"],
     ).count()
 
+    catalog_count = 0
+    catalog_names: list[str] = []
+    try:
+        from apps.commerce.products.models import Product
+
+        catalog_qs = Product.objects.filter(user=request.user).order_by("-updated_at")
+        catalog_count = catalog_qs.count()
+        catalog_names = list(catalog_qs.values_list("name", flat=True)[:5])
+    except Exception:
+        pass
+
+    connected_channels = list(
+        request.user.social_accounts.filter(is_active=True)
+        .values_list("platform", flat=True)
+        .distinct()
+    )
+
     return render(request, "accounts/business_brain.html", {
         "profile": profile,
         "snapshot": snapshot,
         "completeness": snapshot.get("completeness", 0),
         "recent_learning": recent_learning,
         "things_learned": things_learned,
+        "catalog_count": catalog_count,
+        "catalog_names": catalog_names,
+        "connected_channels": connected_channels,
         "page_title": "Business Brain",
     })
 

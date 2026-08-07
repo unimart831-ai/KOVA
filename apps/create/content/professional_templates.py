@@ -1,8 +1,17 @@
-"""Professional-business content template packs (Wave 6 foundation)."""
+"""Professional-business content template packs — thin wrappers over Template Families."""
 
 from __future__ import annotations
 
 import hashlib
+
+from apps.create.content.template_families import (
+    LEGACY_PROFESSIONAL_TO_FAMILY,
+    TEMPLATE_FAMILIES,
+    apply_family_to_blueprint,
+    family_to_legacy_professional,
+    family_prompt_section,
+    resolve_template_family,
+)
 
 VALID_PROFESSIONAL_TEMPLATES = frozenset({
     "portfolio",
@@ -12,46 +21,10 @@ VALID_PROFESSIONAL_TEMPLATES = frozenset({
 })
 
 PROFESSIONAL_TEMPLATES: dict[str, dict] = {
-    "portfolio": {
-        "label": "Portfolio showcase",
-        "hook_patterns": [
-            "Proud of this project for {client}.",
-            "How we delivered {outcome} for {client}.",
-        ],
-        "cta": "Need similar results? Book a consultation.",
-        "content_intent": "authority",
-        "platforms": ["linkedin", "instagram", "facebook"],
-    },
-    "case_study": {
-        "label": "Case study / results",
-        "hook_patterns": [
-            "The challenge: {pain}. The result: {outcome}.",
-            "{client} came to us with {pain} — here's what changed.",
-        ],
-        "cta": "DM me CASE for the full breakdown or book a call.",
-        "content_intent": "proof",
-        "platforms": ["linkedin", "facebook"],
-    },
-    "thought_leadership": {
-        "label": "Thought leadership",
-        "hook_patterns": [
-            "3 lessons from {years} years in {industry}.",
-            "What most {audience} get wrong about {topic}.",
-        ],
-        "cta": "Follow for more — or book a strategy call.",
-        "content_intent": "authority",
-        "platforms": ["linkedin", "twitter"],
-    },
-    "consultation_cta": {
-        "label": "Consultation offer",
-        "hook_patterns": [
-            "Taking on {slots} new clients this month.",
-            "Free 15-min consult for {audience} — limited slots.",
-        ],
-        "cta": "Comment CONSULT or use the link in bio.",
-        "content_intent": "offer",
-        "platforms": ["linkedin", "instagram", "facebook"],
-    },
+    "portfolio": TEMPLATE_FAMILIES["product_spotlight"].as_professional_dict(),
+    "case_study": TEMPLATE_FAMILIES["case_study"].as_professional_dict(),
+    "thought_leadership": TEMPLATE_FAMILIES["thought_leadership"].as_professional_dict(),
+    "consultation_cta": TEMPLATE_FAMILIES["booking_cta"].as_professional_dict(),
 }
 
 
@@ -60,6 +33,8 @@ def pick_professional_template(asset, *, seed: str = "") -> str:
     forced = meta.get("professional_template", "")
     if forced in VALID_PROFESSIONAL_TEMPLATES:
         return forced
+    if meta.get("template_family"):
+        return family_to_legacy_professional(meta["template_family"])
 
     type_map = {
         "portfolio": "portfolio",
@@ -73,7 +48,13 @@ def pick_professional_template(asset, *, seed: str = "") -> str:
     key = f"{getattr(asset, 'id', '')}:{seed}"
     digest = hashlib.md5(key.encode()).hexdigest()
     options = sorted(VALID_PROFESSIONAL_TEMPLATES)
-    return options[int(digest[:8], 16) % len(options)]
+    legacy = options[int(digest[:8], 16) % len(options)]
+    family = resolve_template_family(
+        business_model="professional",
+        asset_type=str(asset_type),
+        forced_professional=legacy,
+    )
+    return family_to_legacy_professional(family)
 
 
 def template_context(asset, user) -> dict:
@@ -90,40 +71,39 @@ def template_context(asset, user) -> dict:
         "years": meta.get("years", "10+"),
         "slots": meta.get("slots", "3"),
         "business": (profile.company_name if profile else "") or "our firm",
+        "service": getattr(asset, "title", None) or "our services",
+        "price": "our consultation rate",
+        "quote": "Best decision we made this year.",
     }
 
 
 def apply_professional_template_to_blueprint(blueprint: dict, template_key: str, asset, user) -> dict:
     if template_key not in VALID_PROFESSIONAL_TEMPLATES:
         return blueprint
+    family = LEGACY_PROFESSIONAL_TO_FAMILY.get(template_key, "thought_leadership")
+    data = apply_family_to_blueprint(
+        blueprint,
+        family,
+        context=template_context(asset, user),
+    )
     tpl = PROFESSIONAL_TEMPLATES[template_key]
-    ctx = template_context(asset, user)
-    hooks = [h.format(**ctx) for h in tpl["hook_patterns"]]
-    meta = dict(blueprint.get("metadata") or {})
-    meta.update({
-        "professional_template": template_key,
-        "template_label": tpl["label"],
-        "suggested_hooks": hooks,
-        "suggested_cta": tpl["cta"],
-        "content_intent": tpl["content_intent"],
-        "preferred_platforms": tpl["platforms"],
-    })
-    blueprint = dict(blueprint)
-    blueprint["metadata"] = meta
-    if tpl["platforms"]:
+    if tpl.get("platforms"):
         from apps.create.content.blueprints import PLATFORM_SLOT_DEFAULTS, PlatformBlueprint
 
-        existing = {p.get("platform") for p in blueprint.get("platforms") or []}
-        platforms = list(blueprint.get("platforms") or [])
+        existing = {p.get("platform") for p in data.get("platforms") or []}
+        platforms = list(data.get("platforms") or [])
         for plat in tpl["platforms"]:
             if plat not in existing:
                 slots = {k: "" for k in PLATFORM_SLOT_DEFAULTS.get(plat, ["body"])}
                 platforms.append(PlatformBlueprint(platform=plat, slots=slots).to_dict())
-        blueprint["platforms"] = platforms
-    return blueprint
+        data["platforms"] = platforms
+    return data
 
 
 def professional_template_prompt_lines(blueprint: dict) -> str:
+    section = family_prompt_section(blueprint)
+    if section:
+        return section
     meta = blueprint.get("metadata") or {}
     key = meta.get("professional_template")
     if key not in VALID_PROFESSIONAL_TEMPLATES:

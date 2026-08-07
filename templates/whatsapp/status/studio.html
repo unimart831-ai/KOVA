@@ -1,13 +1,20 @@
 {% extends "layouts/app.html" %}
 
-{% block page_title %}Status Studio{% endblock %}
+{% block page_title %}WhatsApp Status{% endblock %}
 {% block page_subtitle %}
-<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">AI-curated content ready for WhatsApp Status</p>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">AI drafts your Status — you tap Share to post it in WhatsApp</p>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
   {% include "whatsapp/_whatsapp_tabs.html" %}
+
+  <div class="rounded-xl border border-gold-200 dark:border-gold-900/50 bg-gold-50/70 dark:bg-gold-950/20 px-4 py-3">
+    <p class="text-sm text-gold-900 dark:text-gold-100">
+      <span class="font-semibold">Not automatic publishing.</span>
+      Meta does not allow apps to post Status for you. Kova writes the draft; you open WhatsApp and share in one tap.
+    </p>
+  </div>
 
   {# Stats Bar #}
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -35,8 +42,9 @@
       <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       Calendar
     </a>
+    {% if kova_features.whatsapp_broadcasts %}
     <a href="{% url 'whatsapp:broadcast_list' %}" class="btn-secondary btn-sm">Broadcasts</a>
-    <a href="{% url 'whatsapp:wa_analytics' %}" class="btn-secondary btn-sm">Analytics</a>
+    {% endif %}
   </div>
 
   {# Create Status #}
@@ -92,22 +100,7 @@
     </div>
   </div>
 
-  {# Templates Quick-Pick #}
-  {% if templates %}
-  <div class="card">
-    <div class="card-body">
-      <h3 class="font-medium text-gray-900 dark:text-white mb-3">Quick Templates</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {% for tpl in templates %}
-        <button class="text-left p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors text-xs" title="{{ tpl.example_text }}">
-          <span class="font-medium text-gray-900 dark:text-white block truncate">{{ tpl.name }}</span>
-          <span class="text-gray-400 truncate block mt-0.5">{{ tpl.get_category_display }}</span>
-        </button>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
+  {# StatusTemplate quick-pick archived — use Campaign Studio Template Families #}
 
   {# Filters #}
   <div class="flex flex-wrap items-center gap-3">

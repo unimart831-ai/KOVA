@@ -95,8 +95,8 @@ textarea {
     --app-surface: #FFFFFF;
     --app-border: #E2E8F0;
 
-    /* Marketing — warm off-white canvas (Buffer-style) */
-    --marketing-canvas: #FAFAF9;
+    /* Marketing — Pure Blue + white system */
+    --marketing-canvas: #FFFFFF;
     --kova-accent: var(--brand-primary);
     --kova-accent-hover: var(--brand-primary-hover);
     --kova-accent-subtle: var(--brand-primary-subtle);
@@ -348,13 +348,98 @@ textarea {
     @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm;
   }
 
-  /* Marketing / auth hero — warm off-white, spacious */
+  /* Marketing / auth surfaces — white canvas, Pure Blue accents */
   .brand-atmosphere {
     background-color: var(--marketing-canvas);
     @apply relative overflow-hidden dark:bg-gray-900;
   }
   .brand-atmosphere .orb {
     @apply hidden;
+  }
+
+  /* Immersive join hero — full-bleed photo + centered brand CTA */
+  .kova-join-hero {
+    @apply relative isolate flex min-h-[calc(100svh-3.5rem)] sm:min-h-[calc(100svh-4rem)] items-center justify-center overflow-hidden;
+  }
+  .kova-join-hero__media {
+    @apply absolute inset-0 h-full w-full object-cover scale-105;
+    animation: kova-hero- ken 28s ease-in-out infinite alternate;
+  }
+  .kova-join-hero__veil {
+    @apply absolute inset-0;
+    background:
+      linear-gradient(180deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.62) 45%, rgba(0, 102, 255, 0.45) 100%);
+  }
+  .kova-join-hero__content {
+    @apply relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-4 py-20 sm:py-24 text-center;
+  }
+  .kova-join-hero__brand {
+    @apply font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white;
+    letter-spacing: -0.03em;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.25);
+    animation: kova-hero-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .kova-join-hero__lead {
+    @apply mt-5 max-w-xl text-base sm:text-lg md:text-xl text-white/90 font-medium leading-relaxed;
+    animation: kova-hero-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+  .kova-join-cta {
+    @apply mt-9 flex w-full max-w-xl items-center gap-2 rounded-full bg-white p-1.5 shadow-xl shadow-slate-900/20;
+    animation: kova-hero-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+  }
+  .kova-join-cta__icon {
+    @apply hidden sm:flex shrink-0 pl-3 text-slate-400;
+  }
+  .kova-join-cta__input {
+    @apply min-w-0 flex-1 border-0 bg-transparent px-3 sm:px-2 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0;
+  }
+  .kova-join-cta__btn {
+    @apply shrink-0 rounded-full bg-kova-500 px-5 sm:px-7 py-3 text-sm sm:text-base font-bold text-white transition-colors hover:bg-kova-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-kova-300 focus-visible:ring-offset-2;
+  }
+  .kova-join-hero__secondary {
+    @apply mt-6 text-sm text-white/85;
+  }
+  .kova-join-hero__secondary a {
+    @apply font-semibold text-kova-200 underline-offset-4 hover:text-white hover:underline transition-colors;
+  }
+  .kova-join-hero__hint {
+    @apply mt-10 text-xs sm:text-sm text-white/70;
+  }
+
+  .kova-join-band {
+    @apply relative overflow-hidden bg-kova-500 py-20 sm:py-24 text-white;
+  }
+  .kova-join-band__brand {
+    @apply font-display text-sm font-bold tracking-[0.2em] uppercase text-white/80;
+  }
+  .kova-join-band__title {
+    @apply mt-3 font-display text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight;
+  }
+  .kova-join-band__lead {
+    @apply mt-4 text-base sm:text-lg text-white/90 max-w-xl mx-auto;
+  }
+  .kova-join-band__btn {
+    @apply mt-8 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-base font-bold text-kova-600 shadow-lg transition hover:bg-kova-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white;
+  }
+  .kova-join-band__hint {
+    @apply mt-4 text-sm text-white/75;
+  }
+
+  @keyframes kova-hero-ken {
+    from { transform: scale(1.05); }
+    to { transform: scale(1.12); }
+  }
+  @keyframes kova-hero-rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kova-join-hero__media,
+    .kova-join-hero__brand,
+    .kova-join-hero__lead,
+    .kova-join-cta {
+      animation: none !important;
+    }
   }
 
   .marketing-eyebrow {
@@ -471,21 +556,19 @@ textarea {
     @apply text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-semibold text-gray-500 dark:text-gray-400 mt-2 block;
   }
   .marketing-stats-strip {
-    @apply py-12 border-y border-gray-200/80 dark:border-gray-800;
-    background-color: var(--marketing-canvas);
+    @apply py-12 border-y border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900;
   }
   .marketing-section-muted {
-    @apply bg-gray-50/80 dark:bg-gray-900;
+    @apply bg-kova-50/50 dark:bg-gray-900;
   }
   .marketing-section-default {
-    background-color: var(--marketing-canvas);
-    @apply dark:bg-gray-900;
+    @apply bg-white dark:bg-gray-900;
   }
   .marketing-card {
-    @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
+    @apply bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm;
   }
   .marketing-card-elevated {
-    @apply marketing-card rounded-2xl p-6 sm:p-8 border-gray-100 dark:border-gray-800/90 hover:border-growth-200 dark:hover:border-growth-800/80 transition-colors;
+    @apply marketing-card rounded-2xl p-6 sm:p-8 border-slate-100 dark:border-gray-800/90 hover:border-kova-200 dark:hover:border-kova-800/80 transition-colors;
   }
   .icon-check-success {
     @apply text-growth-500 dark:text-growth-400 flex-shrink-0;

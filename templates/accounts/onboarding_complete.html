@@ -1,49 +1,107 @@
-{% extends "layouts/app.html" %}
+{% extends "layouts/marketing.html" %}
 
-{% block title %}Your AI Agency is Starting — Step {{ setup_step }} of {{ setup_total }}{% endblock %}
-{% block page_title %}Setting up your workspace{% endblock %}
-{% block page_subtitle %}
-<p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 hidden sm:block">{{ setup_label }}</p>
+{% block title %}Setting up - KOVA{% endblock %}
+
+{% block extra_head %}
+{% include "account/_auth_styles.html" %}
+<style>
+  .kova-auth__panel--wide { max-width: 32rem; }
+  .kova-setup-card {
+    margin-top: 0.75rem;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .kova-setup-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .kova-setup-row:last-child { border-bottom: 0; }
+  .kova-setup-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.12);
+  }
+  .kova-setup-icon.is-done { background: rgba(0,102,255,0.45); }
+  .kova-setup-icon.is-run { background: rgba(0,102,255,0.35); }
+  .kova-setup-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .kova-setup-meta {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.65);
+    margin-top: 0.1rem;
+  }
+  .kova-setup-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.75);
+  }
+  .kova-setup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+  .kova-setup-actions a,
+  .kova-setup-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    border-radius: 0.65rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .kova-setup-actions .primary {
+    background: #0066FF;
+    color: #fff;
+  }
+  .kova-setup-actions .primary:hover { background: #0052CC; }
+  .kova-setup-actions .ghost {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="brand-atmosphere relative max-w-3xl mx-auto onboarding-flow">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative space-y-8 py-4">
-  {% include "accounts/_onboarding_setup_progress.html" %}
-  {% include "accounts/_onboarding_social_proof.html" %}
+<section class="kova-auth">
+  {% include "account/_auth_visual.html" %}
 
-  {# ── Hero ── #}
-  <div class="text-center space-y-4">
-    <div class="relative w-16 h-16 mx-auto">
-      <div class="absolute inset-0 rounded-xl bg-kova-400/30 animate-pulse-ring"></div>
-      <div class="relative w-16 h-16 rounded-xl bg-growth-500 flex items-center justify-center shadow-growth">
-        <svg class="w-8 h-8 text-white animate-glow-breathe" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-        </svg>
+  <div class="kova-auth__panel kova-auth__panel--wide">
+    <div class="kova-auth__card">
+      <h1 class="kova-auth__title">Kova is getting to work</h1>
+      <p class="kova-auth__hint mt-2">Learning your brand and drafting your first posts.</p>
+
+      <div id="onboarding-progress"
+           hx-get="{% url 'accounts:onboarding_progress' %}"
+           hx-trigger="load, every 8s"
+           data-kova-busy="off"
+           hx-swap="innerHTML">
+        {% include "accounts/_onboarding_progress.html" %}
       </div>
     </div>
-    {% include "components/brand/_agent_loop_badge.html" %}
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-      Kova is getting to work
-    </h1>
-    <p class="text-gray-700 dark:text-gray-300 max-w-lg mx-auto text-sm sm:text-base leading-relaxed">
-      Kova is learning from what you told us. Your draft posts and welcome brief are ready below.
-    </p>
   </div>
-
-  {# ── First Business Report ── #}
-  {% include "accounts/_first_business_report.html" %}
-
-  <div id="onboarding-progress"
-       hx-get="{% url 'accounts:onboarding_progress' %}"
-       hx-trigger="load, every 8s"
-       data-kova-busy="off"
-       hx-swap="innerHTML"
-       class="">
-    {% include "accounts/_onboarding_progress.html" %}
-  </div>
-
-  </div>
-</div>
+</section>
 {% endblock %}

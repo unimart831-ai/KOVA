@@ -46,6 +46,24 @@ def ensure_campaign_for_seed(
     meta = proposal_meta or {}
 
     from apps.create.content.campaign_archive import default_campaign_expiry
+    from apps.create.content.template_families import resolve_template_family
+
+    profile = getattr(seed.user, "profile", None)
+    bm = getattr(profile, "business_model", "") or ""
+    asset_type = getattr(asset, "asset_type", "") if asset is not None else ""
+    family = (
+        getattr(seed, "template_family", "")
+        or meta.get("template_family")
+        or resolve_template_family(
+            objective=obj,
+            intent=str((meta.get("intent") or "")),
+            business_model=bm,
+            asset_type=str(asset_type),
+        )
+    )
+    if family and not getattr(seed, "template_family", ""):
+        seed.template_family = family
+        seed.save(update_fields=["template_family", "updated_at"])
 
     campaign = MarketingCampaign.objects.create(
         user=seed.user,
@@ -54,14 +72,18 @@ def ensure_campaign_for_seed(
         title=display_title[:200],
         slug=_slug_base(display_title, seed.user_id),
         objective=obj,
+        template_family=family or "",
         status=MarketingCampaign.Status.GENERATING,
-        proposal_meta=meta,
+        proposal_meta={**meta, "template_family": family} if family else meta,
         expires_at=default_campaign_expiry(objective=obj, proposal_meta=meta),
     )
     from apps.create.content.campaign_pages import ensure_campaign_commerce_url
 
     ensure_campaign_commerce_url(campaign, save=True)
-    logger.info("MarketingCampaign %s created for seed %s", campaign.pk, seed.pk)
+    logger.info(
+        "MarketingCampaign %s created for seed %s (family=%s)",
+        campaign.pk, seed.pk, family,
+    )
     return campaign
 
 

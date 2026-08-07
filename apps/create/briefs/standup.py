@@ -20,11 +20,11 @@ def guess_decision_url(decision) -> str | None:
     if any(w in text for w in ("whatsapp", "wa chat", "status")):
         return reverse("whatsapp:status_studio")
     if any(w in text for w in ("comment", "reply", "inbox", "message", "dm", "mention")):
-        return reverse("engage:inbox")
+        return reverse("whatsapp:inbox")
     if any(w in text for w in ("lead", "pricing", "prospect", "inquiry")):
         return reverse("leads:list")
     if any(w in text for w in ("booking", "appointment", "schedule")):
-        return reverse("bookings:list")
+        return reverse("leads:list")
     if any(w in text for w in ("fail", "queue", "publish error")):
         return reverse("content:queue")
     if any(w in text for w in ("approv", "draft", "post", "content", "studio")):

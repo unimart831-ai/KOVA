@@ -1,20 +1,55 @@
 from django.urls import path
 
-from apps.core.admin_dashboard.views import ab_tests, agents, analytics, billing, blog, bookings, content, content_safety, costs, emails, engage, feature_usage, help, innovations, leads, llm, logs, notifications, onboarding, operations, ops, overview, partners, partials, photoroom, pilot, pixel, platforms, products, qr, reel_music, revenue, reviews, sales_inquiries, search, seed_quota, system, system_maps, teams, user_health, users, whatsapp
+from apps.core.admin_dashboard.views import (
+    agents,
+    analytics,
+    billing,
+    blog,
+    content,
+    content_safety,
+    costs,
+    emails,
+    feature_usage,
+    help,
+    innovations,
+    leads,
+    llm,
+    logs,
+    notifications,
+    onboarding,
+    operations,
+    ops,
+    overview,
+    partials,
+    photoroom,
+    pilot,
+    pixel,
+    platforms,
+    products,
+    reel_music,
+    revenue,
+    sales_inquiries,
+    search,
+    seed_quota,
+    system,
+    system_maps,
+    user_health,
+    users,
+    whatsapp,
+)
 
 app_name = "admin_dashboard"
 
+# V1 admin: core ops only. Bookings/reviews/QR/partners/teams/AB/nurture/
+# engage UI routes removed (templates deleted). Apps remain installed.
+
 urlpatterns = [
-    # Overview
     path("", overview.overview, name="overview"),
     path("search/", search.global_search, name="global_search"),
     path("search/suggest/", search.search_suggest, name="global_search_suggest"),
     path("feature-usage/", feature_usage.feature_usage, name="feature_usage"),
-
-    # Pilot cohort (TEST_BUSINESSES)
     path("pilot/", pilot.pilot_overview, name="pilot_overview"),
 
-    # Users
     path("users/", users.user_list, name="user_list"),
     path("users/export/", users.user_export_csv, name="user_export"),
     path("users/<uuid:pk>/", users.user_detail, name="user_detail"),
@@ -26,35 +61,18 @@ urlpatterns = [
     path("users/health/", user_health.user_health, name="user_health"),
     path("users/onboarding-funnel/", onboarding.onboarding_funnel, name="onboarding_funnel"),
 
-    # Operations (platform-wide task activity)
     path("operations/", operations.operations_overview, name="operations_overview"),
     path("ops/celery/", ops.celery_health, name="ops_celery"),
 
-    # Reel music catalog
     path("reel-music/", reel_music.reel_music_manage, name="reel_music_manage"),
     path("reel-music/upload/", reel_music.reel_music_upload, name="reel_music_upload"),
     path("reel-music/<str:track_id>/replace/", reel_music.reel_music_replace, name="reel_music_replace"),
     path("reel-music/<str:track_id>/delete/", reel_music.reel_music_delete, name="reel_music_delete"),
     path("reel-music/<str:track_id>/preview/", reel_music.reel_music_preview, name="reel_music_preview"),
 
-    # Leads & CRM (REACH automation)
     path("leads/", leads.leads_overview, name="leads_overview"),
-    path("leads/nurture/", leads.leads_nurture, name="leads_nurture"),
     path("leads/list/", leads.lead_list, name="lead_list"),
 
-    # Bookings
-    path("bookings/", bookings.bookings_overview, name="bookings_overview"),
-    path("bookings/list/", bookings.booking_list, name="booking_list"),
-
-    # Reviews
-    path("reviews/", reviews.reviews_overview, name="reviews_overview"),
-    path("reviews/list/", reviews.review_list, name="review_list"),
-
-    # QR & Walk-ins
-    path("qr/", qr.qr_overview, name="qr_overview"),
-    path("qr/list/", qr.qr_list, name="qr_list"),
-
-    # Content
     path("content/", content.content_overview, name="content_overview"),
     path("content/posts/", content.post_list, name="post_list"),
     path("content/posts/<uuid:pk>/", content.post_detail, name="post_detail_admin"),
@@ -64,23 +82,16 @@ urlpatterns = [
     path("users/<uuid:pk>/seed-quota/", seed_quota.seed_quota_action, name="seed_quota_action"),
     path("content/failed/", content.failed_content, name="failed_content"),
 
-    # Content Safety
     path("content-safety/", content_safety.content_safety_overview, name="content_safety_overview"),
     path("content-safety/review/", content_safety.content_safety_review, name="content_safety_review"),
     path("content-safety/review/<uuid:pk>/", content_safety.content_safety_incident_detail, name="content_safety_incident_detail"),
     path("content-safety/global-toggle/", content_safety.content_safety_global_toggle, name="content_safety_global_toggle"),
-    path(
-        "content-safety/checks-toggle/",
-        content_safety.content_safety_checks_toggle,
-        name="content_safety_checks_toggle",
-    ),
+    path("content-safety/checks-toggle/", content_safety.content_safety_checks_toggle, name="content_safety_checks_toggle"),
 
-    # Agents
     path("agents/", agents.agent_overview, name="agent_overview"),
     path("agents/log/", agents.agent_log, name="agent_log"),
     path("agents/tokens/", agents.token_economics, name="token_economics"),
 
-    # LLM Configuration
     path("llm/", llm.llm_overview, name="llm_overview"),
     path("llm/update/", llm.llm_update_config, name="llm_update_config"),
     path("llm/task-model/", llm.llm_update_task_model, name="llm_update_task_model"),
@@ -90,11 +101,9 @@ urlpatterns = [
     path("llm/image-config/", llm.llm_update_image_config, name="llm_update_image_config"),
     path("llm/image-plan-models/", llm.llm_update_image_plan_models, name="llm_update_image_plan_models"),
 
-    # Platforms
     path("platforms/", platforms.platform_overview, name="platform_overview"),
     path("platforms/accounts/", platforms.platform_accounts, name="platform_accounts"),
 
-    # Billing
     path("billing/", billing.billing_overview, name="billing_overview"),
     path("billing/payments/", billing.payment_list, name="payment_list"),
     path("billing/events/", billing.billing_events, name="billing_events"),
@@ -111,92 +120,45 @@ urlpatterns = [
     path("billing/sales-inquiries/", sales_inquiries.sales_inquiry_list, name="sales_inquiry_list"),
     path("billing/sales-inquiries/<uuid:pk>/", sales_inquiries.sales_inquiry_detail, name="sales_inquiry_detail"),
 
-    # Cost Economics
     path("costs/", costs.cost_overview, name="cost_overview"),
     path("costs/calculator/", costs.cost_calculator, name="cost_calculator"),
 
-    # Engagement
-    path("engage/", engage.engagement_overview, name="engagement_overview"),
-    path("engage/interactions/", engage.interaction_feed, name="interaction_feed"),
-    path("engage/superfans/", engage.superfan_leaderboard, name="superfan_leaderboard"),
-
-    # HTMX Partials (auto-refresh)
     path("_partials/stat-cards/", partials.partial_stat_cards, name="partial_stat_cards"),
     path("_partials/activity-feed/", partials.partial_activity_feed, name="partial_activity_feed"),
     path("_partials/agent-health/", partials.partial_agent_health, name="partial_agent_health"),
 
-    # System
     path("system/", system.system_health, name="system_health"),
     path("system/errors/", system.error_log, name="error_log"),
 
-    # Logs
     path("logs/", logs.activity_log, name="activity_log"),
     path("logs/export/", logs.log_export_csv, name="log_export"),
 
-    # Analytics
     path("analytics/", analytics.analytics_overview, name="analytics_overview"),
     path("analytics/content-dna/", analytics.content_dna_analysis, name="content_dna_analysis"),
-    path("analytics/competitors/", analytics.competitor_overview, name="competitor_overview"),
 
-    # Revenue Attribution
     path("revenue/", revenue.revenue_overview, name="revenue_overview"),
     path("revenue/conversions/", revenue.conversion_list, name="revenue_conversions"),
     path("revenue/shopify/", revenue.shopify_stores_list, name="shopify_stores"),
     path("revenue/shopify/<uuid:pk>/toggle/", revenue.shopify_store_toggle, name="shopify_store_toggle"),
     path("revenue/journeys/", revenue.journey_list, name="revenue_journeys"),
 
-    # Kova Pixel
     path("pixel/", pixel.pixel_overview, name="pixel_overview"),
     path("pixel/events/", pixel.pixel_events, name="pixel_events"),
     path("pixel/users/", pixel.pixel_users, name="pixel_users"),
 
-    # Teams
-    path("teams/", teams.teams_overview, name="teams_overview"),
-    path("teams/list/", teams.team_list, name="team_list"),
-    path("teams/<uuid:pk>/", teams.team_detail, name="team_detail"),
-
-    # A/B Tests
-    path("ab-tests/", ab_tests.ab_tests_overview, name="ab_tests_overview"),
-    path("ab-tests/list/", ab_tests.ab_test_list_admin, name="ab_test_list_admin"),
-    path("ab-tests/<uuid:pk>/", ab_tests.ab_test_detail_admin, name="ab_test_detail_admin"),
-
-    # Emails
     path("emails/", emails.email_overview, name="emails"),
     path("emails/log/", emails.email_log, name="email_log"),
     path("emails/<uuid:pk>/", emails.email_detail, name="email_detail"),
     path("emails/test/", emails.send_test_email, name="email_test"),
-    path("emails/broadcast/", emails.send_broadcast, name="email_broadcast"),
 
-    # Partners
-    path("partners/", partners.partners_overview, name="partners_overview"),
-    path("partners/health/", partners.partners_health, name="partners_health"),
-    path("partners/applications/", partners.application_list, name="partner_applications"),
-    path("partners/applications/action/", partners.application_action, name="partner_application_action"),
-    path("partners/list/", partners.partner_list, name="partner_list"),
-    path("partners/<int:pk>/", partners.partner_detail, name="partner_detail"),
-    path("partners/<int:pk>/commissions/pay/", partners.partner_mark_commissions_paid, name="partner_commissions_pay"),
-    path("partners/<int:pk>/payouts/<int:request_id>/", partners.partner_payout_action, name="partner_payout_action"),
-
-    # Marketplace Partners
-    path("partners/marketplaces/", partners.marketplace_list, name="marketplace_list"),
-    path("partners/marketplaces/create/", partners.marketplace_create, name="marketplace_create"),
-    path("partners/marketplaces/<int:pk>/", partners.marketplace_detail, name="marketplace_detail"),
-    path("partners/marketplaces/<int:pk>/import/", partners.marketplace_import, name="marketplace_import"),
-    path("partners/marketplaces/<int:pk>/import-sellers/", partners.marketplace_import_sellers, name="marketplace_import_sellers"),
-    path("partners/marketplaces/<int:pk>/update/", partners.marketplace_update, name="marketplace_update"),
-    path("partners/webhooks/", partners.partners_webhook_logs, name="partners_webhook_logs"),
-
-    # Help Center
     path("help/", help.help_overview, name="help_overview"),
     path("help/articles/", help.help_article_views, name="help_article_views"),
     path("help/log/", help.help_view_log, name="help_view_log"),
 
-    # System Maps (internal ops reference — staff only)
     path("system-maps/", system_maps.system_maps_index, name="system_maps"),
     path("system-maps/print/", system_maps.system_maps_print, name="system_maps_print"),
     path("system-maps/<slug:slug>/", system_maps.system_map_detail, name="system_map"),
 
-    # Blog Studio (Educator agent editorial dashboard)
     path("blog/", blog.blog_studio, name="blog_studio"),
     path("blog/draft-next/", blog.blog_draft_next, name="blog_draft_next"),
     path("blog/suggest-topics/", blog.blog_suggest_topics, name="blog_suggest_topics"),
@@ -207,7 +169,6 @@ urlpatterns = [
     path("blog/topics/<uuid:pk>/draft/", blog.blog_draft_topic, name="blog_draft_topic"),
     path("blog/topics/<uuid:pk>/skip/", blog.blog_skip_topic, name="blog_skip_topic"),
 
-    # Commerce (catalog, shops, payments, integrations)
     path("commerce/", products.commerce_overview, name="commerce_overview"),
     path("commerce/catalog/", products.commerce_catalog, name="commerce_catalog"),
     path("commerce/catalog/<uuid:pk>/", products.commerce_product_detail, name="commerce_product_detail"),
@@ -217,26 +178,20 @@ urlpatterns = [
     path("commerce/alerts/", products.commerce_stock_alerts, name="commerce_stock_alerts"),
     path("commerce/stock/", products.commerce_stock_updates, name="commerce_stock_updates"),
     path("commerce/photoroom/", photoroom.photoroom_config, name="commerce_photoroom"),
-    # Legacy product URLs (same views)
     path("products/", products.commerce_overview, name="products_overview"),
     path("products/list/", products.commerce_catalog, name="admin_product_list"),
     path("products/alerts/", products.commerce_stock_alerts, name="admin_stock_alerts"),
     path("products/updates/", products.commerce_stock_updates, name="admin_stock_updates"),
 
-    # Notifications
     path("notifications/", notifications.notifications_overview, name="notifications_overview"),
     path("notifications/log/", notifications.notification_log, name="notification_log"),
 
-    # WhatsApp
     path("whatsapp/", whatsapp.whatsapp_overview, name="whatsapp_overview"),
     path("whatsapp/conversations/", whatsapp.whatsapp_conversations, name="whatsapp_conversations"),
     path("whatsapp/templates/", whatsapp.whatsapp_templates, name="whatsapp_templates"),
-    path("whatsapp/broadcasts/", whatsapp.whatsapp_broadcasts, name="whatsapp_broadcasts"),
-    path("whatsapp/sequences/", whatsapp.whatsapp_sequences, name="whatsapp_sequences"),
     path("whatsapp/commerce-receipts/", whatsapp.whatsapp_commerce_receipts, name="whatsapp_commerce_receipts"),
     path("whatsapp/brief-delivery/", whatsapp.whatsapp_brief_delivery, name="whatsapp_brief_delivery"),
 
-    # Innovations
     path("innovations/", innovations.innovations_overview, name="innovations_overview"),
     path("innovations/voice/", innovations.voice_brief_list, name="voice_brief_list"),
     path("innovations/voice/<uuid:pk>/", innovations.voice_brief_detail, name="voice_brief_detail"),

@@ -9,63 +9,16 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-# Business-type carousel templates (auto-selected from campaign intent)
-CAROUSEL_TEMPLATES: dict[str, dict[str, Any]] = {
-    "educational": {
-        "type": "Educational",
-        "objective": "authority",
-        "slide_roles": ("hook", "problem", "insight", "example", "cta"),
-    },
-    "faq": {
-        "type": "FAQ",
-        "objective": "awareness",
-        "slide_roles": ("hook", "question", "answer", "question", "cta"),
-    },
-    "offer": {
-        "type": "Offer",
-        "objective": "sales",
-        "slide_roles": ("hook", "problem", "solution", "proof", "offer", "cta"),
-    },
-    "case_study": {
-        "type": "Case Study",
-        "objective": "social_proof",
-        "slide_roles": ("hook", "challenge", "solution", "result", "cta"),
-    },
-    "testimonial": {
-        "type": "Testimonial",
-        "objective": "social_proof",
-        "slide_roles": ("hook", "quote", "proof", "benefit", "cta"),
-    },
-    "product_launch": {
-        "type": "Product Launch",
-        "objective": "awareness",
-        "slide_roles": ("hook", "reveal", "feature", "benefit", "cta"),
-    },
-    "before_after": {
-        "type": "Before/After",
-        "objective": "sales",
-        "slide_roles": ("hook", "before", "after", "proof", "cta"),
-    },
-    "industry_insight": {
-        "type": "Industry Insight",
-        "objective": "authority",
-        "slide_roles": ("hook", "trend", "insight", "action", "cta"),
-    },
-}
+# Sourced from canonical Template Families (see template_families.py)
+from apps.create.content.template_families import (  # noqa: E402
+    build_legacy_carousel_templates,
+    build_legacy_intent_to_template,
+    family_to_legacy_carousel,
+    resolve_template_family,
+)
 
-INTENT_TO_TEMPLATE = {
-    "sales": "offer",
-    "offer": "offer",
-    "leads": "educational",
-    "awareness": "product_launch",
-    "bookings": "faq",
-    "authority": "industry_insight",
-    "social_proof": "testimonial",
-    "proof": "case_study",
-    "solution": "educational",
-    "problem_awareness": "educational",
-    "educate": "educational",
-}
+CAROUSEL_TEMPLATES: dict[str, dict[str, Any]] = build_legacy_carousel_templates()
+INTENT_TO_TEMPLATE = build_legacy_intent_to_template()
 
 
 @dataclass
@@ -95,6 +48,7 @@ class CarouselStrategy:
     type: str = "Offer"
     objective: str = "sales"
     template_key: str = "offer"
+    template_family: str = ""
     slides: list[CarouselSlideSpec] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -102,6 +56,7 @@ class CarouselStrategy:
             "type": self.type,
             "objective": self.objective,
             "template_key": self.template_key,
+            "template_family": self.template_family,
             "slides": [s.to_dict() for s in self.slides],
         }
 
@@ -117,6 +72,7 @@ class CarouselStrategy:
             type=data.get("type", "Offer"),
             objective=data.get("objective", "sales"),
             template_key=data.get("template_key", "offer"),
+            template_family=data.get("template_family", ""),
             slides=slides,
         )
 
@@ -140,29 +96,20 @@ def select_carousel_template(
     target_intent: str = "",
     business_model: str = "product",
 ) -> str:
-    """Pick template key from campaign intent."""
-    if business_model == "service" and not any(
-        k for k in (target_intent, intent, objective) if k
-    ):
-        return "faq"
-    if business_model == "professional" and not any(
-        k for k in (target_intent, intent, objective) if k
-    ):
-        return "educational"
-    for key in (target_intent, intent, objective):
-        if not key:
-            continue
-        normalized = str(key).lower().replace("-", "_")
-        if normalized in INTENT_TO_TEMPLATE:
-            return INTENT_TO_TEMPLATE[normalized]
-        if normalized in CAROUSEL_TEMPLATES:
-            return normalized
-    return "offer"
+    """Pick legacy carousel key via canonical Template Families."""
+    family = resolve_template_family(
+        objective=objective,
+        intent=intent,
+        target_intent=target_intent,
+        business_model=business_model,
+    )
+    return family_to_legacy_carousel(family)
 
 
 def build_carousel_strategy(seed, campaign=None) -> CarouselStrategy:
     """Build carousel strategy from campaign context (rule-based v1)."""
     from apps.create.content.campaign_bundle import _campaign_context, _resolve_business_model
+    from apps.create.content.template_families import resolve_family_for_seed
 
     ctx = _campaign_context(seed)
     bm = _resolve_business_model(seed)
@@ -172,13 +119,10 @@ def build_carousel_strategy(seed, campaign=None) -> CarouselStrategy:
         or blueprint.get("objective")
         or "sales"
     )
-    target_intent = getattr(seed, "target_intent", "") or ""
-    template_key = select_carousel_template(
-        objective=str(objective),
-        intent=str(blueprint.get("proposal", {}).get("intent", "")),
-        target_intent=target_intent,
-        business_model=bm,
-    )
+    family_key = resolve_family_for_seed(seed, campaign=campaign)
+    template_key = family_to_legacy_carousel(family_key)
+    if template_key not in CAROUSEL_TEMPLATES:
+        template_key = "offer"
     template = CAROUSEL_TEMPLATES[template_key]
     name, price, title = ctx["name"], ctx["price"], ctx["title"]
 
@@ -248,6 +192,7 @@ def build_carousel_strategy(seed, campaign=None) -> CarouselStrategy:
         type=template["type"],
         objective=template.get("objective", str(objective)),
         template_key=template_key,
+        template_family=family_key,
         slides=slides,
     )
 
@@ -270,6 +215,7 @@ def merge_llm_carousel_strategy(base: CarouselStrategy, llm_slides: list[dict]) 
         type=base.type,
         objective=base.objective,
         template_key=base.template_key,
+        template_family=base.template_family,
         slides=merged,
     )
 

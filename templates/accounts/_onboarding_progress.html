@@ -1,9 +1,6 @@
-{# HTMX partial: Onboarding intelligence progress #}
-{# Polled every 4 seconds from onboarding_complete.html #}
-
+{# HTMX partial: compact onboarding progress for glass setup card #}
 {% load static %}
 
-{# Stop polling once all done OR once we've decided the chain is stuck #}
 {% if progress.all_done or progress.stuck %}
 <div hx-swap-oob="true" id="onboarding-progress"
      hx-get="{% url 'accounts:onboarding_progress' %}"
@@ -12,317 +9,81 @@
 <div>
 {% endif %}
 
-  {# ── Progress Steps ── #}
-  <div class="card shadow-kova dark:shadow-none border-kova-100 dark:border-kova-900/40">
-    <div class="card-body space-y-1">
-      {% for step in progress.steps %}
-        <div class="flex items-center gap-4 py-3 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
-
-          {# Status icon #}
-          {% if step.status == "completed" %}
-            <div class="w-10 h-10 rounded-xl bg-growth-100 dark:bg-growth-950 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-            </div>
-          {% elif step.status == "running" %}
-            <div class="w-10 h-10 rounded-xl bg-kova-100 dark:bg-kova-950 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-kova-600 dark:text-kova-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-            </div>
-          {% elif step.status == "failed" %}
-            <div class="w-10 h-10 rounded-xl bg-gold-100 dark:bg-gold-950 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-gold-600 dark:text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-              </svg>
-            </div>
-          {% else %}
-            <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
-              <div class="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-            </div>
-          {% endif %}
-
-          {# Step details #}
-          <div class="min-w-0 flex-1">
-            {% if step.key == "research" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-growth-700 dark:text-growth-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
-                Research Agent — Analyzing your industry
-              </p>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                {% if step.status == "completed" %}Discovered trends and opportunities in your niche
-                {% elif step.status == "running" %}Scanning for trending topics and competitor activity...
-                {% elif step.status == "failed" %}Completed with limited data — will refine over time
-                {% else %}Waiting to start...{% endif %}
-              </p>
-            {% elif step.key == "seeds" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-growth-700 dark:text-growth-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
-                Strategist Agent — Planning campaign angles
-              </p>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                {% if step.status == "completed" %}Campaign proposals ready from research
-                {% elif step.status == "running" %}Turning research into campaign opportunities...
-                {% elif step.status == "failed" %}Some proposals created — add more in Studio
-                {% else %}Waiting for research...{% endif %}
-              </p>
-            {% elif step.key == "content" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-growth-700 dark:text-growth-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
-                Create Agent — Writing platform posts
-              </p>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                {% if step.status == "completed" %}Posts ready for review in the Studio
-                {% elif step.status == "running" %}
-                  {% if has_platforms %}Crafting platform-native content for each connected account...
-                  {% else %}Writing draft posts tailored to your brand — connect a platform later to publish{% endif %}
-                {% elif step.status == "failed" %}Some posts created — check the Studio
-                {% else %}Waiting for campaign proposals...{% endif %}
-              </p>
-            {% elif step.key == "brief" %}
-              <p class="text-sm font-medium {% if step.status == 'completed' %}text-growth-700 dark:text-growth-300{% elif step.status == 'running' %}text-kova-700 dark:text-kova-300{% else %}text-gray-600 dark:text-gray-400{% endif %}">
-                Chief Strategist — Preparing your welcome brief
-              </p>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                {% if step.status == "completed" %}Your personalized strategy is ready
-                {% elif step.status == "running" %}Compiling research, content plan, and strategic recommendations...
-                {% elif step.status == "failed" %}Brief will be available in your daily brief
-                {% else %}Waiting for content generation...{% endif %}
-              </p>
-            {% endif %}
-          </div>
-
-          {# Status badge #}
-          <div class="shrink-0">
-            {% if step.status == "completed" %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-growth-100 text-growth-700 dark:bg-growth-950 dark:text-growth-300">Done</span>
-            {% elif step.status == "running" %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">Working</span>
-            {% elif step.status == "failed" %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold-100 text-gold-700 dark:bg-gold-950 dark:text-gold-300">Partial</span>
-            {% else %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">Queued</span>
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  {# ── Stuck: Celery dropped the chain or it wedged. Give the user an exit. ── #}
-  {% if progress.stuck and not progress.all_done %}
-    <div class="card border-gold-200 dark:border-gold-800 bg-gold-50 dark:bg-gold-950/30">
-      <div class="card-body space-y-3">
-        <div class="flex items-start gap-3">
-          <svg class="w-5 h-5 text-gold-600 dark:text-gold-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <div class="flex-1">
-            <p class="text-sm font-semibold text-gold-900 dark:text-gold-200">This is taking longer than expected</p>
-            <p class="text-xs text-gold-800 dark:text-gold-300 mt-1">
-              Setup normally finishes in 1–3 minutes. It may still complete in the background — or the
-              job may have been dropped. Retry below, or head straight to the Studio.
-            </p>
-          </div>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <form method="post" action="{% url 'accounts:onboarding_retry' %}" class="flex-1">
-            {% csrf_token %}
-            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gold-600 text-white font-semibold hover:bg-gold-700 transition-colors text-sm">
-              Retry agency setup
-            </button>
-          </form>
-          <a href="{% url 'content:studio' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors text-sm">
-            Skip to Studio
-          </a>
-        </div>
+  <div class="kova-setup-card">
+    {% for step in progress.steps %}
+    <div class="kova-setup-row">
+      {% if step.status == "completed" %}
+      <div class="kova-setup-icon is-done">
+        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       </div>
-    </div>
-  {% endif %}
-
-  {# ── All Done: Show results ── #}
-  {% if progress.all_done %}
-    <div class="space-y-6 animate-fade-in">
-
-      {# Welcome brief preview #}
-      {% if brief %}
-        <div class="card shadow-kova dark:shadow-none border-kova-100 dark:border-kova-900/40">
-          <div class="card-body">
-            <div class="flex items-start gap-4 mb-4">
-              <div class="w-10 h-10 rounded-lg bg-kova-100 dark:bg-kova-950 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Your welcome brief</h2>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Prepared by the Strategist agent</p>
-              </div>
-            </div>
-            <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed space-y-3">
-              {{ brief.summary|linebreaks }}
-            </div>
-          </div>
-        </div>
-      {% endif %}
-
-      {# ── The wow: real posts the AI already wrote ── #}
-      {% if preview_posts %}
-      <div class="card shadow-kova dark:shadow-none border-kova-100 dark:border-kova-900/40">
-        <div class="card-body">
-          <div class="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Your AI already wrote these</h2>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">In your brand voice — ready for you to approve</p>
-            </div>
-            {% if posts_ready > preview_posts|length %}
-            <span class="shrink-0 text-xs font-medium text-kova-600 dark:text-kova-400">+{{ posts_ready|add:"-3" }} more</span>
-            {% endif %}
-          </div>
-          <div class="space-y-3">
-            {% for post in preview_posts %}
-            <div class="rounded-xl border border-gray-100 dark:border-gray-800 p-4 bg-gray-50/60 dark:bg-gray-900/30">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">
-                  {{ post.get_platform_display|default:post.platform|default:"Draft" }}
-                </span>
-                {% if post.post_format %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400">
-                  {{ post.get_post_format_display|default:post.post_format }}
-                </span>
-                {% endif %}
-              </div>
-              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ post.content_text|truncatechars:240 }}</p>
-            </div>
-            {% endfor %}
-          </div>
-          <a href="{% url 'content:studio' %}" class="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
-            Review &amp; approve all in Studio
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          </a>
-        </div>
+      {% elif step.status == "running" %}
+      <div class="kova-setup-icon is-run">
+        <svg class="w-3.5 h-3.5 text-white animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+      </div>
+      {% else %}
+      <div class="kova-setup-icon">
+        <div class="w-1.5 h-1.5 rounded-full bg-white/40"></div>
       </div>
       {% endif %}
 
-      {# Quick stats #}
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {% if brief.trending_topics %}
-        <div class="card">
-          <div class="card-body text-center py-4">
-            <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ brief.trending_topics|length }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Trends discovered</p>
-          </div>
-        </div>
-        {% endif %}
-        {% if posts_ready %}
-        <div class="card">
-          <div class="card-body text-center py-4">
-            <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ posts_ready }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Posts ready to review</p>
-          </div>
-        </div>
-        {% endif %}
-        <div class="card">
-          <div class="card-body text-center py-4">
-            <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">6</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">AI agents active</p>
-          </div>
-        </div>
-      </div>
-
-      {# Action buttons — industry-aware CTAs #}
-      {% if not has_platforms %}
-      <div class="p-4 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800 rounded-xl flex items-start gap-3">
-        <svg class="w-5 h-5 text-gold-600 dark:text-gold-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
-        <div class="flex-1">
-          <p class="text-sm font-medium text-gold-800 dark:text-gold-300">Connect a platform to start publishing</p>
-          <p class="text-xs text-gold-700 dark:text-gold-400 mt-1">Your draft campaign posts are saved in Studio. Connect a social account to assign platforms and schedule them.</p>
-          <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-800 dark:hover:text-kova-300">
-            Connect now
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          </a>
-        </div>
-      </div>
-      {% endif %}
-
-      {% if is_commerce or onboarding_intent == "sell" or onboarding_intent == "both" %}
-      <div class="p-4 bg-growth-50 dark:bg-growth-950/30 border border-growth-200 dark:border-growth-800 rounded-xl">
-        <p class="text-sm font-medium text-growth-800 dark:text-growth-300">Next: your shop</p>
-        <p class="text-xs text-growth-700 dark:text-growth-400 mt-1">Snap your first product and share your shop link when you're ready.</p>
-        <div class="flex flex-wrap gap-2 mt-3">
-          <a href="{% url 'products:snap' %}" class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-growth-600 text-white text-sm font-semibold hover:bg-growth-700 transition-colors">
-            Add a product
-          </a>
-          <a href="{% url 'products:list' %}" class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 text-growth-800 dark:text-growth-300 text-sm font-semibold border border-growth-200 dark:border-growth-800 hover:bg-growth-50 dark:hover:bg-growth-950/50 transition-colors">
-            View shop
-          </a>
-        </div>
-      </div>
-      {% endif %}
-
-      <div class="flex flex-col sm:flex-row gap-3">
-        {% if is_commerce or onboarding_intent == "sell" or onboarding_intent == "both" %}
-        <a href="{% url 'products:snap' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-growth-600 text-white font-semibold hover:bg-growth-700 transition-colors">
-          Snap your first product
-        </a>
-        {% endif %}
-        <a href="{% url 'content:studio' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-kova-600 text-white font-semibold hover:bg-kova-700 transition-colors shadow-kova">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          Review Your Posts
-        </a>
-        <a href="{% url 'brief:home' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Read Welcome Brief
-        </a>
-      </div>
-
-      <p class="text-center text-xs text-gray-400 dark:text-gray-500">
-        Performance data feeds back into the agents over time.
-      </p>
-
-      {% if setup_mission %}
-      <div class="card border-kova-100 dark:border-kova-900/40">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">Setup mission</p>
-            <span class="text-xs text-gray-500">{{ setup_mission.completed }}/{{ setup_mission.total }}</span>
-          </div>
-          <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-4">
-            <div class="h-full bg-kova-500 rounded-full" style="width: {{ setup_mission.percent }}%"></div>
-          </div>
-          <ul class="space-y-2">
-            {% for item in setup_mission.items %}
-              <li class="flex items-center gap-2 text-sm {% if item.done %}text-gray-400 line-through{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                {% if item.done %}✓{% else %}○{% endif %}
-                {% if not item.done and item.url_name %}
-                  <a href="{% url item.url_name %}" class="hover:text-kova-600 dark:hover:text-kova-400">{{ item.label }}</a>
-                {% else %}
-                  {{ item.label }}
-                {% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-      {% endif %}
-    </div>
-  {% elif not progress.stuck %}
-    {# Still running — show tips #}
-    <div class="card bg-kova-50/50 dark:bg-kova-950/20 border-kova-100 dark:border-kova-900/40">
-      <div class="card-body text-center py-6">
-        <p class="text-sm text-gray-600 dark:text-gray-400">
-          <span class="font-medium text-gray-700 dark:text-gray-300">While you wait —</span>
-          {% if has_platforms %}
-          we're pulling current trends in your industry and drafting platform-native posts for each
-          connected account, not reformatted copies of the same text.
-          {% else %}
-          we're researching your industry and drafting brand-native posts as drafts.
-          Connect a platform anytime to publish — no need to redo setup.
-          {% endif %}
+      <div class="min-w-0 flex-1">
+        <p class="kova-setup-label">
+          {% if step.key == "research" %}Research
+          {% elif step.key == "seeds" %}Campaign plan
+          {% elif step.key == "content" %}Draft posts
+          {% elif step.key == "brief" %}Welcome brief
+          {% else %}{{ step.key }}{% endif %}
+        </p>
+        <p class="kova-setup-meta">
+          {% if step.status == "completed" %}Done
+          {% elif step.status == "running" %}Working…
+          {% elif step.status == "failed" %}Partial
+          {% else %}Queued{% endif %}
         </p>
       </div>
+      <span class="kova-setup-badge">
+        {% if step.status == "completed" %}Done
+        {% elif step.status == "running" %}Live
+        {% elif step.status == "failed" %}Partial
+        {% else %}Wait{% endif %}
+      </span>
     </div>
+    {% endfor %}
+  </div>
+
+  {% if progress.stuck and not progress.all_done %}
+  <p class="kova-auth__hint mt-3" style="color:#fde68a">Taking longer than usual — retry or continue to Studio.</p>
+  <div class="kova-setup-actions">
+    <form method="post" action="{% url 'accounts:onboarding_retry' %}">
+      {% csrf_token %}
+      <button type="submit" class="primary" style="width:100%">Retry setup</button>
+    </form>
+    <a href="{% url 'content:studio' %}" class="ghost">Skip to Studio</a>
+  </div>
+  {% endif %}
+
+  {% if progress.all_done %}
+  <div class="kova-setup-actions">
+    <a href="{% url 'content:studio' %}" class="primary">Review posts in Studio</a>
+    <a href="{% url 'brief:home' %}" class="ghost">Go to Today</a>
+    {% if not has_platforms %}
+    <a href="{% url 'platforms:list' %}" class="ghost">Connect a platform</a>
+    {% endif %}
+  </div>
+  {% if preview_posts %}
+  <div class="kova-setup-card" style="margin-top:0.85rem">
+    {% for post in preview_posts|slice:":2" %}
+    <div class="kova-setup-row" style="align-items:flex-start">
+      <div class="min-w-0 flex-1">
+        <p class="kova-setup-label">{{ post.get_platform_display|default:post.platform|default:"Draft" }}</p>
+        <p class="kova-setup-meta">{{ post.content_text|truncatechars:120 }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% elif not progress.stuck %}
+  <p class="kova-auth__hint mt-3">Usually finishes in 1–3 minutes.</p>
   {% endif %}
 
 </div>

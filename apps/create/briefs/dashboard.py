@@ -154,7 +154,7 @@ def _customer_pulse_from_stats(stats):
         pulse.append({
             "label": "Social inbox",
             "detail": f"{n} waiting for reply",
-            "url_name": "engage:inbox",
+            "url_name": "whatsapp:inbox",
             "tone": "amber" if n >= 3 else "blue",
         })
     if stats["new_leads"]:
@@ -164,14 +164,6 @@ def _customer_pulse_from_stats(stats):
             "detail": f"{n} new lead{'s' if n != 1 else ''}",
             "url_name": "leads:list",
             "tone": "purple",
-        })
-    if stats["booking_today"]:
-        n = stats["booking_today"]
-        pulse.append({
-            "label": "Bookings",
-            "detail": f"{n} today",
-            "url_name": "bookings:list",
-            "tone": "green",
         })
     if stats["wa_escalated"]:
         n = stats["wa_escalated"]
@@ -315,22 +307,14 @@ def _money_board_from_stats(stats):
                 else "WhatsApp + social inbox waiting on you"
             ),
             "url_name": (
-                "engage:unified_inbox"
-                if stats["needs_reply_wa"] and stats["needs_reply_engage"]
-                else (
-                    "whatsapp:inbox"
-                    if stats["needs_reply_wa"]
-                    else "engage:inbox"
-                )
+                "whatsapp:inbox"
+                if stats["needs_reply_wa"]
+                else "leads:list"
             ),
             "url_query": (
-                ""
-                if stats["needs_reply_wa"] and stats["needs_reply_engage"]
-                else (
-                    "status=escalated"
-                    if stats["needs_reply_wa"]
-                    else "needs_reply=1"
-                )
+                "status=escalated"
+                if stats["needs_reply_wa"]
+                else ""
             ),
             "needs_reply_wa": stats["needs_reply_wa"],
             "needs_reply_engage": stats["needs_reply_engage"],
@@ -402,10 +386,10 @@ def _money_board_from_stats(stats):
 
 def _nba_url_name(key: str) -> str:
     mapping = {
-        "reply": "engage:unified_inbox",
+        "reply": "whatsapp:inbox",
         "approve": "content:studio",
         "hot_leads": "leads:list",
-        "book": "bookings:list",
+        "book": "leads:list",
         "snap": "products:snap",
         "money": "analytics:revenue",
     }

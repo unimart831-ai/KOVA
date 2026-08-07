@@ -482,12 +482,20 @@ def campaign_revenue_detail(request, campaign_id):
     campaign = get_object_or_404(MarketingCampaign, pk=campaign_id, user=request.user)
     detail = get_campaign_performance_detail(campaign, days=days)
 
+    from apps.commerce.leads.models import Lead
+
+    named_leads = (
+        Lead.objects.filter(user=request.user, marketing_campaign=campaign)
+        .order_by("-first_seen_at")[:50]
+    )
+
     return render(request, "analytics/campaign_revenue.html", {
         "campaign": campaign,
         "detail": detail,
         "stats": detail["stats"],
         "platforms": detail["platforms"],
         "recent_conversions": detail["recent_conversions"],
+        "named_leads": named_leads,
         "days": days,
     })
 

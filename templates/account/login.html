@@ -1,76 +1,61 @@
 {% extends "layouts/marketing.html" %}
 
-{% block title %}Sign In — Kova Agent{% endblock %}
+{% block title %}Sign in - KOVA{% endblock %}
+
+{% block extra_head %}
+{% include "account/_auth_styles.html" %}
+{% endblock %}
 
 {% block content %}
-<div class="brand-atmosphere min-h-[85vh] flex items-center justify-center py-12 px-4">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-14 items-center">
-    <div class="hidden lg:block">
-      {% include "components/brand/_mission_panel.html" %}
-    </div>
+<section class="kova-auth">
+  {% include "account/_auth_visual.html" %}
 
-    <div class="w-full max-w-md mx-auto lg:mx-0 reveal">
-      <div class="lg:hidden mb-6">
-        {% include "components/brand/_agent_loop_badge.html" %}
-      </div>
-      <div class="lg:hidden mb-6">
-        {% include "components/brand/_agent_activity_loop.html" %}
-      </div>
+  <div class="kova-auth__panel">
+    <div class="kova-auth__card">
+      <h1 class="kova-auth__title">Sign in</h1>
 
-      <div class="text-center lg:text-left mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">The system that chases money while you run the shop — approve in 5 minutes.</p>
-      </div>
+      {% include "account/_auth_messages.html" %}
+      {% include "account/_social_login.html" %}
 
-      <div class="card shadow-kova dark:shadow-none dark:border-gray-800/90">
-        <div class="card-body">
-          {% include "account/_auth_messages.html" %}
-          {% include "account/_auth_trust_strip.html" %}
-          {% include "account/_social_login.html" %}
+      <form method="post" action="{% url 'account_login' %}" class="kova-auth__form">
+        {% csrf_token %}
 
-          <form method="post" action="{% url 'account_login' %}" class="space-y-5">
-            {% csrf_token %}
+        {% if form.errors %}
+          <div class="rounded-xl px-4 py-3 text-sm bg-red-50 border border-red-200 text-red-700">
+            {% for field in form %}{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
 
-            {% if form.errors %}
-              <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm dark:bg-red-950/30 dark:border-red-800 dark:text-red-200">
-                {% for field in form %}{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
-                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-              </div>
-            {% endif %}
-
-            <div>
-              <label for="id_login" class="label">Email</label>
-              <input type="email" name="login" id="id_login" class="input" placeholder="you@example.com"
-                     value="{{ form.login.value|default:'' }}" required autofocus>
-            </div>
-            <div>
-              <div class="flex items-center justify-between">
-                <label for="id_password" class="label">Password</label>
-                <a href="{% url 'account_reset_password' %}" class="text-xs text-kova-600 hover:text-kova-700 dark:text-kova-400">Forgot password?</a>
-              </div>
-              <input type="password" name="password" id="id_password" class="input" placeholder="••••••••" required>
-            </div>
-            <div class="flex items-center">
-              <input type="checkbox" name="remember" id="id_remember" class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
-              <label for="id_remember" class="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</label>
-            </div>
-
-            {% if redirect_field_value %}
-              <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
-            {% endif %}
-
-            <button type="submit" class="btn-primary w-full">Sign in</button>
-          </form>
+        <div>
+          <label for="id_login" class="label">Email</label>
+          <input type="email" name="login" id="id_login" class="input" placeholder="you@business.com"
+                 value="{{ form.login.value|default:'' }}" required autofocus autocomplete="email">
         </div>
-      </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="id_password" class="label !mb-0">Password</label>
+            <a href="{% url 'account_reset_password' %}" class="text-xs font-semibold text-kova-600">Forgot?</a>
+          </div>
+          <input type="password" name="password" id="id_password" class="input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="flex items-center px-0.5">
+          <input type="checkbox" name="remember" id="id_remember" class="rounded border-white/40 text-kova-500 focus:ring-kova-400 bg-white/20">
+          <label for="id_remember" class="ml-2 text-sm">Remember me</label>
+        </div>
 
-      <p class="mt-6 text-center lg:text-left text-sm text-gray-600 dark:text-gray-400">
-        Don't have an account?
-        <a href="{% url 'account_signup' %}" class="text-kova-600 font-medium hover:text-kova-700 dark:text-kova-400">Start free trial</a>
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <button type="submit" class="kova-auth__submit">Sign in</button>
+      </form>
+
+      <p class="kova-auth__foot">
+        New here?
+        <a href="{% url 'account_signup' %}">Join free</a>
       </p>
     </div>
   </div>
-</div>
-{% include "components/brand/_reveal_script.html" %}
+</section>
 {% endblock %}

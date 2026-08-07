@@ -91,7 +91,6 @@ class TestAuthFlow:
         page.fill("input[name='email']", "testuser@example.com")
         page.fill("input[name='phone_number']", "0712345678")
         page.fill("input[name='password1']", "TestPass123!@#")
-        page.fill("input[name='password2']", "TestPass123!@#")
         page.click("button[type='submit']")
         page.wait_for_load_state("networkidle")
         user = User.objects.filter(email="testuser@example.com").first()
