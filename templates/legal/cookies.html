@@ -1,0 +1,124 @@
+{% extends "legal/base.html" %}
+
+{% block legal_body %}
+<!-- 1. What Are Cookies -->
+    <section>
+      <h2>1. What Are Cookies?</h2>
+      <p>Cookies are small text files stored on your device when you visit a website. They help sites remember your preferences, keep you signed in, and understand how you use the service. We also use similar technologies such as local storage and session storage.</p>
+    </section>
+
+    <!-- 2. Cookies We Use -->
+    <section>
+      <h2>2. Cookies We Use</h2>
+
+      <!-- Essential -->
+      <div class="legal-panel">
+        <h3>Essential Cookies <span class="ml-2 text-xs font-normal text-white/45">(Always active)</span></h3>
+        <p class="mb-3 text-sm text-white/55">Required for the Service to function. Cannot be disabled.</p>
+        <div class="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th class="pb-2 pr-4">Cookie</th>
+                <th class="pb-2 pr-4">Purpose</th>
+                <th class="pb-2">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">sessionid</td>
+                <td class="py-2 pr-4">Keeps you signed in to your account</td>
+                <td class="py-2">2 weeks</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">csrftoken</td>
+                <td class="py-2 pr-4">Protects against cross-site request forgery attacks</td>
+                <td class="py-2">1 year</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">messages</td>
+                <td class="py-2 pr-4">Displays one-time status messages (e.g., &ldquo;Post published&rdquo;)</td>
+                <td class="py-2">Session</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">oauth_state_*</td>
+                <td class="py-2 pr-4">Secures the social platform connection flow</td>
+                <td class="py-2">Session</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Functional -->
+      <div class="legal-panel">
+        <h3>Functional Cookies</h3>
+        <p class="mb-3 text-sm text-white/55">Remember your preferences and personalization choices.</p>
+        <div class="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th class="pb-2 pr-4">Cookie / Storage</th>
+                <th class="pb-2 pr-4">Purpose</th>
+                <th class="pb-2">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">kova-theme</td>
+                <td class="py-2 pr-4">Remembers your light/dark mode preference</td>
+                <td class="py-2">Persistent (localStorage)</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 font-mono text-xs">ref</td>
+                <td class="py-2 pr-4">Tracks partner referral codes for attribution</td>
+                <td class="py-2">30 days</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analytics -->
+      <div class="legal-panel">
+        <h3>Analytics Cookies</h3>
+        <p class="mb-3 text-sm text-white/55">Help us understand how visitors use the Service so we can improve it. Data is aggregated and anonymized where possible.</p>
+        <p class="text-sm text-white/55">Currently, Kova does not use third-party analytics cookies. If we add analytics tools in the future (e.g., privacy-focused analytics), we will update this policy and notify you.</p>
+      </div>
+    </section>
+
+    <!-- 3. Third-Party Cookies -->
+    <section>
+      <h2>3. Third-Party Cookies</h2>
+      <p>When you connect social media accounts through OAuth, the respective platform may set cookies during the authorization flow. These are governed by that platform&rsquo;s cookie policy:</p>
+      <ul>
+        <li><a href="https://www.facebook.com/policies/cookies/" target="_blank" rel="noopener noreferrer">Meta (Facebook/Instagram) Cookie Policy</a></li>
+        <li><a href="https://twitter.com/en/privacy" target="_blank" rel="noopener noreferrer">X (Twitter) Privacy Policy</a></li>
+        <li><a href="https://www.linkedin.com/legal/cookie-policy" target="_blank" rel="noopener noreferrer">LinkedIn Cookie Policy</a></li>
+      </ul>
+      <p>Payment processors (Stripe) may also set cookies when processing payments. See <a href="https://stripe.com/cookies-policy/legal" target="_blank" rel="noopener noreferrer">Stripe&rsquo;s Cookie Policy</a>.</p>
+    </section>
+
+    <!-- 4. Managing Cookies -->
+    <section>
+      <h2>4. Managing Cookies</h2>
+      <p>You can control cookies through your browser settings:</p>
+      <ul>
+        <li><strong>Block all cookies</strong> — most browsers allow this in privacy/security settings. Note that blocking essential cookies will prevent you from signing in.</li>
+        <li><strong>Delete cookies</strong> — clear existing cookies through your browser. You will be signed out and preferences will be reset.</li>
+        <li><strong>Private browsing</strong> — cookies set during private/incognito sessions are deleted when the window closes.</li>
+      </ul>
+    </section>
+
+    <!-- 5. Changes -->
+    <section>
+      <h2>5. Changes to This Policy</h2>
+      <p>We may update this Cookie Policy when we add new features or integrations. Changes will be reflected in the &ldquo;Last updated&rdquo; date above.</p>
+    </section>
+
+    <!-- 6. Contact -->
+    <section>
+      <h2>6. Contact</h2>
+      <p>Questions about cookies? Email us at <a href="mailto:privacy@kovaagent.com">privacy@kovaagent.com</a>.</p>
+    </section>
+{% endblock %}

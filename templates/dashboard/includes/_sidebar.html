@@ -1,0 +1,173 @@
+{# Dashboard sidebar — Tailwind on dark canvas #}
+{% load nav_tags %}
+
+{% nav_active request.path '/accounts/business-brain' as business_active %}
+{% nav_active request.path '/content/studio' '/content/edit/' '/content/archive' '/content/queue' '/content/calendar' as studio_active %}
+{% nav_active request.path '/analytics/revenue' as results_active %}
+{% nav_active request.path '/analytics/' '!/analytics/revenue' '!/analytics/pixel' '!/analytics/attribution' '!/analytics/intelligence' '!/analytics/recycle' '!/analytics/webhooks' as analytics_active %}
+{% nav_active request.path '/leads/' as leads_active %}
+{% nav_active request.path '/platforms/' as channels_active %}
+{% nav_active request.path '/accounts/settings' as account_active %}
+
+<aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+       id="app-sidebar"
+       class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col transform bg-canvas transition-transform duration-200 ease-in-out lg:translate-x-0"
+       aria-label="App">
+
+  <div class="flex-shrink-0 px-4 pb-3 pt-4">
+    <div class="mb-3 flex items-center justify-between gap-2">
+      <a href="{% url 'brief:home' %}" class="inline-flex min-w-0 items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-kova-400" aria-label="KOVA home">
+        <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-kova-500 font-display text-sm font-bold text-white"{% if agency_brand_theme %} style="background-color: var(--brand-accent);"{% endif %} aria-hidden="true">K</span>
+        <span class="truncate font-display text-base font-bold tracking-tight text-white">KOVA</span>
+      </a>
+      <button type="button"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/55 hover:bg-white/5 hover:text-white lg:hidden"
+              @click="sidebarOpen = false"
+              aria-label="Close navigation">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    {% if agency_brands|length > 1 and kova_features.teams %}
+    <form method="post" action="{% url 'teams:switch_brand' %}">
+      {% csrf_token %}
+      <label for="agency-brand-select" class="sr-only">Active client</label>
+      <select id="agency-brand-select" name="brand_id" onchange="this.form.submit()"
+              class="w-full rounded-lg border border-white/10 bg-canvas-raised px-2.5 py-1.5 text-xs text-white/85">
+        {% for b in agency_brands %}
+        <option value="{{ b.id }}" {% if b.id == active_agency_brand_id %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% elif agency_brands|length == 1 and kova_features.teams %}
+    <p class="truncate text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-white/35">{{ agency_brands.0.name }}</p>
+    {% endif %}
+  </div>
+
+  <nav class="sidebar-scroll flex-1 overflow-y-auto px-3 pb-4" aria-label="Primary">
+    <div>
+      <p class="mb-1.5 ml-2.5 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-white/30">Main</p>
+      <ul class="space-y-0.5">
+        <li>
+          <a href="{% url 'brief:home' %}"
+             {% if request.resolver_match.namespace == 'brief' and request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if request.resolver_match.namespace == 'brief' and request.resolver_match.url_name == 'home' %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if request.resolver_match.namespace == 'brief' and request.resolver_match.url_name == 'home' %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+            </svg>
+            Home
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:business_brain' %}"
+             {% if business_active %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if business_active %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if business_active %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            Business
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'content:studio' %}"
+             {% if studio_active %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if studio_active %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if studio_active %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Studio
+            {% if nav_badge_queue %}<span class="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-kova-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white">{{ nav_badge_queue }}</span>{% endif %}
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="mb-1.5 ml-2.5 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-white/30">Growth</p>
+      <ul class="space-y-0.5">
+        <li>
+          <a href="{% url 'analytics:revenue' %}"
+             {% if results_active %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if results_active %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if results_active %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Results
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'analytics:insights' %}"
+             {% if analytics_active %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if analytics_active %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if analytics_active %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            Analytics
+          </a>
+        </li>
+        {% if kova_features.leads_nav %}
+        <li>
+          <a href="{% url 'leads:list' %}"
+             {% if leads_active %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if leads_active %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if leads_active %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Leads
+            {% if nav_badge_leads %}<span class="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white">{{ nav_badge_leads }}</span>{% endif %}
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+
+    <div class="mt-4">
+      <p class="mb-1.5 ml-2.5 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-white/30">General</p>
+      <ul class="space-y-0.5">
+        <li>
+          <a href="{% url 'platforms:list' %}"
+             {% if channels_active %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if channels_active %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if channels_active %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+            </svg>
+            Channels
+            {% if platforms_need_attention %}<span class="ml-auto h-1.5 w-1.5 rounded-full bg-red-500" title="Needs attention"></span>{% endif %}
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:settings' %}"
+             {% if account_active and '/accounts/business-brain' not in request.path %}aria-current="page"{% endif %}
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium {% if account_active and '/accounts/business-brain' not in request.path %}bg-canvas-raised text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]{% else %}text-white/60 hover:bg-white/5 hover:text-white{% endif %}">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0 {% if account_active and '/accounts/business-brain' not in request.path %}text-kova-400{% else %}text-white/40{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Settings
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'account_logout' %}"
+             class="flex min-h-[2.4rem] items-center gap-3 rounded-xl px-2.5 py-1.5 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300">
+            <svg class="h-[1.15rem] w-[1.15rem] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            Log out
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="flex-shrink-0 px-3 pb-3.5 pt-1">
+    <a href="{% url 'billing:pricing' %}"
+       class="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-canvas-raised px-2.5 py-2 no-underline transition hover:border-kova-500/40">
+      <span class="min-w-0 truncate text-xs font-semibold text-white/70">{{ user_plan_sidebar.label|default:"Your plan" }}</span>
+      <span class="flex-shrink-0 rounded-md bg-kova-500 px-2 py-1 text-[0.7rem] font-semibold leading-none text-white">
+        {% if user_plan_sidebar.variant == 'paid' %}Manage{% else %}Upgrade{% endif %}
+      </span>
+    </a>
+  </div>
+</aside>

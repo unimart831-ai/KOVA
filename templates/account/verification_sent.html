@@ -1,43 +1,37 @@
-{% extends "layouts/marketing.html" %}
+{% extends "account/base.html" %}
 
-{% block title %}Verify Your Email — Kova Agent{% endblock %}
+{% block account_title %}Verify Your Email — KOVA{% endblock %}
+{% block account_heading %}Check your email{% endblock %}
+{% block account_messages %}{% endblock %}
 
-{% block content %}
-<div class="brand-atmosphere min-h-[60vh] flex items-center justify-center py-12 px-4">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative w-full max-w-md text-center reveal">
-    <div class="w-16 h-16 rounded-2xl bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center mx-auto mb-6 shadow-kova">
-      <svg class="w-8 h-8 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-      </svg>
-    </div>
-    {% include "components/brand/_agent_loop_badge.html" %}
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 mt-4">Check your email</h1>
-    <p class="text-gray-600 dark:text-gray-400 mb-6">
-      One click to activate — then your AI team handles social while you approve in 5 minutes.
-    </p>
-
-    <div class="card text-left glass-panel">
-      <div class="card-body space-y-4 text-sm text-gray-600 dark:text-gray-400">
-        <div>
-          <p class="font-medium text-gray-900 dark:text-white mb-1">What happens next</p>
-          <ol class="list-decimal list-inside space-y-1.5">
-            <li>Verify your email (this page)</li>
-            <li>Pick a setup path — social, website, or manual</li>
-            <li>Your AI agency drafts your first posts</li>
-          </ol>
-        </div>
-        <p class="text-xs text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-800">
-          Didn't receive it? Check spam or
-          <a href="{% url 'account_login' %}" class="text-kova-600 dark:text-kova-400 font-medium">sign in to resend</a>.
-        </p>
-      </div>
-    </div>
-
-    <p class="mt-6 text-sm text-gray-500">
-      <a href="{% url 'account_login' %}" class="text-kova-600 font-medium dark:text-kova-400">← Back to sign in</a>
-    </p>
-  </div>
+{% block account_lead %}
+<div class="kova-auth__icon mt-4" aria-hidden="true">
+  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+  </svg>
 </div>
-{% include "components/brand/_reveal_script.html" %}
+<p class="kova-auth__hint">
+  One click to activate — then your AI team handles social while you approve in 5 minutes.
+</p>
+{% endblock %}
+
+{% block account_body %}
+<div class="kova-auth__steps">
+  <strong>What happens next</strong>
+  <ol>
+    <li>Verify your email (this page)</li>
+    <li>Pick a setup path — social, website, or manual</li>
+    <li>Your AI agency drafts your first posts</li>
+  </ol>
+  <p class="kova-auth__steps-note">
+    Didn't receive it? Check spam or
+    <a href="{% url 'account_login' %}">sign in to resend</a>.
+  </p>
+</div>
+{% endblock %}
+
+{% block account_footer %}
+<p class="kova-auth__foot">
+  <a href="{% url 'account_login' %}">← Back to sign in</a>
+</p>
 {% endblock %}

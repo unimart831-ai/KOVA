@@ -9,7 +9,7 @@ def preferences(request):
     """Holiday & moment preferences — full engine ships in a later sprint."""
     profile = getattr(request.user, "profile", None)
     country = (getattr(profile, "country", None) or "").strip()
-    return render(request, "calendar_intel/preferences.html", {
+    return render(request, "dashboard/calendar_intel/preferences.html", {
         "country": country,
         "moment_categories": [
             {"id": "national", "label": "National holidays", "enabled": True},

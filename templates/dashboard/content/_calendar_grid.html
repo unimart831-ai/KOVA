@@ -1,0 +1,131 @@
+{% load content_tags %}
+
+{# ── Desktop: full month grid ─────────────────────────────────── #}
+<div class="hidden sm:block">
+  <table class="w-full border-collapse table-fixed">
+    <thead>
+      <tr>
+        <th class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 text-center">Mon</th>
+        <th class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 text-center">Tue</th>
+        <th class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 text-center">Wed</th>
+        <th class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 text-center">Thu</th>
+        <th class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 text-center">Fri</th>
+        <th class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 text-center">Sat</th>
+        <th class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider py-2 text-center">Sun</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in weeks %}
+      <tr>
+        {% for day in week %}
+        <td class="border border-gray-100 dark:border-gray-800 p-1.5 align-top h-[90px] relative group
+            {% if not day.in_month %}bg-gray-50/50 dark:bg-gray-950/50{% endif %}
+            {% if day.is_today %}ring-2 ring-kova-500 ring-inset rounded-sm{% endif %}">
+
+          {# Day number #}
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-medium leading-none
+              {% if day.is_today %}text-kova-600 dark:text-kova-400 font-bold
+              {% elif not day.in_month %}text-gray-300 dark:text-gray-700
+              {% else %}text-gray-600 dark:text-gray-400{% endif %}">
+              {{ day.date.day }}
+            </span>
+            {% if day.posts %}
+            <span class="text-[9px] font-medium text-gray-400 dark:text-gray-500 tabular-nums">{{ day.posts|length }}</span>
+            {% endif %}
+          </div>
+
+          {# Platform dots #}
+          {% if day.posts %}
+          <div class="flex flex-wrap gap-[3px] mt-1.5">
+            {% for post in day.posts|slice:":6" %}
+            <a href="{% url 'content:post_detail' post.id %}"
+               title="{{ post.platform|default:'post'|title }} · {{ post.scheduled_at|date:'g:i A' }}"
+               class="w-2.5 h-2.5 rounded-full {{ post|platform_dot_color }} hover:ring-2 hover:ring-offset-1 hover:ring-gray-300 dark:hover:ring-gray-600 dark:hover:ring-offset-gray-900 transition-shadow"></a>
+            {% endfor %}
+            {% if day.posts|length > 6 %}
+            <span class="text-[9px] text-gray-400 dark:text-gray-500 leading-[10px] self-center">+{{ day.posts|length|add:"-6" }}</span>
+            {% endif %}
+          </div>
+
+          {# First post preview on hover #}
+          {% with first=day.posts.0 %}
+          <div class="hidden group-hover:block absolute left-0 right-0 bottom-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800 p-1.5 z-10 rounded-b-sm">
+            <p class="text-[10px] text-gray-600 dark:text-gray-400 leading-snug line-clamp-2">{{ first.content_text|truncatewords:10 }}</p>
+          </div>
+          {% endwith %}
+
+          {% elif day.in_month and day.date >= today %}
+          {# Empty future day — show + on hover #}
+          <a href="{% url 'content:studio' %}"
+             class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+             title="Create content for {{ day.date|date:'M j' }}">
+            <span class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm font-light hover:bg-kova-50 hover:text-kova-500 dark:hover:bg-kova-950 dark:hover:text-kova-400 transition-colors">+</span>
+          </a>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Mobile: compact day list ──────────────────────────────────── #}
+<div class="sm:hidden space-y-2">
+  {% for week in weeks %}{% for day in week %}
+    {% if day.in_month and day.posts %}
+    <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs font-semibold {% if day.is_today %}text-kova-600 dark:text-kova-400{% else %}text-gray-900 dark:text-white{% endif %}">
+          {{ day.date|date:"D, M j" }}
+          {% if day.is_today %}<span class="ml-1 text-[10px] font-medium text-kova-500">today</span>{% endif %}
+        </p>
+        <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ day.posts|length }} post{{ day.posts|length|pluralize }}</span>
+      </div>
+      <div class="space-y-1.5">
+        {% for post in day.posts|slice:":5" %}
+        <a href="{% url 'content:post_detail' post.id %}" class="flex items-center gap-2 group/item">
+          <span class="w-2 h-2 rounded-full flex-shrink-0 {{ post|platform_dot_color }}"></span>
+          <span class="text-xs text-gray-600 dark:text-gray-400 truncate group-hover/item:text-gray-900 dark:group-hover/item:text-white transition-colors">{{ post.content_text|truncatewords:8 }}</span>
+          <span class="text-[10px] text-gray-400 dark:text-gray-500 ml-auto flex-shrink-0">{{ post.scheduled_at|date:"g:i A" }}</span>
+        </a>
+        {% endfor %}
+        {% if day.posts|length > 5 %}
+        <p class="text-[10px] text-gray-400 dark:text-gray-500 pl-4">+{{ day.posts|length|add:"-5" }} more</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}{% endfor %}
+
+  {# Empty state for mobile — uses the same source of truth as the desktop state #}
+  {% if not total_scheduled %}
+  <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center">
+    <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+      <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+    </div>
+    <p class="text-sm font-medium text-gray-900 dark:text-white">No posts this month</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Head to the Studio to create content.</p>
+    <a href="{% url 'content:studio' %}" class="btn-primary btn-sm mt-3">Create content</a>
+  </div>
+  {% endif %}
+</div>
+
+{# ── Desktop empty state ──────────────────────────────────────── #}
+{% if not total_scheduled %}
+<div class="hidden sm:block">
+  <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center mt-4">
+    <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+      <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+    </div>
+    <p class="text-base font-semibold text-gray-900 dark:text-white">No posts scheduled for {{ month_name }}</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">Create content in the Studio and approve it to see posts appear on the calendar.</p>
+    <a href="{% url 'content:studio' %}" class="btn-primary mt-4">Create content</a>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,41 @@
+{% extends "landing/base.html" %}
+
+{% block title %}{% block account_title %}Account — KOVA{% endblock %}{% endblock %}
+
+{% block extra_head %}
+{% block account_head %}
+{% include "account/includes/_auth_styles.html" %}
+{% endblock %}
+{% endblock %}
+
+{% block content %}
+{% block account_content %}
+<section class="kova-auth">
+  {% block account_visual %}
+  {% include "account/includes/_auth_visual.html" %}
+  {% endblock %}
+
+  <div class="kova-auth__panel {% block account_panel_class %}{% endblock %}">
+    <div class="kova-auth__card" {% block account_card_attrs %}{% endblock %}>
+      {% block account_card %}
+      {% block account_heading_wrap %}
+      <h1 class="kova-auth__title">{% block account_heading %}{% endblock %}</h1>
+      {% endblock %}
+
+      {% block account_lead %}{% endblock %}
+
+      {% block account_messages %}
+      {% include "account/includes/_auth_messages.html" %}
+      {% endblock %}
+
+      {% block account_social %}{% endblock %}
+
+      {% block account_body %}{% endblock %}
+
+      {% block account_footer %}{% endblock %}
+      {% endblock %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% endblock %}

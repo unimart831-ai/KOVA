@@ -22,7 +22,7 @@ def _auditable_accounts(user):
 def audit_list(request):
     """Connected social accounts eligible for profile completeness audits."""
     accounts = list(_auditable_accounts(request.user))
-    return render(request, "profile_audit/list.html", {
+    return render(request, "dashboard/profile_audit/list.html", {
         "page_title": "Profile Health",
         "accounts": accounts,
     })
@@ -36,7 +36,7 @@ def audit_detail(request, account_id):
         pk=account_id,
         user=request.user,
     )
-    return render(request, "profile_audit/detail.html", {
+    return render(request, "dashboard/profile_audit/detail.html", {
         "page_title": f"Profile health · @{account.username or account.platform}",
         "account": account,
         "audit_platforms": AUDIT_PLATFORMS,

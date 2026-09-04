@@ -1,0 +1,117 @@
+{# Decision stream — HTMX-friendly attention queue for Home #}
+{% load humanize %}
+
+{% if stream_items %}
+<div class="space-y-1">
+  {% if stream_critical_count %}
+  <p class="px-1 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-red-400">Needs attention now</p>
+  {% endif %}
+
+  {% for item in stream_items %}
+  {% if item.urgency == "critical" %}
+  <div id="stream-{{ item.source_id|default:item.kind }}-{{ forloop.counter }}"
+       class="group flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3">
+    <div class="mt-0.5 flex shrink-0 items-center gap-2">
+      <span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
+      <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/20">
+        <svg class="h-4 w-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      </span>
+    </div>
+    <div class="min-w-0 flex-1">
+      <a href="{{ item.action_url }}" class="line-clamp-1 text-sm font-medium text-white hover:underline">{{ item.title }}</a>
+      {% if item.subtitle %}<p class="mt-0.5 text-[11px] text-white/45">{{ item.subtitle }}</p>{% endif %}
+      {% if item.meta.recommended_action %}<p class="mt-0.5 text-[11px] font-medium text-kova-400">→ {{ item.meta.recommended_action }}</p>{% endif %}
+    </div>
+    <div class="flex shrink-0 items-center gap-1.5">
+      {% for action in item.inline_actions %}
+      <form method="post" action="{{ action.url }}"
+            hx-post="{{ action.url }}" hx-target="#stream-{{ item.source_id|default:item.kind }}-{{ forloop.parentloop.counter }}" hx-swap="outerHTML">
+        {% csrf_token %}
+        {% if action.variant == "primary" %}
+        <button type="submit" class="rounded-lg bg-kova-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-kova-600">{{ action.label }}</button>
+        {% else %}
+        <button type="submit" class="rounded-lg px-2.5 py-1 text-xs font-medium text-white/50 hover:bg-white/5 hover:text-white">{{ action.label }}</button>
+        {% endif %}
+      </form>
+      {% empty %}
+      <a href="{{ item.action_url }}" class="px-2.5 py-1 text-xs font-medium text-kova-400 hover:underline">View →</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  {% if stream_today_count %}
+  <p class="px-1 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider text-kova-400">Do this next</p>
+  {% endif %}
+
+  {% for item in stream_items %}
+  {% if item.urgency == "today" %}
+  <div id="stream-{{ item.source_id|default:item.kind }}-{{ forloop.counter }}"
+       class="group flex items-start gap-3 rounded-xl border border-white/10 bg-canvas-raised p-3 transition hover:border-kova-500/30">
+    <div class="mt-0.5 flex shrink-0 items-center gap-2">
+      <span class="h-2 w-2 rounded-full bg-gold-500"></span>
+      <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-kova-500/15">
+        <svg class="h-4 w-4 text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </span>
+    </div>
+    <div class="min-w-0 flex-1">
+      <a href="{{ item.action_url }}" class="line-clamp-1 text-sm font-medium text-white hover:underline">{{ item.title }}</a>
+      {% if item.subtitle %}<p class="mt-0.5 text-[11px] text-white/45">{{ item.subtitle }}</p>{% endif %}
+      {% if item.meta.recommended_action %}<p class="mt-0.5 text-[11px] font-medium text-kova-400">→ {{ item.meta.recommended_action }}</p>{% endif %}
+    </div>
+    <div class="flex shrink-0 items-center gap-1.5">
+      {% for action in item.inline_actions %}
+      <form method="post" action="{{ action.url }}"
+            hx-post="{{ action.url }}" hx-target="#stream-{{ item.source_id|default:item.kind }}-{{ forloop.parentloop.counter }}" hx-swap="outerHTML"
+            hx-on::after-request="if(event.detail.successful) this.closest('[id^=stream-]').outerHTML = '<div class=\'flex items-center gap-2 rounded-xl border border-kova-500/20 bg-kova-500/10 p-3 text-sm text-kova-300\'>Done</div>'">
+        {% csrf_token %}
+        {% if item.kind == "approve_post" and action.variant == "primary" %}
+        <input type="hidden" name="schedule_intent" value="next_best">
+        {% endif %}
+        {% if action.variant == "primary" %}
+        <button type="submit" class="rounded-lg bg-kova-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-kova-600">{{ action.label }}</button>
+        {% else %}
+        <button type="submit" class="rounded-lg px-2.5 py-1 text-xs font-medium text-white/50 hover:bg-white/5 hover:text-white">{{ action.label }}</button>
+        {% endif %}
+      </form>
+      {% empty %}
+      <a href="{{ item.action_url }}" class="whitespace-nowrap px-2.5 py-1 text-xs font-medium text-kova-400 hover:underline">View →</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  {% if stream_later_count %}
+  <p class="px-1 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider text-white/35">When you have a moment</p>
+  {% endif %}
+
+  {% for item in stream_items %}
+  {% if item.urgency == "later" %}
+  <div id="stream-{{ item.source_id|default:item.kind }}-{{ forloop.counter }}"
+       class="group flex items-start gap-3 rounded-xl border border-white/5 bg-canvas-muted/50 p-3">
+    <div class="mt-0.5 flex shrink-0 items-center gap-2">
+      <span class="h-2 w-2 rounded-full bg-white/25"></span>
+      <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5">
+        <svg class="h-4 w-4 text-white/35" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </span>
+    </div>
+    <div class="min-w-0 flex-1">
+      <a href="{{ item.action_url }}" class="line-clamp-1 text-sm font-medium text-white/70 hover:text-white hover:underline">{{ item.title }}</a>
+      {% if item.subtitle %}<p class="mt-0.5 text-[11px] text-white/40">{{ item.subtitle }}</p>{% endif %}
+    </div>
+    <a href="{{ item.action_url }}" class="shrink-0 whitespace-nowrap px-2.5 py-1 text-xs font-medium text-white/40 hover:text-white/70 hover:underline">View →</a>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center rounded-xl border border-kova-500/20 bg-kova-500/5 px-4 py-10 text-center">
+  <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-kova-500/15">
+    <svg class="h-6 w-6 text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+  </div>
+  <p class="text-sm font-semibold text-white">All clear</p>
+  <p class="mt-1 max-w-sm text-xs text-white/45">Nothing needs your attention right now.</p>
+</div>
+{% endif %}

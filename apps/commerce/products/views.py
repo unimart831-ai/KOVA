@@ -74,7 +74,7 @@ def product_list(request):
     profile = getattr(request.user, "profile", None)
     promotable_count = promotable_catalog_queryset(request.user).count()
 
-    return render(request, "products/product_list.html", {
+    return render(request, "dashboard/products/product_list.html", {
         "products": page_obj,
         "page_obj": page_obj,
         "stats": stats,
@@ -132,7 +132,7 @@ def product_add(request):
     else:
         form = ProductForm(user=request.user, plan_ctx=_plan_ctx(request))
 
-    return render(request, "products/product_form.html", {
+    return render(request, "dashboard/products/product_form.html", {
         "form": form,
         "title": "Add Offer",
         "submit_label": "Save Offer",
@@ -221,7 +221,7 @@ def product_detail(request, product_id):
     except Exception:
         funnel = None
 
-    return render(request, "products/product_detail.html", {
+    return render(request, "dashboard/products/product_detail.html", {
         "product": product,
         "stock_history": stock_history,
         "alerts": alerts,
@@ -335,7 +335,7 @@ def product_edit(request, product_id):
 
         asset_ctx = asset_context_for_product(product)
 
-    return render(request, "products/product_form.html", {
+    return render(request, "dashboard/products/product_form.html", {
         "form": form,
         "product": product,
         "title": f"Edit Offer · {product.name}",
@@ -384,7 +384,7 @@ def product_update_stock(request, product_id):
     )
 
     if request.headers.get("HX-Request"):
-        return render(request, "products/partials/stock_badge.html", {"product": product})
+        return render(request, "dashboard/products/partials/stock_badge.html", {"product": product})
 
     messages.success(request, f"Stock updated for '{product.name}'.")
     return redirect("products:detail", product_id=product.pk)
@@ -424,7 +424,7 @@ def product_import(request):
     else:
         form = BulkImportForm()
 
-    return render(request, "products/product_import.html", {"form": form, "plan_ctx": plan_ctx})
+    return render(request, "dashboard/products/product_import.html", {"form": form, "plan_ctx": plan_ctx})
 
 
 @login_required
@@ -438,7 +438,7 @@ def stock_alerts(request):
 
     unread_count = StockAlert.objects.filter(user=request.user, is_read=False).count()
 
-    return render(request, "products/stock_alerts.html", {
+    return render(request, "dashboard/products/stock_alerts.html", {
         "alerts": alerts,
         "unread_count": unread_count,
         "show": show,
@@ -452,7 +452,7 @@ def stock_alert_read(request, alert_id):
     alert.is_read = True
     alert.save(update_fields=["is_read"])
     if request.headers.get("HX-Request"):
-        return render(request, "products/partials/alert_row.html", {"alert": alert, "dismissed": True})
+        return render(request, "dashboard/products/partials/alert_row.html", {"alert": alert, "dismissed": True})
     return redirect("products:alerts")
 
 
@@ -576,7 +576,7 @@ def category_list(request):
     categories = ProductCategory.objects.filter(user=request.user, is_active=True).annotate(
         product_count=Count("products", filter=Q(products__is_active=True))
     )
-    return render(request, "products/category_list.html", {"categories": categories})
+    return render(request, "dashboard/products/category_list.html", {"categories": categories})
 
 
 @login_required
@@ -592,7 +592,7 @@ def category_add(request):
     else:
         form = ProductCategoryForm()
 
-    return render(request, "products/category_form.html", {
+    return render(request, "dashboard/products/category_form.html", {
         "form": form,
         "title": "Add Category",
     })
@@ -610,7 +610,7 @@ def category_edit(request, category_id):
     else:
         form = ProductCategoryForm(instance=category)
 
-    return render(request, "products/category_form.html", {
+    return render(request, "dashboard/products/category_form.html", {
         "form": form,
         "title": f"Edit {category.name}",
         "category": category,
@@ -1077,7 +1077,7 @@ def asset_intake(request):
             messages.success(request, "Asset saved — pick your campaign angle.")
             return redirect("content:asset_proposals", asset_id=asset.pk)
 
-    return render(request, "products/asset_intake.html", {
+    return render(request, "dashboard/products/asset_intake.html", {
         "title": "Add asset",
         "asset_types": BusinessAsset.AssetType.choices,
         "snap_url": reverse("products:snap"),
@@ -1132,7 +1132,7 @@ def snap_to_sell(request):
 
     return render(
         request,
-        "products/snap_to_sell.html",
+        "dashboard/products/snap_to_sell.html",
         {
             "plan_ctx": plan_ctx,
             "commerce_autopilot": commerce_autopilot_active(request.user),
@@ -1405,7 +1405,7 @@ def snap_batch(request):
     """Batch Snap — Market Day Mode: photograph your whole stall."""
     from django.conf import settings
 
-    return render(request, "products/snap_batch.html", {
+    return render(request, "dashboard/products/snap_batch.html", {
         "plan_ctx": _plan_ctx(request),
         "voice_transcribe_url": reverse("products:snap_batch_transcribe"),
         "whatsapp_configured": bool(
@@ -1608,7 +1608,7 @@ def restock_scan(request):
         .order_by("-created_at")[:30]
     )
 
-    return render(request, "products/restock_scan.html", {
+    return render(request, "dashboard/products/restock_scan.html", {
         "scans": scans,
         "plan_ctx": _plan_ctx(request),
         "restock_scan_id": request.GET.get("restock", ""),
@@ -1881,7 +1881,7 @@ def showcase_assets(request):
         .order_by("-updated_at")
     )
 
-    return render(request, "products/showcase_assets.html", {
+    return render(request, "dashboard/products/showcase_assets.html", {
         "assets": assets,
         "business_model": business_model,
         "page_title": "Showcase",

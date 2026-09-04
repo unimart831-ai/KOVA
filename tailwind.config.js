@@ -79,6 +79,12 @@ module.exports = {
           900: '#0F172A',
           950: '#020617',
         },
+        /* ── CANVAS: near-black teal-navy — dark-mode-first surfaces ── */
+        canvas: {
+          DEFAULT: '#06131a',
+          muted:   '#0a1c27',
+          raised:  '#0e2634',
+        },
       },
       boxShadow: {
         kova: "0 1px 2px rgba(0, 102, 255, 0.06), 0 4px 24px rgba(0, 102, 255, 0.08)",

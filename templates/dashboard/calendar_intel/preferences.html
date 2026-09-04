@@ -1,0 +1,34 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}Holiday & moment preferences{% endblock %}
+{% block page_subtitle %}
+<p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+  Choose which cultural moments Kova should draft content for.
+  {% if country %}National holidays use your country: <strong>{{ country }}</strong>.{% endif %}
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="card">
+    <div class="card-body space-y-4">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Kova watches upcoming holidays and cultural moments, then drafts posts you can approve in Studio.
+        Full per-holiday controls are rolling out soon — national holidays follow your country in
+        <a href="{% url 'accounts:settings' %}#settings-business" class="text-kova-600 dark:text-kova-400 hover:underline">Settings</a>.
+      </p>
+      <ul class="divide-y divide-gray-100 dark:divide-gray-800 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+        {% for cat in moment_categories %}
+        <li class="flex items-center justify-between gap-4 px-4 py-3 bg-white dark:bg-gray-900">
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ cat.label }}</span>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full {% if cat.enabled %}bg-growth-100 text-growth-800 dark:bg-growth-950/50 dark:text-growth-300{% else %}bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+            {% if cat.enabled %}On{% else %}Off{% endif %}
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+      <a href="{% url 'accounts:settings' %}" class="btn-secondary btn-sm">← Back to settings</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

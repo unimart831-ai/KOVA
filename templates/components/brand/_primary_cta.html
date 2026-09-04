@@ -1,0 +1,30 @@
+{% comment %}
+Primary split CTA (link).
+Pass href, label.
+Optional: extra_class, compact, icon ("arrow"|"plus"), icon_position ("end"|"start").
+Default icon_position is end (arrow on the right) — do not break existing call sites.
+{% endcomment %}
+{% with icon_name=icon|default:"arrow" icon_side=icon_position|default:"end" %}
+<a href="{{ href }}"
+   class="group inline-flex items-center rounded-lg bg-kova-500 font-sans text-white transition duration-200 hover:bg-kova-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-kova-400 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas active:translate-y-px {% if compact %}h-10 gap-2 py-1{% else %}h-12 gap-3 py-1.5 sm:h-14 sm:gap-4 sm:py-2{% endif %} {% if icon_side == 'start' %}{% if compact %}pl-1 pr-3.5{% else %}pl-1.5 pr-5 sm:pl-2 sm:pr-6{% endif %}{% else %}{% if compact %}pl-3.5 pr-1{% else %}pl-5 pr-1.5 sm:pl-6 sm:pr-2{% endif %}{% endif %} {{ extra_class|default:'' }}">
+  {% if icon_side == 'start' %}
+  <span class="inline-flex shrink-0 items-center justify-center rounded-full bg-canvas-muted text-white {% if compact %}h-8 w-8{% else %}h-9 w-9 sm:h-10 sm:w-10{% endif %}" aria-hidden="true">
+    {% if icon_name == 'plus' %}
+    <svg class="{% if compact %}h-3.5 w-3.5{% else %}h-[18px] w-[18px]{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m8-8H4"/></svg>
+    {% else %}
+    <svg class="{% if compact %}h-3.5 w-3.5{% else %}h-[18px] w-[18px]{% endif %} -scale-x-100 transition-transform duration-200 ease-out group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"/><path d="M13 6.5 19.5 12 13 17.5"/></svg>
+    {% endif %}
+  </span>
+  {% endif %}
+  <span class="text-sm font-semibold whitespace-nowrap {% if not compact %}sm:text-[15px]{% endif %}">{{ label }}</span>
+  {% if icon_side != 'start' %}
+  <span class="inline-flex shrink-0 items-center justify-center rounded-full bg-canvas-muted text-white {% if compact %}h-8 w-8{% else %}h-9 w-9 sm:h-10 sm:w-10{% endif %}" aria-hidden="true">
+    {% if icon_name == 'plus' %}
+    <svg class="{% if compact %}h-3.5 w-3.5{% else %}h-[18px] w-[18px]{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m8-8H4"/></svg>
+    {% else %}
+    <svg class="{% if compact %}h-3.5 w-3.5{% else %}h-[18px] w-[18px]{% endif %} transition-transform duration-200 ease-out group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"/><path d="M13 6.5 19.5 12 13 17.5"/></svg>
+    {% endif %}
+  </span>
+  {% endif %}
+</a>
+{% endwith %}

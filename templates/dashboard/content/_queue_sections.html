@@ -1,0 +1,90 @@
+{# Partial: queue pipeline sections — review + going live only #}
+
+{% if current_section == "all" or current_section == "review" %}
+<section>
+  {% if current_section == "all" %}
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Waiting for approval</h2>
+  {% endif %}
+
+  {% if review_batches or review_ungrouped %}
+    <div class="space-y-4">
+      {% for batch in review_batches %}
+        {% include "dashboard/content/_queue_batch.html" with batch=batch batch_tone="review" compact_card=True %}
+      {% endfor %}
+      {% if review_ungrouped %}
+        {% include "dashboard/content/_post_carousel.html" with posts=review_ungrouped compact_card=True %}
+      {% endif %}
+    </div>
+  {% elif current_section == "review" or current_section == "all" %}
+    <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div class="px-4 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <p>Nothing waiting for approval.</p>
+        <a href="{% url 'content:studio' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">Go to Studio →</a>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if current_section == "all" or current_section == "live" %}
+<section>
+  {% if current_section == "all" %}
+  <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Going live</h2>
+  {% endif %}
+
+  {% if publishing or ready_batches or ready_ungrouped or scheduled_batches or scheduled_ungrouped %}
+    <div class="space-y-6">
+      {% if publishing %}
+      <div>
+        {% if current_section == "all" %}
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gold-700 dark:text-gold-400 mb-3 flex items-center gap-2">
+          <span class="animate-spin rounded-full h-3 w-3 border-2 border-gold-500 border-t-transparent" aria-hidden="true"></span>
+          Publishing now
+        </h3>
+        {% endif %}
+        {% include "dashboard/content/_post_carousel.html" with posts=publishing compact_card=True %}
+      </div>
+      {% endif %}
+
+      {% if ready_batches or ready_ungrouped %}
+      <div>
+        {% if current_section == "all" %}
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Ready to schedule</h3>
+        {% endif %}
+        <div class="space-y-4">
+          {% for batch in ready_batches %}
+            {% include "dashboard/content/_queue_batch.html" with batch=batch batch_tone="ready" compact_card=True %}
+          {% endfor %}
+          {% if ready_ungrouped %}
+            {% include "dashboard/content/_post_carousel.html" with posts=ready_ungrouped compact_card=True %}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if scheduled_batches or scheduled_ungrouped %}
+      <div>
+        {% if current_section == "all" %}
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Scheduled</h3>
+        {% endif %}
+        <div class="space-y-4">
+          {% for batch in scheduled_batches %}
+            {% include "dashboard/content/_queue_batch.html" with batch=batch batch_tone="scheduled" compact_card=True %}
+          {% endfor %}
+          {% if scheduled_ungrouped %}
+            {% include "dashboard/content/_post_carousel.html" with posts=scheduled_ungrouped compact_card=True %}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  {% elif current_section == "live" %}
+    <div class="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div class="px-4 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <p>Nothing scheduled or publishing yet.</p>
+        <p class="mt-1 text-xs">Approve posts in Studio to add them here.</p>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endif %}

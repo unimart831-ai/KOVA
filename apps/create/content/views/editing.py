@@ -153,7 +153,7 @@ def edit_post(request, post_id):
 
         asset_ctx = {"show_asset_picker": True, **asset_context_for_product(product)}
 
-    return render(request, "content/edit.html", {
+    return render(request, "dashboard/content/edit.html", {
         "post": post,
         "form": form,
         "page_title": "Edit Post",
@@ -249,7 +249,7 @@ def upload_media(request, post_id):
             attachment = _attach_user_reel_video(
                 post, uploaded, alt_text=request.POST.get("alt_text", ""),
             )
-            return render(request, "content/_media_item.html", {"attachment": attachment})
+            return render(request, "dashboard/content/_media_item.html", {"attachment": attachment})
 
         if uploaded.size > 10 * 1024 * 1024:
             return HttpResponse("File too large (max 10MB)", status=400)
@@ -303,7 +303,7 @@ def upload_media(request, post_id):
         if post.media_status != Post.MediaStatus.GENERATED:
             post.media_status = Post.MediaStatus.UPLOADED
             post.save(update_fields=["media_status", "updated_at"])
-        return render(request, "content/_media_item.html", {"attachment": attachment})
+        return render(request, "dashboard/content/_media_item.html", {"attachment": attachment})
 
     return HttpResponse(status=405)
 
@@ -686,7 +686,7 @@ def post_preview(request, post_id):
     )
     if not can_edit_post(request.user, post):
         raise Http404
-    return render(request, "content/preview.html", {"post": post})
+    return render(request, "dashboard/content/preview.html", {"post": post})
 
 
 @login_required
@@ -727,7 +727,7 @@ def post_detail(request, post_id):
         except Exception:
             scorecard = None
 
-    return render(request, "content/detail.html", {
+    return render(request, "dashboard/content/detail.html", {
         "post": post,
         "metrics": metrics,
         "notifications": notifications,

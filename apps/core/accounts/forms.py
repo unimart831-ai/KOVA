@@ -5,36 +5,18 @@ from apps.core.accounts.phone_utils import apply_phone_to_user, is_valid_phone, 
 
 
 class KovaSignupForm(forms.Form):
-    """Signup form — phone required so we can reach users via WhatsApp/SMS."""
+    """
+    Extra allauth signup fields.
 
-    phone_number = forms.CharField(
-        max_length=20,
-        label="Phone number",
-        widget=forms.TextInput(attrs={
-            "class": "input",
-            "placeholder": "07XX XXX XXX",
-            "autocomplete": "tel",
-        }),
-        help_text="For onboarding updates, support, and WhatsApp briefs.",
-    )
-
-    def clean_phone_number(self):
-        phone = normalize_phone(self.cleaned_data.get("phone_number", ""))
-        if not phone:
-            raise forms.ValidationError("Phone number is required.")
-        if not is_valid_phone(phone):
-            raise forms.ValidationError(
-                "Enter a valid phone number (Kenyan 07xx/01xx/02xx or international +country code)."
-            )
-        return phone
+    Phone is collected on the next step (`collect_phone`), not at signup.
+    """
 
     def signup(self, request, user):
-        apply_phone_to_user(user, self.cleaned_data["phone_number"])
         return user
 
 
 class PhoneCaptureForm(forms.Form):
-    """Collect phone for OAuth signups that skipped the email signup form."""
+    """Collect phone after email or OAuth signup."""
 
     phone_number = forms.CharField(
         max_length=20,
@@ -67,7 +49,6 @@ class UserSettingsForm(forms.ModelForm):
             "placeholder": "0712345678",
             "autocomplete": "tel",
         }),
-        help_text="For WhatsApp daily brief pings (Pro plan). Kenyan format 07xx…",
     )
 
     class Meta:
@@ -80,10 +61,20 @@ class UserSettingsForm(forms.ModelForm):
         widgets = {
             "full_name": forms.TextInput(attrs={"class": "input", "placeholder": "Your full name"}),
             "timezone": forms.Select(attrs={"class": "input"}),
-            "daily_brief_time": forms.TimeInput(attrs={"class": "input", "type": "time"}),
-            "brief_email_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
-            "brief_whatsapp_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
-            "money_board_digest_enabled": forms.CheckboxInput(attrs={"class": "rounded border-gray-300 text-kova-600 focus:ring-kova-500"}),
+            "daily_brief_time": forms.TimeInput(attrs={
+                "class": "input input-time",
+                "type": "time",
+            }),
+            "avatar": forms.ClearableFileInput(attrs={"class": "input input-file"}),
+            "brief_email_enabled": forms.CheckboxInput(attrs={
+                "class": "mt-0.5 h-4 w-4 rounded border-white/20 bg-canvas-raised text-kova-500 focus:ring-kova-500 focus:ring-offset-0",
+            }),
+            "brief_whatsapp_enabled": forms.CheckboxInput(attrs={
+                "class": "mt-0.5 h-4 w-4 rounded border-white/20 bg-canvas-raised text-kova-500 focus:ring-kova-500 focus:ring-offset-0",
+            }),
+            "money_board_digest_enabled": forms.CheckboxInput(attrs={
+                "class": "mt-0.5 h-4 w-4 rounded border-white/20 bg-canvas-raised text-kova-500 focus:ring-kova-500 focus:ring-offset-0",
+            }),
         }
 
     def __init__(self, *args, **kwargs):

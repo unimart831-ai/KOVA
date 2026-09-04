@@ -1,0 +1,29 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Add asset{% endblock %}
+{% block page_title %}Add asset{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto space-y-6">
+  <p class="text-sm text-gray-500">Snap a photo or add details manually — both start a campaign from proposals.</p>
+  <a href="{{ snap_url }}" class="btn-primary w-full text-center block py-3">Snap to Sell (photo)</a>
+  <form method="post" class="card card-body space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="text-sm font-medium">Title</label>
+      <input type="text" name="title" required class="input w-full mt-1" placeholder="e.g. Weekend braid special">
+    </div>
+    <div>
+      <label class="text-sm font-medium">Description (optional)</label>
+      <textarea name="description" rows="3" class="input w-full mt-1"></textarea>
+    </div>
+    <div>
+      <label class="text-sm font-medium">Type</label>
+      <select name="asset_type" class="input w-full mt-1">
+        {% for value, label in asset_types %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-primary w-full py-3">Save &amp; choose campaign angle</button>
+  </form>
+</div>
+{% endblock %}

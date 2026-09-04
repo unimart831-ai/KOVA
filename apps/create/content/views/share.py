@@ -55,7 +55,7 @@ def share_list(request):
     ]
     attention_count = sum(1 for b in bundles if b["needs_attention"])
 
-    return render(request, "content/share_list.html", {
+    return render(request, "dashboard/content/share_list.html", {
         "bundles": bundles,
         "attention_count": attention_count,
         "active_tab": "shares",
@@ -77,7 +77,7 @@ def share_detail(request, seed_id):
     posts = list(_posts_for_seed(seed))
     detail = build_share_bundle_detail(seed, posts)
 
-    return render(request, "content/share_detail.html", {
+    return render(request, "dashboard/content/share_detail.html", {
         **detail,
         "active_tab": "shares",
     })

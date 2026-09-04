@@ -5,6 +5,7 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import include, path, re_path
+from django.views.generic import TemplateView
 from django.views.generic.base import RedirectView
 
 from apps.commerce.links.views import public_page, public_form_submit, public_link_click
@@ -18,6 +19,7 @@ from apps.commerce.products.commerce_views import (
 from apps.create.content.views.campaign_pages import public_campaign_page
 from apps.commerce.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
 from apps.core.partners.views import referral_redirect
+from apps.core.accounts.legal_views import legal
 from apps.core.platforms.facebook_data_deletion_views import (
     facebook_data_deletion_instructions,
     facebook_data_deletion_status,
@@ -31,7 +33,6 @@ admin.site.index_title = "Administration"
 def landing_page(request):
     if request.user.is_authenticated:
         return redirect("brief:home")
-    from apps.core.accounts.product_voice import marketing_voice_context
     from apps.core.billing.models import (
         TRIAL_CAMPAIGN_LIMIT,
         get_campaign_addon_packs,
@@ -39,14 +40,13 @@ def landing_page(request):
         get_public_plan_limits,
     )
     kova = get_plan_limits("kova")
-    return render(request, "pages/landing.html", {
+    return render(request, "landing/landing.html", {
         "all_plans": get_public_plan_limits(),
         "kova_plan": kova,
         "campaign_addons": get_campaign_addon_packs(),
         "agency_plan": get_plan_limits("agency"),
         "trial_days": kova.get("trial_days", 7),
         "trial_campaigns": TRIAL_CAMPAIGN_LIMIT,
-        **marketing_voice_context(),
     })
 
 
@@ -62,6 +62,9 @@ _COMPARE_TEMPLATES = {
 }
 
 
+def pricing(request) -> HttpResponse:
+    return render(request, "pages/pricing.html")
+
 def compare_page(request, slug):
     template = _COMPARE_TEMPLATES.get(slug)
     if not template:
@@ -70,15 +73,10 @@ def compare_page(request, slug):
     return render(request, template, {"all_plans": get_public_plan_limits()})
 
 
-def legal_page(template):
-    """Return a view that renders a legal page template."""
-    def view(request):
-        return render(request, f"pages/{template}")
-    return view
-
-
 def service_worker(request):
-    """Serve SW from root so it can control the full scope."""
+    """
+    Serve SW from root so it can control the full scope.
+    """
     from django.contrib.staticfiles import finders
     sw_path = finders.find("sw.js")
     if sw_path:
@@ -111,15 +109,10 @@ urlpatterns = [
     path("health/deep/", health_check_deep, name="health_deep"),
     # Landing
     path("", landing_page, name="landing"),
+    path("pricing/", pricing, name="pricing"),
     path("start/", landing_start, name="landing_start"),
     path("compare/<slug:slug>/", compare_page, name="compare"),
-    # Legal pages
-    path("privacy/", legal_page("privacy.html"), name="privacy"),
-    path("terms/", legal_page("terms.html"), name="terms"),
-    path("cookies/", legal_page("cookies.html"), name="cookies"),
-    path("acceptable-use/", legal_page("acceptable_use.html"), name="acceptable_use"),
-    path("dpa/", legal_page("dpa.html"), name="dpa"),
-    # Meta (Facebook) user data deletion — App Dashboard URLs
+    # Legal — Meta deletion first (dynamic), then static /legal/<name>/
     path(
         "legal/facebook-data-deletion/",
         facebook_data_deletion_instructions,
@@ -130,15 +123,20 @@ urlpatterns = [
         facebook_data_deletion_status,
         name="facebook_data_deletion_status",
     ),
+    path("legal/<slug:name>/", legal, name="legal"),
+    # Legacy legal URLs → /legal/<name>/
+    path("privacy/", RedirectView.as_view(url="/legal/privacy/", permanent=True)),
+    path("terms/", RedirectView.as_view(url="/legal/terms/", permanent=True)),
+    path("cookies/", RedirectView.as_view(url="/legal/cookies/", permanent=True)),
+    path("acceptable-use/", RedirectView.as_view(url="/legal/acceptable-use/", permanent=True)),
+    path("dpa/", RedirectView.as_view(url="/legal/dpa/", permanent=True)),
+    path("privacy/data-deletion/", RedirectView.as_view(pattern_name="facebook_data_deletion",permanent=False), name="privacy_data_deletion", ),
+    
     path(
-        "privacy/data-deletion/",
-        RedirectView.as_view(
-            pattern_name="facebook_data_deletion",
-            permanent=False,
-        ),
-        name="privacy_data_deletion",
+        "campus-rep/",
+        TemplateView.as_view(template_name="pages/campus_rep.html"),
+        name="campus_rep",
     ),
-    path("campus-rep/", legal_page("campus_rep.html"), name="campus_rep"),
     # Public help / learn section (no login required)
     path("learn/", include("apps.insight.help.urls_public")),
     # Public SEO blog (Educator agent output — no login required)

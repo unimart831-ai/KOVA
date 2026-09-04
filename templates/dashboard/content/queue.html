@@ -1,0 +1,31 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}Schedule{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-white/50 mt-0.5 hidden sm:block">Approve, pick a time, or post now</p>
+{% endblock %}
+
+{% block content %}
+<div class="create-section">
+  <p class="mb-4"><a href="{% url 'content:studio' %}" class="text-sm text-white/45 hover:text-kova-400">&larr; Studio</a></p>
+
+  <div class="page-toolbar">
+    <nav class="subnav-pills mb-0 pb-0 w-full" aria-label="Queue view">
+      <a href="{% url 'content:queue' %}"
+         class="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg transition-colors min-h-[44px] sm:min-h-0 {% if '/content/queue' in request.path %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        Pipeline
+      </a>
+      <a href="{% url 'content:calendar' %}"
+         class="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 text-sm font-medium rounded-lg transition-colors min-h-[44px] sm:min-h-0 {% if '/content/calendar' in request.path %}bg-kova-600 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Calendar
+      </a>
+    </nav>
+  </div>
+
+  <div id="queue-content">
+    {% include "dashboard/content/_queue_content.html" %}
+  </div>
+</div>
+{% endblock %}

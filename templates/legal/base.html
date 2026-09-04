@@ -1,0 +1,15 @@
+{% extends "landing/base.html" %}
+
+{% block title %}{% block legal_title %}{{ page_title }} — Kova Agent{% endblock %}{% endblock %}
+
+{% block content %}
+{% block legal_header %}
+{% include "legal/includes/_legal_header.html" with page_title=page_title page_subtitle=page_subtitle %}
+{% endblock %}
+
+<div class="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+  <div class="legal-doc {% block legal_doc_class %}space-y-8{% endblock %} rounded-2xl border border-white/10 bg-canvas-raised p-6 sm:p-10">
+    {% block legal_body %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

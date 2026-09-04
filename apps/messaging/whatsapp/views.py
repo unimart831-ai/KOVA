@@ -85,7 +85,7 @@ def whatsapp_inbox(request):
 
     stats["pending_ai_drafts"] = pending_draft_count(request.user)
 
-    return render(request, "whatsapp/inbox.html", {
+    return render(request, "dashboard/whatsapp/inbox.html", {
         "conversations": conversations,
         "stats": stats,
         "wa_accounts": wa_accounts,
@@ -121,7 +121,7 @@ def whatsapp_conversation(request, pk):
     from apps.commerce.leads.bridges import find_lead_for_whatsapp_conversation
     linked_lead = find_lead_for_whatsapp_conversation(conversation)
 
-    return render(request, "whatsapp/conversation.html", {
+    return render(request, "dashboard/whatsapp/conversation.html", {
         "conversation": conversation,
         "messages": messages,
         "pending_drafts": pending_drafts,
@@ -234,7 +234,7 @@ def send_message(request, pk):
         conversation.save(update_fields=["last_message_at", "updated_at"])
 
         # Return the new message bubble (HTMX swap)
-        return render(request, "whatsapp/_message_bubble.html", {
+        return render(request, "dashboard/whatsapp/_message_bubble.html", {
             "msg": {
                 "direction": "outbound",
                 "content": message_text,
@@ -292,7 +292,7 @@ def template_list(request):
     if status_filter:
         templates = templates.filter(status=status_filter)
 
-    return render(request, "whatsapp/template_list.html", {
+    return render(request, "dashboard/whatsapp/template_list.html", {
         "templates": templates,
         "wa_accounts": wa_accounts,
         "status_filter": status_filter,
@@ -500,7 +500,7 @@ def status_studio(request):
     paginator = Paginator(statuses, 20)
     page = paginator.get_page(request.GET.get("page", 1))
 
-    return render(request, "whatsapp/status/studio.html", {
+    return render(request, "dashboard/whatsapp/status/studio.html", {
         "page_obj": page,
         "stats": stats,
         "upcoming": upcoming,
@@ -631,7 +631,7 @@ def status_calendar(request):
             streak = 1
         last_category = s.category
 
-    return render(request, "whatsapp/status/calendar.html", {
+    return render(request, "dashboard/whatsapp/status/calendar.html", {
         "days": days,
         "mix_warnings": mix_warnings,
     })
@@ -666,7 +666,7 @@ def broadcast_list(request):
         "total_delivered": broadcasts.aggregate(s=Sum("delivered_count"))["s"] or 0,
     }
 
-    return render(request, "whatsapp/broadcast/list.html", {
+    return render(request, "dashboard/whatsapp/broadcast/list.html", {
         "broadcasts": broadcasts[:30],
         "sequences": sequences[:20],
         "stats": stats,
@@ -737,7 +737,7 @@ def broadcast_detail(request, pk):
     if segment.get("languages"):
         conversations = conversations.filter(language__in=segment["languages"])
 
-    return render(request, "whatsapp/broadcast/detail.html", {
+    return render(request, "dashboard/whatsapp/broadcast/detail.html", {
         "broadcast": broadcast,
         "templates": templates,
         "eligible_count": conversations.count(),
@@ -868,7 +868,7 @@ def sequence_detail(request, pk):
         status="approved",
     )
 
-    return render(request, "whatsapp/broadcast/sequence_detail.html", {
+    return render(request, "dashboard/whatsapp/broadcast/sequence_detail.html", {
         "sequence": sequence,
         "steps": steps,
         "enrollments": enrollments,
@@ -980,7 +980,7 @@ def wa_analytics(request):
     # Weekly digests
     digests = WeeklyDigest.objects.filter(user=request.user).order_by("-week_start")[:8]
 
-    return render(request, "whatsapp/analytics/dashboard.html", {
+    return render(request, "dashboard/whatsapp/analytics/dashboard.html", {
         "totals": totals,
         "chart_data": chart_data,
         "analytics": analytics,
@@ -994,7 +994,7 @@ def wa_analytics(request):
 def wa_digest_detail(request, pk):
     """View a weekly digest in detail."""
     digest = get_object_or_404(WeeklyDigest, pk=pk, user=request.user)
-    return render(request, "whatsapp/analytics/digest.html", {
+    return render(request, "dashboard/whatsapp/analytics/digest.html", {
         "digest": digest,
     })
 
@@ -1030,7 +1030,7 @@ def channel_dashboard(request):
         ).aggregate(s=Sum("reach"))["s"] or 0,
     }
 
-    return render(request, "whatsapp/channels/dashboard.html", {
+    return render(request, "dashboard/whatsapp/channels/dashboard.html", {
         "channels": channels,
         "recent_posts": recent_posts,
         "stats": stats,
@@ -1093,7 +1093,7 @@ def channel_detail(request, pk):
         "total_reactions": posts.filter(status="published").aggregate(s=Sum("reactions"))["s"] or 0,
     }
 
-    return render(request, "whatsapp/channels/detail.html", {
+    return render(request, "dashboard/whatsapp/channels/detail.html", {
         "channel": channel,
         "page_obj": page,
         "stats": stats,

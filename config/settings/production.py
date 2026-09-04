@@ -117,7 +117,7 @@ else:
 # See docs/CSP.md for migration notes.
 CSP_DEFAULT_SRC = ("'self'",)
 CSP_INCLUDE_NONCE_IN = ["script-src"]
-CSP_SCRIPT_SRC = ("'self'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com")
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://js.stripe.com")
 CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com")
 CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
 CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net")

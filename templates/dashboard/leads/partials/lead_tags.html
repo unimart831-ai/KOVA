@@ -1,0 +1,18 @@
+<div class="flex flex-wrap gap-1.5">
+  {% for tag in lead.tags %}
+  <span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+    {{ tag }}
+    <form method="post" action="{% url 'leads:remove_tag' lead_id=lead.pk %}" class="inline"
+          hx-post="{% url 'leads:remove_tag' lead_id=lead.pk %}"
+          hx-target="#lead-tags"
+          hx-swap="innerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="tag" value="{{ tag }}">
+      <button type="submit" class="text-gray-400 hover:text-red-500 ml-0.5">&times;</button>
+    </form>
+  </span>
+  {% endfor %}
+  {% if not lead.tags %}
+  <span class="text-[10px] text-gray-400">No tags yet</span>
+  {% endif %}
+</div>

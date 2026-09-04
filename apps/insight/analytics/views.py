@@ -36,7 +36,7 @@ def insights(request):
     cached = cache.get(cache_key)
 
     if cached:
-        return render(request, "analytics/insights.html", cached)
+        return render(request, "dashboard/analytics.html", cached)
 
     metrics = PostMetric.objects.filter(
         post__user=request.user,
@@ -161,7 +161,7 @@ def insights(request):
     }
     cache.set(cache_key, ctx, 300)  # 5 min
 
-    return render(request, "analytics/insights.html", ctx)
+    return render(request, "dashboard/analytics.html", ctx)
 
 
 # ─── Competitor Tracking ─────────────────────────────────────────────────────
@@ -193,7 +193,7 @@ def competitor_dashboard(request):
         is_acted_on=False, is_dismissed=False,
     ).count()
 
-    return render(request, "analytics/competitors.html", {
+    return render(request, "dashboard/analytics/competitors.html", {
         "page_title": "Competitor Intelligence",
         "competitors": competitors,
         "recent_insights": recent_insights,
@@ -245,7 +245,7 @@ def competitor_add(request):
 
         return redirect("analytics:competitor_detail", pk=competitor.pk)
 
-    return render(request, "analytics/competitor_add.html", {
+    return render(request, "dashboard/analytics/competitor_add.html", {
         "page_title": "Track New Competitor",
     })
 
@@ -269,7 +269,7 @@ def competitor_detail(request, pk):
     active_insights = insight_base.filter(is_acted_on=False)[:15]
     acted_insights = insight_base.filter(is_acted_on=True)[:15]
 
-    return render(request, "analytics/competitor_detail.html", {
+    return render(request, "dashboard/analytics/competitor_detail.html", {
         "page_title": f"Intel: {competitor.name}",
         "competitor": competitor,
         "latest_analysis": latest_analysis,
@@ -303,7 +303,7 @@ def competitor_edit(request, pk):
         messages.success(request, f"Updated {competitor.name}.")
         return redirect("analytics:competitor_detail", pk=competitor.pk)
 
-    return render(request, "analytics/competitor_edit.html", {
+    return render(request, "dashboard/analytics/competitor_edit.html", {
         "page_title": f"Edit {competitor.name}",
         "competitor": competitor,
     })
@@ -343,7 +343,7 @@ def competitor_landscape(request):
 
     competitors = Competitor.objects.filter(user=request.user, is_active=True)
     if not competitors.exists():
-        return render(request, "analytics/competitor_landscape.html", {
+        return render(request, "dashboard/analytics/competitor_landscape.html", {
             "page_title": "Competitive Landscape",
             "landscape": None,
             "competitors": [],
@@ -362,7 +362,7 @@ def competitor_landscape(request):
         insight_count=Count("insights", filter=~Q(insights__is_dismissed=True)),
     )
 
-    return render(request, "analytics/competitor_landscape.html", {
+    return render(request, "dashboard/analytics/competitor_landscape.html", {
         "page_title": "Competitive Landscape",
         "landscape": report,
         "competitors": competitors,
@@ -399,12 +399,12 @@ def insight_action(request, pk):
                 from apps.create.content.tasks import generate_from_seed
                 fire_task(generate_from_seed, str(seed.id))
 
-                return render(request, "analytics/_insight_acted.html", {
+                return render(request, "dashboard/analytics/_insight_acted.html", {
                     "insight": insight,
                     "action": "create_seed",
                 })
 
-        return render(request, "analytics/_insight_acted.html", {
+        return render(request, "dashboard/analytics/_insight_acted.html", {
             "insight": insight,
             "action": action,
         })
@@ -445,7 +445,7 @@ def revenue_dashboard(request):
     shopify_stores = ShopifyStore.objects.filter(user=request.user, is_active=True)
     from apps.insight.analytics.shopify_oauth import shopify_configured
 
-    return render(request, "analytics/revenue.html", {
+    return render(request, "dashboard/results.html", {
         "conversions": conversions,
         "summary": summary,
         "totals": summary["totals"],
@@ -489,7 +489,7 @@ def campaign_revenue_detail(request, campaign_id):
         .order_by("-first_seen_at")[:50]
     )
 
-    return render(request, "analytics/campaign_revenue.html", {
+    return render(request, "dashboard/analytics/campaign_revenue.html", {
         "campaign": campaign,
         "detail": detail,
         "stats": detail["stats"],
@@ -964,7 +964,7 @@ def attribution_dashboard(request):
     # ── 8. Posts published count ─────────────────────────────────────────────
     posts_published = published_posts.count()
 
-    return render(request, "analytics/attribution.html", {
+    return render(request, "dashboard/analytics/attribution.html", {
         "page_title": "Social Media Attribution",
         "days": days,
         "customers_from_social": customers_from_social,
@@ -1171,7 +1171,7 @@ def content_intelligence(request):
             f"'{top['topic']}' is your top theme ({top['avg_engagement']:.0f} avg engagement) — create more content around it."
         )
 
-    return render(request, "analytics/content_intelligence.html", {
+    return render(request, "dashboard/analytics/content_intelligence.html", {
         "page_title": "Content Intelligence",
         "days": days,
         "total_posts": posts.count(),
@@ -1225,7 +1225,7 @@ def screenshot_compete(request):
         .order_by("-created_at")[:30]
     )
 
-    return render(request, "analytics/screenshot_compete.html", {
+    return render(request, "dashboard/analytics/screenshot_compete.html", {
         "screenshots": screenshots,
     })
 
@@ -1249,7 +1249,7 @@ def performance_recycle(request):
     if status_filter:
         qs = qs.filter(status=status_filter)
 
-    return render(request, "analytics/performance_recycle.html", {
+    return render(request, "dashboard/analytics/performance_recycle.html", {
         "recycles": qs[:50],
         "status_filter": status_filter,
         "status_choices": PerformanceRecycle.Status.choices,

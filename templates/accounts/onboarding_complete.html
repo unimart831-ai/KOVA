@@ -1,9 +1,12 @@
-{% extends "layouts/marketing.html" %}
+{% extends "account/base.html" %}
 
-{% block title %}Setting up - KOVA{% endblock %}
+{% block account_title %}Setting up - KOVA{% endblock %}
+{% block account_heading %}Kova is getting to work{% endblock %}
+{% block account_panel_class %}kova-auth__panel--wide{% endblock %}
+{% block account_messages %}{% endblock %}
 
-{% block extra_head %}
-{% include "account/_auth_styles.html" %}
+{% block account_head %}
+{% include "account/includes/_auth_styles.html" %}
 <style>
   .kova-auth__panel--wide { max-width: 32rem; }
   .kova-setup-card {
@@ -85,23 +88,16 @@
 </style>
 {% endblock %}
 
-{% block content %}
-<section class="kova-auth">
-  {% include "account/_auth_visual.html" %}
+{% block account_lead %}
+<p class="kova-auth__hint mt-2">Learning your brand and drafting your first posts.</p>
+{% endblock %}
 
-  <div class="kova-auth__panel kova-auth__panel--wide">
-    <div class="kova-auth__card">
-      <h1 class="kova-auth__title">Kova is getting to work</h1>
-      <p class="kova-auth__hint mt-2">Learning your brand and drafting your first posts.</p>
-
-      <div id="onboarding-progress"
-           hx-get="{% url 'accounts:onboarding_progress' %}"
-           hx-trigger="load, every 8s"
-           data-kova-busy="off"
-           hx-swap="innerHTML">
-        {% include "accounts/_onboarding_progress.html" %}
-      </div>
-    </div>
-  </div>
-</section>
+{% block account_body %}
+<div id="onboarding-progress"
+     hx-get="{% url 'accounts:onboarding_progress' %}"
+     hx-trigger="load, every 8s"
+     data-kova-busy="off"
+     hx-swap="innerHTML">
+  {% include "accounts/_onboarding_progress.html" %}
+</div>
 {% endblock %}

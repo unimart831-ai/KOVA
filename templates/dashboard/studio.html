@@ -1,0 +1,136 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Studio — KOVA{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl" x-data="{ createOpen: {% if request.GET.create %}true{% else %}false{% endif %} }">
+
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div class="min-w-0 px-0.5">
+      <h1 class="font-serif text-2xl font-bold tracking-tight text-white sm:text-3xl">Studio</h1>
+      <p class="mt-1 text-sm font-light text-white/50">
+        {% if total_pending %}{{ total_pending }} to approve{% else %}Your posts{% endif %}
+      </p>
+    </div>
+    {% include "components/brand/_primary_cta_button.html" with label="Create Post" icon="plus" icon_position="start" type="button" alpine_click="createOpen = true" disabled=at_seed_limit compact=True extra_class="shrink-0 self-start sm:self-auto" %}
+  </div>
+
+  {% if connected_platform_count == 0 %}
+  <div class="mb-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-canvas-raised px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-sm text-white/70">Connect a channel to publish</p>
+    <a href="{% url 'platforms:list' %}" class="btn-primary btn-sm shrink-0">Connect</a>
+  </div>
+  {% endif %}
+
+  <div id="seed-processing-zone" class="mb-4 space-y-2 empty:mb-0">
+    {% if active_seeds %}
+    {% for seed in active_seeds %}
+    <div hx-get="{% url 'content:seed_status' seed.id %}"
+         hx-trigger="every 2s"
+         data-kova-busy="off"
+         hx-swap="outerHTML"
+         class="overflow-hidden rounded-xl border border-kova-500/25 bg-canvas-raised">
+      <div class="flex items-center gap-3 px-4 py-3">
+        <div class="h-2 w-2 shrink-0 animate-pulse rounded-full bg-kova-400"></div>
+        <p class="min-w-0 flex-1 truncate text-sm text-white/80">Creating posts…</p>
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+  {% include "dashboard/content/_studio_filter_posts.html" %}
+
+  {% include "dashboard/includes/_studio_create_modal.html" %}
+  {% include "dashboard/content/_studio_generation_modal.html" %}
+</div>
+
+<script>
+function refreshStudioPostsSection() {
+  const section = document.getElementById('studio-posts-section');
+  if (!section || !window.htmx) return;
+  const url = section.getAttribute('hx-get');
+  if (!url) return;
+  htmx.ajax('GET', url, { target: '#studio-posts-section', swap: 'innerHTML' });
+}
+document.body.addEventListener('refreshStudioPosts', refreshStudioPostsSection);
+
+function seedForm() {
+  const connected = JSON.parse('{{ connected_platforms|escapejs }}');
+  return {
+    showNotes: false,
+    platforms: connected,
+    selectedPlatforms: connected.map(p => p.platform),
+    togglePlatform(platform) {
+      const idx = this.selectedPlatforms.indexOf(platform);
+      if (idx > -1) this.selectedPlatforms.splice(idx, 1);
+      else this.selectedPlatforms.push(platform);
+    }
+  }
+}
+
+function voiceRecorder() {
+  return {
+    state: 'idle',
+    errorMsg: '',
+    recordingTime: '0:00',
+    _mediaRecorder: null,
+    _audioChunks: [],
+    _timerInterval: null,
+    _startedAt: null,
+    async startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+        this._audioChunks = [];
+        this._mediaRecorder = new MediaRecorder(stream, { mimeType });
+        this._mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) this._audioChunks.push(e.data); };
+        this._mediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); this._sendAudio(); };
+        this._mediaRecorder.start(250);
+        this.state = 'recording';
+        this._startedAt = Date.now();
+        this._startTimer();
+      } catch (err) {
+        this.errorMsg = err.name === 'NotAllowedError' ? 'Mic denied' : 'Recording failed';
+        this.state = 'error';
+      }
+    },
+    stopRecording() {
+      if (this._mediaRecorder && this._mediaRecorder.state === 'recording') this._mediaRecorder.stop();
+      this._stopTimer();
+    },
+    async _sendAudio() {
+      this.state = 'transcribing';
+      const blob = new Blob(this._audioChunks, { type: this._mediaRecorder.mimeType });
+      const formData = new FormData();
+      formData.append('audio', blob, 'voice-memo.webm');
+      formData.append('mode', 'transcribe');
+      try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const resp = await fetch('{% url "content:voice_to_seed" %}', {
+          method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: formData,
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.error) { this.errorMsg = data.error || 'Failed'; this.state = 'error'; return; }
+        window.dispatchEvent(new CustomEvent('voice-transcribed', { detail: { text: data.text, duration: data.duration } }));
+        this.state = 'idle';
+      } catch (err) { this.errorMsg = 'Network error'; this.state = 'error'; }
+    },
+    _startTimer() {
+      this.recordingTime = '0:00';
+      this._timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - this._startedAt) / 1000);
+        this.recordingTime = Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+      }, 500);
+    },
+    _stopTimer() {
+      if (this._timerInterval) { clearInterval(this._timerInterval); this._timerInterval = null; }
+    }
+  }
+}
+</script>
+{% endblock %}

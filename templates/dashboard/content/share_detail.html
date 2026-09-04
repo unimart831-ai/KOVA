@@ -1,0 +1,151 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}Quick Share{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block truncate max-w-lg">
+  {{ title }}
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="create-section-narrow" id="share-detail">
+
+  <p class="mb-4"><a href="{% url 'content:studio' %}" class="text-sm text-white/45 hover:text-kova-400">&larr; Studio</a></p>
+
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+    <div class="min-w-0">
+      <a href="{% url 'content:share_list' %}" class="text-xs text-gray-500 hover:text-kova-600 dark:hover:text-kova-400 inline-flex items-center gap-1 mb-2">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        All Quick Shares
+      </a>
+      <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ title }}</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ summary_line }}</p>
+      <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+        <span>{{ media_count }} {{ share_kind }}{{ media_count|pluralize }}</span>
+        <span class="hidden sm:inline">·</span>
+        <span>{{ post_count }} posts · {{ platform_count }} platform{{ platform_count|pluralize }}</span>
+        <span class="hidden sm:inline">·</span>
+        <span>{{ schedule_mode|capfirst }} schedule</span>
+        <span class="hidden sm:inline">·</span>
+        <span>{{ created_at|date:"M j, g:i A" }}</span>
+      </p>
+    </div>
+    <a href="{% url 'content:share_moment' %}" class="btn-secondary btn-sm shrink-0 w-full sm:w-auto justify-center">+ New share</a>
+  </div>
+
+  {# Status strip #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 bg-white dark:bg-gray-900">
+      <p class="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Live</p>
+      <p class="text-lg font-bold text-growth-600 dark:text-growth-400 tabular-nums">{{ counts.published }}</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 bg-white dark:bg-gray-900">
+      <p class="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Scheduled</p>
+      <p class="text-lg font-bold text-blue-600 dark:text-blue-400 tabular-nums">{{ counts.scheduled }}</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 bg-white dark:bg-gray-900">
+      <p class="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Needs review</p>
+      <p class="text-lg font-bold text-gold-600 dark:text-gold-400 tabular-nums">{{ counts.pending }}</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 bg-white dark:bg-gray-900">
+      <p class="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Failed</p>
+      <p class="text-lg font-bold text-red-600 dark:text-red-400 tabular-nums">{{ counts.failed }}</p>
+    </div>
+  </div>
+
+  <div class="share-detail-layout">
+    {# Sidebar: edit bundle + actions — below timeline on mobile #}
+    <div class="share-detail-sidebar">
+      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Bundle details</h2>
+        <form method="post" action="{% url 'content:share_update_context' seed_id=seed.id %}" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Title</label>
+            <input type="text" name="title" value="{{ title }}"
+                   class="mt-1 w-full text-sm rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          </div>
+          <div>
+            <label class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Context</label>
+            <textarea name="context" rows="2"
+                      class="mt-1 w-full text-sm rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">{{ context }}</textarea>
+          </div>
+          <div>
+            <label class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Caption (updates draft posts)</label>
+            <textarea name="caption" rows="4"
+                      class="mt-1 w-full text-sm rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">{{ caption }}</textarea>
+          </div>
+          <button type="submit" class="btn-secondary btn-sm w-full">Save changes</button>
+        </form>
+      </div>
+
+      {% if can_reschedule %}
+      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Reschedule batch</h2>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400">
+          Re-stagger all eligible posts using publish order + platform offsets.
+        </p>
+        <form method="post" action="{% url 'content:share_reschedule_bundle' seed_id=seed.id %}" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Hours between items</label>
+            <input type="number" name="gap_hours" value="{{ gap_hours }}" min="1" max="168"
+                   class="mt-1 w-full text-sm rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          </div>
+          <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+            <input type="checkbox" name="publish_first" value="1" class="rounded border-gray-300">
+            Publish first item in ~2 minutes
+          </label>
+          <button type="submit" class="btn-primary btn-sm w-full">Reschedule all</button>
+        </form>
+      </div>
+      {% endif %}
+
+      {% if can_approve_all and campaign %}
+      <form method="post" action="{% url 'content:campaign_approve' campaign_id=campaign.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary btn-sm w-full">
+          Approve all ({{ approval.approvable_count }})
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    {# Timeline — first on mobile so users see their posts immediately #}
+    <div class="share-detail-timeline">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Publish timeline</h2>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400">Ordered by sequence → platform</p>
+      </div>
+
+      <div class="space-y-3">
+        {% for item in timeline %}
+        <div id="share-post-row-{{ item.post.id }}" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+          <div class="share-timeline-header">
+            {% if share_kind == 'reel' and media_count > 1 %}
+            <span class="font-semibold text-kova-600 dark:text-kova-400">Reel {{ item.media_order }}</span>
+            {% elif share_kind == 'photo' and media_count > 1 and item.post.post_format != 'carousel' %}
+            <span class="font-semibold text-kova-600 dark:text-kova-400">Photo {{ item.media_order }}</span>
+            {% elif item.post.post_format == 'carousel' %}
+            <span class="font-semibold text-kova-600 dark:text-kova-400">Carousel · {{ media_count }} photos</span>
+            {% endif %}
+            {% if item.post.scheduled_at %}
+            <span>· Scheduled {{ item.post.scheduled_at|date:"M j, g:i A" }}</span>
+            {% elif item.post.published_at %}
+            <span>· Published {{ item.post.published_at|date:"M j, g:i A" }}</span>
+            {% endif %}
+            <a href="{% url 'content:edit' post_id=item.post.id %}" class="sm:ml-auto text-kova-600 dark:text-kova-400 hover:underline shrink-0">Edit post</a>
+          </div>
+          <div class="p-3">
+            {% include "components/post_card.html" with post=item.post compact_card=True share_context=True %}
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No posts in this bundle.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

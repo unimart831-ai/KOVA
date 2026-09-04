@@ -415,7 +415,7 @@ def brief_home(request):
     )[:7]
     superfans = Superfan.objects.filter(user=request.user)[:5]
 
-    return render(request, "briefs/home.html", {
+    return render(request, "dashboard/brief.html", {
         "brief": brief,
         "brief_is_stale": brief_is_stale,
         "brief_time_passed": _brief_time_has_passed(request.user),
@@ -536,85 +536,9 @@ def operations_report_partial(request):
     if brief and brief.performance_summary:
         operations_update = brief.performance_summary.get("operations_update", "")
 
-    return render(request, "briefs/_operations_report.html", {
+    return render(request, "dashboard/includes/_brief_operations.html", {
         "operations_report": operations_report,
         "operations_update": operations_update,
-    })
-
-
-@login_required
-def brief_detail(request, date):
-    """Show a historical daily brief by date (YYYY-MM-DD)."""
-    from datetime import date as date_type
-    try:
-        brief_date = date_type.fromisoformat(date)
-    except ValueError:
-        from django.http import Http404
-        raise Http404("Invalid date format")
-
-    brief = DailyBrief.objects.filter(user=request.user, date=brief_date).first()
-    if not brief:
-        from django.http import Http404
-        raise Http404("Brief not found")
-
-    today = timezone.now().date()
-    recent_briefs = (
-        DailyBrief.objects.filter(user=request.user)
-        .exclude(date=brief_date)
-        .order_by("-date")[:7]
-    )
-
-    published_today = request.user.posts.filter(status="published", published_at__date=today).count()
-    failed_count = request.user.posts.filter(status="failed").count()
-    scheduled_count = request.user.posts.filter(status__in=["approved", "scheduled"]).count()
-
-    superfans = Superfan.objects.filter(user=request.user)[:5]
-
-    from apps.core.platforms.models import SocialAccount
-    has_connected_platform = SocialAccount.objects.filter(user=request.user, is_active=True).exists()
-
-    # Upcoming holidays / cultural moments — same forward-looking widget as the home brief
-    upcoming_moments = []
-    holiday_drafts_ready = 0
-    upcoming_moments = []
-    holiday_drafts_ready = 0
-    profile_health_alerts = []
-
-    performance = brief.performance_summary or {}
-    operations_report = performance.get("operations_report") or {}
-    if not operations_report.get("categories"):
-        try:
-            from apps.create.briefs.operations_report import build_operations_report
-
-            operations_report = build_operations_report(request.user, hours=24)
-        except Exception:
-            operations_report = {"has_activity": False, "categories": [], "recent_tasks": []}
-
-    return render(request, "briefs/detail.html", {
-        "brief": brief,
-        "brief_date": brief_date,
-        "is_historical": True,
-        "today": today,
-        "recent_briefs": recent_briefs,
-        "published_today": published_today,
-        "failed_count": failed_count,
-        "scheduled_count": scheduled_count,
-        "superfans": superfans,
-        "has_connected_platform": has_connected_platform,
-        "momentum": _build_momentum_data(request.user),
-        "value_summary": _build_value_summary(request.user),
-        "brief_streak": _build_brief_streak(request.user),
-        "research_updated_at": _parse_research_updated_at(brief),
-        "dismissed_decisions": _get_dismissed_decisions(brief),
-        "trending_topics": _normalize_trending_topics(brief),
-        "upcoming_moments": upcoming_moments,
-        "holiday_drafts_ready": holiday_drafts_ready,
-        "profile_health_alerts": profile_health_alerts,
-        "quick_actions": [],
-        "setup_checklist": None,
-        "operations_report": operations_report,
-        "operations_update": performance.get("operations_update", ""),
-        "page_title": f"Brief — {brief_date.strftime('%b %d, %Y')}",
     })
 
 
@@ -705,30 +629,4 @@ def brief_action(request):
     return redirect(proposals_url)
 
 
-@login_required
-def brief_archive_list(request):
-    """List of archived daily briefs."""
-    briefs = DailyBrief.objects.filter(
-        user=request.user, is_archived=True,
-    ).order_by("-brief_date")[:50]
-    return render(request, "briefs/archive.html", {
-        "page_title": "Brief Archive",
-        "briefs": briefs,
-    })
-
-
-@login_required
-@require_POST
-def archive_brief(request):
-    """Toggle archive status of a brief."""
-    brief_id = request.POST.get("brief_id")
-    brief = get_object_or_404(DailyBrief, id=brief_id, user=request.user)
-    brief.is_archived = not brief.is_archived
-    brief.save(update_fields=["is_archived"])
-    if brief.is_archived:
-        messages.success(request, "Brief archived.")
-    else:
-        messages.success(request, "Brief restored.")
-    if request.headers.get("HX-Request"):
-        return HttpResponse(status=204)
-    return redirect(request.META.get("HTTP_REFERER") or reverse("brief:home"))
+# History views (brief_detail, brief_archive_list, archive_brief) — restore when user histories ship.

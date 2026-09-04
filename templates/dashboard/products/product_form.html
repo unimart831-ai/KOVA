@@ -1,0 +1,185 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card p-6" x-data="{ offeringType: '{{ form.offering_type.value|default:"product" }}' }">
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+      {% csrf_token %}
+
+      {% include "dashboard/products/_professional_asset_fields.html" %}
+
+      <div class="rounded-xl border border-kova-200 dark:border-kova-800/60 bg-kova-50/60 dark:bg-kova-950/20 px-4 py-3">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">Build an offer Kova can actually convert</p>
+        <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">
+          Set the correct fulfillment path so Kova can choose the right CTA for products, services, and digital offers.
+        </p>
+      </div>
+
+      <div>
+        <label for="id_offering_type" class="label">What are you adding? *</label>
+        {{ form.offering_type }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span x-show="offeringType === 'product'">Physical product with inventory (e.g., shoes, electronics, food)</span>
+          <span x-show="offeringType === 'service'" x-cloak>Service you provide (e.g., web development, consulting, photography)</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Digital product with unlimited supply (e.g., templates, courses, ebooks)</span>
+        </p>
+      </div>
+
+      <div>
+        <label for="id_name" class="label">
+          <span x-show="offeringType === 'product'">Product Name *</span>
+          <span x-show="offeringType === 'service'" x-cloak>Service Name *</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Digital Offer Name *</span>
+        </label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="text-xs text-red-500 mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="id_description" class="label">Description</label>
+        {{ form.description }}
+      </div>
+
+      <div>
+        <label for="id_category" class="label">Category</label>
+        {{ form.category }}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label for="id_price" class="label">Price</label>
+          {{ form.price }}
+        </div>
+        <div>
+          <label for="id_currency" class="label">Currency</label>
+          {{ form.currency }}
+        </div>
+        <div></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="id_price_range_min" class="label">Price Range Min</label>
+          {{ form.price_range_min }}
+        </div>
+        <div>
+          <label for="id_price_range_max" class="label">Price Range Max</label>
+          {{ form.price_range_max }}
+        </div>
+      </div>
+
+      <div>
+        <label for="id_image" class="label">
+          <span x-show="offeringType === 'product'">Product Image</span>
+          <span x-show="offeringType === 'service'" x-cloak>Proof / Service Image</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Cover / Offer Image</span>
+        </label>
+        {{ form.image }}
+        {% if product.image %}
+        <p class="text-xs text-gray-500 mt-1">Current: {{ product.image.name }}</p>
+        {% endif %}
+      </div>
+
+      {# E-commerce integration fields #}
+      <div>
+        <label for="id_product_url" class="label">
+          <span x-show="offeringType === 'product'">Purchase / Product Page URL</span>
+          <span x-show="offeringType === 'service'" x-cloak>Service page URL</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Offer / sales page URL</span>
+        </label>
+        {{ form.product_url }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span x-show="offeringType === 'product'">Where customers can buy this. Used for "Shop Now" CTAs in AI-generated content.</span>
+          <span x-show="offeringType === 'service'" x-cloak>Optional public page for this service. If blank, Kova can fall back to your booking link.</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Optional sales or landing page for this digital offer.</span>
+        </p>
+      </div>
+
+      <div x-show="offeringType === 'service'" x-cloak>
+        <label for="id_booking_link" class="label">Booking Link</label>
+        {{ form.booking_link }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pick the booking page Kova should use when this service needs a "Book now" CTA.</p>
+      </div>
+
+      <div x-show="offeringType !== 'product'" x-cloak>
+        <label for="id_fulfillment_url" class="label">
+          <span x-show="offeringType === 'service'">Primary booking / inquiry URL</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Primary access / delivery URL</span>
+        </label>
+        {{ form.fulfillment_url }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <span x-show="offeringType === 'service'">Use this if bookings happen on another site or form.</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Use this for the access, download, or enrollment destination customers should reach.</span>
+        </p>
+      </div>
+
+      <div x-show="offeringType !== 'product'" x-cloak>
+        <label for="id_fulfillment_notes" class="label">
+          <span x-show="offeringType === 'service'">Booking / delivery notes</span>
+          <span x-show="offeringType === 'digital'" x-cloak>Access notes</span>
+        </label>
+        {{ form.fulfillment_notes }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional instructions customers should see on the public Kova offer page.</p>
+      </div>
+
+      <div>
+        <label for="id_external_id" class="label">SKU / External ID</label>
+        {{ form.external_id }}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">For syncing with Shopify, WooCommerce, or other e-commerce platforms.</p>
+      </div>
+
+      <hr class="border-gray-200 dark:border-gray-700">
+
+      {# Stock fields — only for physical products #}
+      <div x-show="offeringType === 'product'" x-cloak>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="id_stock_status" class="label">Stock Status</label>
+            {{ form.stock_status }}
+          </div>
+          <div>
+            <label for="id_quantity" class="label">Quantity</label>
+            {{ form.quantity }}
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label for="id_low_stock_threshold" class="label">Low Stock Threshold</label>
+          {{ form.low_stock_threshold }}
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Flag as "low stock" when quantity drops below this number.</p>
+        </div>
+      </div>
+
+      {# Info banner for services / digital #}
+      <div x-show="offeringType !== 'product'" x-cloak class="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
+        <p class="text-xs text-blue-700 dark:text-blue-300">
+          <span x-show="offeringType === 'service'"><strong>Services</strong> are always available — no stock tracking needed. The AI will promote your service using booking/scheduling language.</span>
+          <span x-show="offeringType === 'digital'"><strong>Digital products</strong> have unlimited supply — no stock tracking needed. The AI will promote freely with focus on instant access.</span>
+        </p>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <label class="flex items-center gap-2 cursor-pointer">
+          {{ form.is_featured }}
+          <span class="text-sm text-gray-700 dark:text-gray-300">Featured — push harder in content</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          {{ form.is_active }}
+          <span class="text-sm text-gray-700 dark:text-gray-300">Active</span>
+        </label>
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="text-sm text-red-500">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <div class="flex items-center justify-between pt-2">
+        <a href="{% url 'products:list' %}" class="btn-secondary text-sm px-4 py-2">Back to Offers</a>
+        <button type="submit" class="btn-primary text-sm px-6 py-2">{{ submit_label }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

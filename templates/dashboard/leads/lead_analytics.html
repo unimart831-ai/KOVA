@@ -1,0 +1,115 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Lead stats — KOVA{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+
+  <div class="px-0.5">
+    <a href="{% url 'leads:list' %}" class="text-sm text-kova-300 hover:text-kova-200">← Leads</a>
+    <h1 class="mt-2 font-serif text-2xl font-bold tracking-tight text-white">Lead stats</h1>
+    <p class="mt-1 text-sm text-white/45">Where leads come from and how they convert.</p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-4">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-white/40">Total</p>
+      <p class="mt-1 text-xl font-bold tabular-nums text-white">{{ total }}</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-4">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-white/40">Converted</p>
+      <p class="mt-1 text-xl font-bold tabular-nums text-growth-400">{{ converted }}</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-4">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-white/40">Rate</p>
+      <p class="mt-1 text-xl font-bold tabular-nums text-kova-300">{{ conversion_rate }}%</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-4">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-white/40">Commerce</p>
+      <p class="mt-1 text-xl font-bold tabular-nums text-growth-400">KES {{ total_commerce_revenue|floatformat:0 }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3.5">
+      <p class="text-xs text-white/45">Forms</p>
+      <p class="mt-1 text-lg font-bold text-white">{{ form_leads }}</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3.5">
+      <p class="text-xs text-white/45">Social</p>
+      <p class="mt-1 text-lg font-bold text-white">{{ social_leads }}</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3.5">
+      <p class="text-xs text-white/45">Commerce</p>
+      <p class="mt-1 text-lg font-bold text-white">{{ commerce_leads }}</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3.5">
+      <p class="text-xs text-white/45">Bookings</p>
+      <p class="mt-1 text-lg font-bold text-white">{{ booking_leads }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised">
+      <div class="border-b border-white/10 px-4 py-3">
+        <h2 class="text-sm font-semibold text-white">By status</h2>
+      </div>
+      <div class="space-y-3 px-4 py-4">
+        {% for label, count in by_status.items %}
+        <div>
+          <div class="mb-1 flex items-center justify-between text-sm">
+            <span class="text-white/65">{{ label }}</span>
+            <span class="font-medium tabular-nums text-white">{{ count }}</span>
+          </div>
+          {% if total %}
+          <div class="h-1.5 w-full rounded-full bg-white/10">
+            <div class="h-1.5 rounded-full bg-kova-500" style="width: {% widthratio count total 100 %}%"></div>
+          </div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-sm text-white/40">No data yet</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised">
+      <div class="border-b border-white/10 px-4 py-3">
+        <h2 class="text-sm font-semibold text-white">By source</h2>
+      </div>
+      <div class="space-y-2 px-4 py-4">
+        {% for label, count in by_source.items %}
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-white/65">{{ label }}</span>
+          <span class="font-medium tabular-nums text-white">{{ count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-sm text-white/40">No data yet</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised">
+      <div class="border-b border-white/10 px-4 py-3">
+        <h2 class="text-sm font-semibold text-white">Temperature</h2>
+      </div>
+      <div class="space-y-2 px-4 py-4">
+        {% for label, count in by_temperature.items %}
+        <div class="flex items-center justify-between text-sm">
+          <span class="flex items-center gap-1.5 text-white/65">
+            <span class="h-2 w-2 rounded-full {% if forloop.counter == 1 %}bg-red-500{% elif forloop.counter == 2 %}bg-gold-500{% else %}bg-kova-400{% endif %}"></span>
+            {{ label }}
+          </span>
+          <span class="font-medium tabular-nums text-white">{{ count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-sm text-white/40">No data yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

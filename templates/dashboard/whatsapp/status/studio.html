@@ -1,0 +1,215 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}WhatsApp Status{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">AI drafts your Status — you tap Share to post it in WhatsApp</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  {% include "dashboard/whatsapp/_whatsapp_tabs.html" %}
+
+  <div class="rounded-xl border border-gold-200 dark:border-gold-900/50 bg-gold-50/70 dark:bg-gold-950/20 px-4 py-3">
+    <p class="text-sm text-gold-900 dark:text-gold-100">
+      <span class="font-semibold">Not automatic publishing.</span>
+      Meta does not allow apps to post Status for you. Kova writes the draft; you open WhatsApp and share in one tap.
+    </p>
+  </div>
+
+  {# Stats Bar #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ stats.ready }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Ready</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.shared }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Shared</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gray-400">{{ stats.draft }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Drafts</p>
+    </div>
+  </div>
+
+  {# Quick Actions #}
+  <div class="flex flex-wrap items-center gap-3">
+    <a href="{% url 'whatsapp:status_calendar' %}" class="btn-secondary btn-sm">
+      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Calendar
+    </a>
+    {% if kova_features.whatsapp_broadcasts %}
+    <a href="{% url 'whatsapp:broadcast_list' %}" class="btn-secondary btn-sm">Broadcasts</a>
+    {% endif %}
+  </div>
+
+  {# Create Status #}
+  <div class="card" x-data="{ mode: 'ai', open: false }">
+    <div class="card-body">
+      <button @click="open = !open" class="w-full flex items-center justify-between">
+        <h3 class="font-medium text-gray-900 dark:text-white">Create Status Content</h3>
+        <svg class="w-5 h-5 text-gray-400 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+
+      <div x-show="open" x-collapse class="mt-4 space-y-4">
+        <div class="flex gap-2">
+          <button @click="mode = 'ai'" :class="mode === 'ai' ? 'btn-primary' : 'btn-secondary'" class="btn-sm">AI Generate</button>
+          <button @click="mode = 'manual'" :class="mode === 'manual' ? 'btn-primary' : 'btn-secondary'" class="btn-sm">Manual</button>
+        </div>
+
+        {# AI Mode #}
+        <form x-show="mode === 'ai'" method="post" action="{% url 'whatsapp:status_create' %}" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="label">Describe what you want to share</label>
+            <textarea name="ai_prompt" rows="2" class="input-field" placeholder="E.g., Promote our Friday chapati special with a fun, engaging vibe"></textarea>
+          </div>
+          <div>
+            <label class="label">Category</label>
+            <select name="category" class="input-field !w-auto">
+              {% for value, label in categories %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn-primary btn-sm">Generate with AI</button>
+        </form>
+
+        {# Manual Mode #}
+        <form x-show="mode === 'manual'" method="post" action="{% url 'whatsapp:status_create' %}" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="label">Status Text</label>
+            <textarea name="text" rows="3" class="input-field" placeholder="Keep it punchy — 200 characters is ideal" maxlength="700"></textarea>
+          </div>
+          <div>
+            <label class="label">Category</label>
+            <select name="category" class="input-field !w-auto">
+              {% for value, label in categories %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn-primary btn-sm">Create Status</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# StatusTemplate quick-pick archived — use Campaign Studio Template Families #}
+
+  {# Filters #}
+  <div class="flex flex-wrap items-center gap-3">
+    <form method="get" class="flex flex-wrap items-center gap-2">
+      <select name="state" class="input-field !w-auto text-sm" onchange="this.form.submit()">
+        <option value="">All States</option>
+        <option value="draft" {% if state_filter == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="ready" {% if state_filter == 'ready' %}selected{% endif %}>Ready</option>
+        <option value="shared" {% if state_filter == 'shared' %}selected{% endif %}>Shared</option>
+        <option value="skipped" {% if state_filter == 'skipped' %}selected{% endif %}>Skipped</option>
+      </select>
+      <select name="category" class="input-field !w-auto text-sm" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for value, label in categories %}
+        <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% if state_filter or category_filter %}
+        <a href="{% url 'whatsapp:status_studio' %}" class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {# Status Queue #}
+  {% if page_obj.object_list %}
+  <div class="space-y-3">
+    {% for status in page_obj %}
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-start gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1.5">
+              {# State badge #}
+              {% if status.state == 'ready' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-800 dark:bg-growth-900 dark:text-growth-200">Ready</span>
+              {% elif status.state == 'shared' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-900 dark:text-kova-200">Shared</span>
+              {% elif status.state == 'skipped' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">Skipped</span>
+              {% else %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">Draft</span>
+              {% endif %}
+              <span class="text-xs text-gray-400">{{ status.get_category_display }}</span>
+              {% if status.ai_generated %}
+                <span class="text-xs text-kova-500">AI</span>
+              {% endif %}
+              {% if status.source_platform %}
+                <span class="text-xs text-blue-500">↻ {{ status.source_platform|title }}</span>
+              {% endif %}
+            </div>
+            <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{ status.text }}</p>
+            {% if status.caption %}
+              <p class="text-xs text-gray-400 mt-1 truncate">Caption: {{ status.caption|truncatechars:100 }}</p>
+            {% endif %}
+            {% if status.scheduled_for %}
+              <p class="text-xs text-gray-400 mt-1">
+                {{ status.scheduled_for|date:"D M j, g:i A" }}
+              </p>
+            {% endif %}
+          </div>
+          <div class="flex flex-col gap-2 shrink-0">
+            {% if status.is_shareable %}
+              <form method="post" action="{% url 'whatsapp:status_share' status.pk %}" hx-post="{% url 'whatsapp:status_share' status.pk %}" hx-swap="outerHTML">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary btn-sm whitespace-nowrap">Share →</button>
+              </form>
+              <form method="post" action="{% url 'whatsapp:status_skip' status.pk %}" hx-post="{% url 'whatsapp:status_skip' status.pk %}" hx-swap="outerHTML">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary btn-sm text-xs">Skip</button>
+              </form>
+            {% elif status.share_url %}
+              <a href="{{ status.share_url }}" target="_blank" rel="noopener" class="btn-primary btn-sm whitespace-nowrap inline-flex items-center gap-1">
+                Open in WA
+              </a>
+            {% endif %}
+            <span class="text-xs text-gray-400 text-right">{{ status.created_at|timesince }} ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Pagination #}
+  {% if page_obj.has_other_pages %}
+  <nav class="flex justify-center gap-2 mt-6">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if state_filter %}&state={{ state_filter }}{% endif %}" class="btn-secondary btn-sm">← Prev</a>
+    {% endif %}
+    <span class="text-sm text-gray-500 py-1.5">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if state_filter %}&state={{ state_filter }}{% endif %}" class="btn-secondary btn-sm">Next →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="card border-dashed border-gray-200 dark:border-gray-700">
+    <div class="card-body text-center py-14 px-6">
+      <div class="w-14 h-14 mx-auto rounded-xl bg-growth-100 dark:bg-growth-900 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Status content yet</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+        Create AI-generated content optimized for WhatsApp Status. Share with one tap.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

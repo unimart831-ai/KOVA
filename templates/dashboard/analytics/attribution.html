@@ -1,0 +1,423 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+
+{% block page_title %}Revenue{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+    The answer: how many customers came from social media?
+  </p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <a href="{% url 'analytics:revenue' %}?days={{ days }}" class="inline-flex text-sm text-kova-300 hover:text-kova-200">← Results</a>
+
+  {# Period selector #}
+  <div class="page-toolbar">
+    <a href="{% url 'analytics:download_report' %}?days={{ days }}"
+       class="btn-secondary btn-sm gap-1.5">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Download PDF
+    </a>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="?days=7" class="px-3 py-1 text-xs rounded-full {% if days == 7 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">7d</a>
+      <a href="?days=14" class="px-3 py-1 text-xs rounded-full {% if days == 14 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">14d</a>
+      <a href="?days=30" class="px-3 py-1 text-xs rounded-full {% if days == 30 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">30d</a>
+      <a href="?days=90" class="px-3 py-1 text-xs rounded-full {% if days == 90 %}bg-growth-500 text-white{% else %}bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">90d</a>
+    </div>
+  </div>
+
+  {# Hero summary — last N days #}
+  <div class="rounded-xl bg-kova-700 p-8 text-white">
+    <p class="text-kova-200 text-sm font-medium mb-4">Last {{ days }} days — social attribution</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+      <div>
+        <p class="text-4xl sm:text-5xl font-semibold tracking-tight">
+          {{ customers_from_social }}
+          <span class="text-xl font-normal text-kova-200">customer{{ customers_from_social|pluralize }}</span>
+        </p>
+        {% if deltas.sales is not None %}
+        <p class="text-sm mt-2 {% if deltas.sales > 0 %}text-growth-300{% elif deltas.sales < 0 %}text-red-300{% else %}text-kova-200{% endif %}">
+          {% if deltas.sales > 0 %}+{% endif %}{{ deltas.sales }} vs previous {{ days }}d
+        </p>
+        {% endif %}
+      </div>
+      <div>
+        <p class="text-4xl sm:text-5xl font-semibold tracking-tight">
+          KES {{ revenue_from_social|floatformat:0 }}
+        </p>
+        <p class="text-kova-200 text-base mt-1">attributed revenue</p>
+        {% if deltas.revenue is not None %}
+        <p class="text-sm mt-1 {% if deltas.revenue > 0 %}text-growth-300{% elif deltas.revenue < 0 %}text-red-300{% else %}text-kova-200{% endif %}">
+          {% if deltas.revenue > 0 %}+{% endif %}KES {{ deltas.revenue|floatformat:0 }} vs previous {{ days }}d
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ═══ Full Funnel Visualization ═══ #}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Full Funnel: Content → Customers</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Every step from impression to revenue</p>
+    </div>
+    <div class="p-5">
+      <div class="flex items-center justify-between gap-1 overflow-x-auto">
+        {# Stage: Reach #}
+        <div class="text-center flex-1 min-w-[80px]">
+          <div class="w-12 h-12 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2">
+            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ funnel.reach|default:"0" }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Reach</p>
+        </div>
+
+        {# Arrow #}
+        <div class="text-center flex-shrink-0 px-1">
+          <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <p class="text-[9px] text-gray-400 mt-0.5">{{ funnel.reach_to_engage }}%</p>
+        </div>
+
+        {# Stage: Engagements #}
+        <div class="text-center flex-1 min-w-[80px]">
+          <div class="w-12 h-12 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2">
+            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </div>
+          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ funnel.engagements|default:"0" }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Engagements</p>
+        </div>
+
+        {# Arrow #}
+        <div class="text-center flex-shrink-0 px-1">
+          <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <p class="text-[9px] text-gray-400 mt-0.5">{{ funnel.engage_to_click }}%</p>
+        </div>
+
+        {# Stage: Clicks #}
+        <div class="text-center flex-1 min-w-[80px]">
+          <div class="w-12 h-12 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2">
+            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+            </svg>
+          </div>
+          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ funnel.clicks|default:"0" }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Clicks</p>
+        </div>
+
+        {# Arrow #}
+        <div class="text-center flex-shrink-0 px-1">
+          <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <p class="text-[9px] text-gray-400 mt-0.5">{{ funnel.click_to_lead }}%</p>
+        </div>
+
+        {# Stage: Leads #}
+        <div class="text-center flex-1 min-w-[80px]">
+          <div class="w-12 h-12 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2">
+            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ funnel.leads|default:"0" }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Leads</p>
+        </div>
+
+        {# Arrow #}
+        <div class="text-center flex-shrink-0 px-1">
+          <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <p class="text-[9px] text-gray-400 mt-0.5">{{ funnel.lead_to_sale }}%</p>
+        </div>
+
+        {# Stage: Sales #}
+        <div class="text-center flex-1 min-w-[80px]">
+          <div class="w-12 h-12 mx-auto rounded-full bg-kova-50 dark:bg-kova-950/40 flex items-center justify-center mb-2">
+            <svg class="w-6 h-6 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <p class="text-xl font-bold text-growth-600 dark:text-growth-400">{{ funnel.sales|default:"0" }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Sales</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ═══ Key Metrics Cards ═══ #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    {# Posts Published #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Posts Published</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ posts_published }}</p>
+    </div>
+    {# Total Reach #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Reach</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ engagement.total_reach }}</p>
+      {% if deltas.reach is not None %}
+      <p class="text-[10px] {% if deltas.reach > 0 %}text-growth-600 dark:text-growth-400{% elif deltas.reach < 0 %}text-red-600 dark:text-red-400{% else %}text-gray-400 dark:text-gray-500{% endif %}">
+        {% if deltas.reach > 0 %}+{% endif %}{{ deltas.reach }} vs prev
+      </p>
+      {% endif %}
+    </div>
+    {# Leads Captured #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Leads Captured</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ leads_total }}</p>
+      {% if deltas.leads is not None %}
+      <p class="text-[10px] {% if deltas.leads > 0 %}text-growth-600 dark:text-growth-400{% elif deltas.leads < 0 %}text-red-600 dark:text-red-400{% else %}text-gray-400 dark:text-gray-500{% endif %}">
+        {% if deltas.leads > 0 %}+{% endif %}{{ deltas.leads }} vs prev
+      </p>
+      {% endif %}
+    </div>
+    {# Link Clicks #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Link Clicks</p>
+      <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ link_clicks }}</p>
+    </div>
+  </div>
+
+  {# ═══ Response Time + Community Management ═══ #}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Community Management Performance</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Every ignored DM is a lost customer</p>
+    </div>
+    <div class="p-5">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+        <div class="text-center">
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ response_metrics.total_interactions }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Messages</p>
+        </div>
+        <div class="text-center">
+          <p class="text-3xl font-bold text-growth-600 dark:text-growth-400">{{ response_metrics.replied }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Replied To</p>
+        </div>
+        <div class="text-center">
+          <p class="text-3xl font-bold {% if response_metrics.reply_rate >= 80 %}text-growth-600 dark:text-growth-400{% elif response_metrics.reply_rate >= 50 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+            {{ response_metrics.reply_rate }}%
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Reply Rate</p>
+        </div>
+        <div class="text-center">
+          {% if response_metrics.avg_response_minutes is not None %}
+          <p class="text-3xl font-bold {% if response_metrics.avg_response_minutes <= 30 %}text-growth-600 dark:text-growth-400{% elif response_metrics.avg_response_minutes <= 120 %}text-gold-600 dark:text-gold-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+            {% if response_metrics.avg_response_minutes < 60 %}
+              {{ response_metrics.avg_response_minutes|floatformat:0 }}m
+            {% else %}
+              {{ response_metrics.avg_response_minutes|floatformat:0|divisibleby:60 }}h
+            {% endif %}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Avg Response Time</p>
+          {% else %}
+          <p class="text-3xl font-bold text-gray-300 dark:text-gray-600">—</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Avg Response Time</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Response time quality bar #}
+      {% if response_metrics.avg_response_minutes is not None %}
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            {% if response_metrics.avg_response_minutes <= 15 %}
+            <div class="h-full bg-growth-500 rounded-full" style="width: 100%"></div>
+            {% elif response_metrics.avg_response_minutes <= 60 %}
+            <div class="h-full bg-growth-400 rounded-full" style="width: 75%"></div>
+            {% elif response_metrics.avg_response_minutes <= 120 %}
+            <div class="h-full bg-gold-400 rounded-full" style="width: 50%"></div>
+            {% else %}
+            <div class="h-full bg-red-400 rounded-full" style="width: 25%"></div>
+            {% endif %}
+          </div>
+          <span class="text-xs font-medium
+            {% if response_metrics.avg_response_minutes <= 15 %}text-growth-600 dark:text-growth-400
+            {% elif response_metrics.avg_response_minutes <= 60 %}text-growth-600 dark:text-growth-400
+            {% elif response_metrics.avg_response_minutes <= 120 %}text-gold-600 dark:text-gold-400
+            {% else %}text-red-600 dark:text-red-400{% endif %}">
+            {% if response_metrics.avg_response_minutes <= 15 %}Excellent
+            {% elif response_metrics.avg_response_minutes <= 60 %}Great
+            {% elif response_metrics.avg_response_minutes <= 120 %}Good
+            {% else %}Needs Improvement{% endif %}
+          </span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    {# ═══ Revenue by Platform ═══ #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Per-Platform Breakdown</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Which platform brings you money?</p>
+      </div>
+      <div class="p-5">
+        {% if platform_breakdown %}
+        <div class="space-y-4">
+          {% for p in platform_breakdown %}
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 capitalize">
+                  {{ p.social_account__platform }}
+                </span>
+              </div>
+              <span class="text-sm font-bold text-growth-600 dark:text-growth-400">KES {{ p.revenue|floatformat:0 }}</span>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <span>{{ p.clicks }} click{{ p.clicks|pluralize }}</span>
+              <span>{{ p.leads }} lead{{ p.leads|pluralize }}</span>
+              <span class="font-medium text-gray-700 dark:text-gray-300">{{ p.sales }} sale{{ p.sales|pluralize }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+          <p class="text-sm text-gray-500 dark:text-gray-400">No platform revenue data yet.</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Revenue is attributed when conversions include UTM tracking from your posts.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ═══ Lead Sources ═══ #}
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+      <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Where Leads Come From</h3>
+      </div>
+      <div class="p-5">
+        {% if leads_by_source %}
+        <div class="space-y-3 mb-6">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">By Source Type</p>
+          {% for item in leads_by_source %}
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-700 dark:text-gray-300 capitalize">{{ item.source_type|default:"unknown" }}</span>
+            <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if leads_by_platform %}
+        <div class="space-y-3">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">By Platform</p>
+          {% for item in leads_by_platform %}
+          <div class="flex items-center justify-between">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 capitalize">
+              {{ item.source_platform }}
+            </span>
+            <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not leads_by_source and not leads_by_platform %}
+        <div class="text-center py-8">
+          <p class="text-sm text-gray-500 dark:text-gray-400">No leads captured yet.</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Leads are created from form submissions, DMs, and social interactions.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  {# ═══ Daily Revenue Trend ═══ #}
+  {% if daily_revenue %}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Revenue Over Time</h3>
+    </div>
+    <div class="p-5 overflow-x-auto">
+      <div class="flex items-end gap-1 h-32 min-w-[250px] sm:min-w-[300px]">
+        {% with max_rev=daily_revenue.0.revenue %}
+        {% for day in daily_revenue %}
+        <div class="flex-1 flex flex-col items-center justify-end gap-1"
+             title="KES {{ day.revenue|floatformat:0 }} — {{ day.date|date:'M d' }}">
+          <p class="text-[9px] text-gray-400 mb-0.5">{{ day.revenue|floatformat:0 }}</p>
+          <div class="w-full bg-growth-500 dark:bg-growth-400 rounded-t transition-all"
+               style="min-height: 4px; height: {% widthratio day.revenue max_rev 120 %}px; max-height: 120px;"></div>
+          <p class="text-[8px] text-gray-400">{{ day.date|date:"d" }}</p>
+        </div>
+        {% endfor %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ═══ Engagement Breakdown ═══ #}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Engagement Breakdown</h3>
+    </div>
+    <div class="p-5">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
+        <div>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ engagement.total_impressions }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">Impressions</p>
+        </div>
+        <div>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ engagement.total_likes }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">Likes</p>
+        </div>
+        <div>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ engagement.total_comments }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">Comments</p>
+        </div>
+        <div>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ engagement.total_shares }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">Shares</p>
+        </div>
+        <div>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ engagement.total_saves }}</p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">Saves</p>
+        </div>
+        <div>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">
+            {% if engagement.avg_engagement_rate %}{{ engagement.avg_engagement_rate|floatformat:2 }}%{% else %}—{% endif %}
+          </p>
+          <p class="text-[10px] text-gray-500 dark:text-gray-400">Avg Rate</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ═══ Empty State ═══ #}
+  {% if not customers_from_social and not leads_total and not engagement.total_reach %}
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center">
+    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+      <svg class="h-6 w-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    </div>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Your attribution story starts here</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+      Once you publish posts with CTAs, capture leads, and track conversions, this dashboard will show you exactly how many customers social media brought you.
+    </p>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a href="{% url 'content:studio' %}" class="btn-primary text-sm px-4 py-2">Create Content</a>
+      <a href="{% url 'links:list' %}" class="btn-secondary text-sm px-4 py-2">Set Up Kova Links</a>
+      <a href="{% url 'analytics:revenue' %}" class="btn-secondary text-sm px-4 py-2">Connect Revenue Sources</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {# Quick link to detailed revenue page #}
+  <div class="text-center">
+    <a href="{% url 'analytics:revenue' %}?days={{ days }}" class="text-sm text-kova-600 dark:text-kova-400 hover:underline">
+      View detailed revenue breakdown &rarr;
+    </a>
+  </div>
+
+</div>
+{% endblock %}

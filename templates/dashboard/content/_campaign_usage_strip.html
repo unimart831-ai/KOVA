@@ -1,0 +1,26 @@
+{# Monthly create quota — Studio #}
+<div class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+  <div class="min-w-0">
+    <p class="text-sm font-medium text-white">Posts this month</p>
+    <p class="mt-0.5 text-xs text-white/45">
+      {% if seed_usage.unlimited %}
+        Unlimited
+      {% elif seed_usage.at_limit %}
+        {{ seed_usage.max }} used — limit reached
+      {% else %}
+        <span class="font-semibold tabular-nums text-kova-400">{{ seed_usage.remaining }}</span> left
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex shrink-0 items-center gap-3">
+    {% if not seed_usage.unlimited %}
+    {% widthratio seed_usage.remaining seed_usage.max 100 as pct %}
+    <div class="hidden h-1.5 w-20 overflow-hidden rounded-full bg-white/10 sm:block">
+      <div class="h-full rounded-full bg-kova-500" style="width: {% if seed_usage.at_limit %}0{% else %}{{ pct }}%{% endif %}"></div>
+    </div>
+    {% endif %}
+    {% if seed_usage.at_limit %}
+    <a href="{% url 'billing:pricing' %}" class="btn-primary btn-sm">Get more</a>
+    {% endif %}
+  </div>
+</div>

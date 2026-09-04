@@ -1,0 +1,57 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}{{ article.title }}{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+    <a href="{% url 'help:center' %}" class="hover:text-kova-600 dark:hover:text-kova-400">Help Center</a>
+    <span class="mx-1">/</span>
+    {{ category.name }}
+  </p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <!-- Article content -->
+  <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 sm:p-8">
+    <div class="article-content max-w-none">
+      {% if article.legacy_template %}
+        {% include article.legacy_template %}
+      {% else %}
+        {{ article.body_html|safe }}
+      {% endif %}
+    </div>
+  </article>
+
+  <!-- Prev / Next navigation -->
+  <div class="flex items-center justify-between mt-6 gap-4">
+    {% if prev_article %}
+    <a href="{% url 'help:article' prev_article.slug %}"
+       class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      {{ prev_article.title }}
+    </a>
+    {% else %}
+    <div></div>
+    {% endif %}
+
+    {% if next_article %}
+    <a href="{% url 'help:article' next_article.slug %}"
+       class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 transition-colors ml-auto">
+      {{ next_article.title }}
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Back to help center -->
+  <div class="mt-6 text-center">
+    <a href="{% url 'help:center' %}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400 transition-colors">
+      &larr; Back to Help Center
+    </a>
+  </div>
+</div>
+{% endblock %}

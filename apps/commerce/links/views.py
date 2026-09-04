@@ -60,7 +60,7 @@ def page_list(request):
         )
     )
     page_limit = _get_page_limit(request.user)
-    return render(request, "links/page_list.html", {
+    return render(request, "dashboard/links/page_list.html", {
         "page_title": "Kova Links",
         "pages": pages,
         "page_limit": page_limit,
@@ -92,7 +92,7 @@ def page_create(request):
     else:
         form = KovaPageForm()
 
-    return render(request, "links/page_form.html", {
+    return render(request, "dashboard/links/page_form.html", {
         "page_title": "Create Kova Page",
         "form": form,
         "is_edit": False,
@@ -118,7 +118,7 @@ def page_detail(request, page_id):
         form__page=page, submitted_at__gte=thirty_days_ago
     ).count()
 
-    return render(request, "links/page_detail.html", {
+    return render(request, "dashboard/links/page_detail.html", {
         "page_title": page.title,
         "page": page,
         "links": links,
@@ -146,7 +146,7 @@ def page_edit(request, page_id):
     else:
         form = KovaPageForm(instance=page)
 
-    return render(request, "links/page_form.html", {
+    return render(request, "dashboard/links/page_form.html", {
         "page_title": f"Edit {page.title}",
         "form": form,
         "page": page,
@@ -195,7 +195,7 @@ def link_add(request, page_id):
     else:
         form = KovaLinkForm()
 
-    return render(request, "links/link_form.html", {
+    return render(request, "dashboard/links/link_form.html", {
         "page_title": "Add Link",
         "form": form,
         "page": page,
@@ -218,7 +218,7 @@ def link_edit(request, page_id, link_id):
     else:
         form = KovaLinkForm(instance=link)
 
-    return render(request, "links/link_form.html", {
+    return render(request, "dashboard/links/link_form.html", {
         "page_title": f"Edit {link.title}",
         "form": form,
         "page": page,
@@ -264,7 +264,7 @@ def form_add(request, page_id):
     else:
         form = KovaFormForm()
 
-    return render(request, "links/form_form.html", {
+    return render(request, "dashboard/links/form_form.html", {
         "page_title": "Add Lead Capture Form",
         "form": form,
         "page": page,
@@ -287,7 +287,7 @@ def form_edit(request, page_id, form_id):
     else:
         form = KovaFormForm(instance=kova_form)
 
-    return render(request, "links/form_form.html", {
+    return render(request, "dashboard/links/form_form.html", {
         "page_title": f"Edit {kova_form.title}",
         "form": form,
         "page": page,
@@ -327,7 +327,7 @@ def submission_mark_read(request, submission_id):
     submission.save(update_fields=["is_read"])
 
     if request.htmx:
-        return render(request, "links/partials/submission_row.html", {"sub": submission})
+        return render(request, "dashboard/links/partials/submission_row.html", {"sub": submission})
     return redirect("/leads/?source=form_submission")
 
 
@@ -446,7 +446,7 @@ def public_form_submit(request, slug, form_id):
             logger.warning("Could not create notification for form submission")
 
         if request.htmx:
-            return render(request, "links/partials/form_success.html", {
+            return render(request, "dashboard/links/partials/form_success.html", {
                 "success_message": kova_form.success_message,
             })
 
@@ -455,7 +455,7 @@ def public_form_submit(request, slug, form_id):
 
     # Form invalid
     if request.htmx:
-        return render(request, "links/partials/public_form.html", {
+        return render(request, "dashboard/links/partials/public_form.html", {
             "active_form": kova_form,
             "form_instance": form,
             "page": page,

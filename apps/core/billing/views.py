@@ -77,7 +77,7 @@ def billing_overview(request):
 
     seed_usage = get_seed_usage(request.user)
 
-    return render(request, "billing/overview.html", {
+    return render(request, "dashboard/billing/overview.html", {
         "page_title": "Billing & Plan",
         "profile": profile,
         "limits": limits,
@@ -99,7 +99,7 @@ def billing_overview(request):
 def pricing(request):
     """Standalone pricing page (for logged-in users upgrading)."""
     can_addons, _ = user_can_purchase_addons(request.user)
-    return render(request, "billing/pricing.html", {
+    return render(request, "dashboard/billing/pricing.html", {
         "page_title": "Kova Plan",
         "all_plans": get_public_plan_limits(),
         "agency_plan": get_plan_limits("agency"),
@@ -208,7 +208,7 @@ def checkout_success(request):
     profile = request.user.profile
     plan_name = get_plan_limits(profile.plan).get("label", profile.get_plan_display())
 
-    return render(request, "billing/checkout_success.html", {
+    return render(request, "dashboard/billing/checkout_success.html", {
         "page_title": "Welcome!",
         "profile": profile,
         "plan_name": plan_name,
@@ -218,7 +218,7 @@ def checkout_success(request):
 @login_required
 def checkout_cancel(request):
     """User canceled the checkout flow."""
-    return render(request, "billing/checkout_cancel.html", {
+    return render(request, "dashboard/billing/checkout_cancel.html", {
         "page_title": "Checkout Canceled",
     })
 
@@ -396,7 +396,7 @@ def mpesa_waiting(request):
     else:
         plan_name = get_plan_limits(plan_tier).get("label", plan_tier)
 
-    return render(request, "billing/mpesa_waiting.html", {
+    return render(request, "dashboard/billing/mpesa_waiting.html", {
         "page_title": "Confirming Payment",
         "checkout_id": checkout_id,
         "plan_name": plan_name,
@@ -463,7 +463,7 @@ def mpesa_success(request):
 
     plan_name = get_plan_limits(profile.plan).get("label", profile.get_plan_display())
 
-    return render(request, "billing/mpesa_success.html", {
+    return render(request, "dashboard/billing/mpesa_success.html", {
         "page_title": "Payment Successful!",
         "profile": profile,
         "plan_name": plan_name,

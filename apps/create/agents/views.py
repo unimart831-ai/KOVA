@@ -42,7 +42,7 @@ def agent_control(request):
     by_type = {a.agent_type: a for a in agents}
     agents_ordered = [by_type[k] for k in _PIPELINE_ORDER if k in by_type]
 
-    return render(request, "agents/control.html", {
+    return render(request, "dashboard/agents/control.html", {
         "agents": agents_ordered,
         "page_title": "Agent Control Center",
     })
@@ -86,7 +86,7 @@ def agent_activity_log(request):
 
     actions = list(actions[:100])
 
-    return render(request, "agents/activity_log.html", {
+    return render(request, "dashboard/agents/activity_log.html", {
         "actions": actions,
         "agent_filter": agent_filter,
         "status_filter": status_filter,
@@ -116,7 +116,7 @@ def agent_detail(request, slug):
         ).aggregate(total=Sum("tokens_used"))["total"] or 0,
     }
 
-    return render(request, "agents/detail.html", {
+    return render(request, "dashboard/agents/detail.html", {
         "agent": agent,
         "recent_actions": recent_actions,
         "stats": stats,
@@ -210,7 +210,7 @@ def strategist_dashboard(request):
         status=AgentAction.ActionStatus.COMPLETED,
     ).order_by("-created_at")[:5]
 
-    return render(request, "agents/strategist_dashboard.html", {
+    return render(request, "dashboard/agents/strategist_dashboard.html", {
         "page_title": "Growth Advisor",
         "growth_summary": growth_summary,
         "sparklines": dict(sparklines),

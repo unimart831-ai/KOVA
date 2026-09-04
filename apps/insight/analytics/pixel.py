@@ -263,7 +263,7 @@ def pixel_settings(request):
         "stats": stats,
         "plan": profile.get_plan_display(),
     }
-    return render(request, "analytics/pixel_settings.html", context)
+    return render(request, "dashboard/analytics/pixel_settings.html", context)
 
 
 @login_required
@@ -284,7 +284,7 @@ def pixel_events(request):
     profile = request.user.profile
     limits = get_user_plan_limits(profile.user)
     if not limits.get("multi_touch_attribution"):
-        return render(request, "analytics/pixel_events.html", {"pixel_enabled": False})
+        return render(request, "dashboard/analytics/pixel_events.html", {"pixel_enabled": False})
 
     qs = WebsiteEvent.objects.filter(user=request.user).select_related("post")
 
@@ -320,7 +320,7 @@ def pixel_events(request):
         "current_revenue": has_revenue,
         "journeys": journeys,
     }
-    return render(request, "analytics/pixel_events.html", context)
+    return render(request, "dashboard/analytics/pixel_events.html", context)
 
 
 @login_required

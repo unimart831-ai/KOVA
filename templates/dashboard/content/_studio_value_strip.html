@@ -1,0 +1,18 @@
+{% if studio_value %}
+{% if studio_value.posts_created_week or studio_value.posts_published_week or studio_value.scheduled_count %}
+<div class="grid grid-cols-3 gap-3">
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3">
+    <p class="text-2xl font-bold tabular-nums text-white">{{ studio_value.posts_created_week }}</p>
+    <p class="mt-0.5 text-xs text-white/45">drafted</p>
+  </div>
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3">
+    <p class="text-2xl font-bold tabular-nums text-white">{{ studio_value.posts_published_week }}</p>
+    <p class="mt-0.5 text-xs text-white/45">published</p>
+  </div>
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-3">
+    <p class="text-2xl font-bold tabular-nums text-white">{{ studio_value.scheduled_count }}</p>
+    <p class="mt-0.5 text-xs text-white/45">scheduled</p>
+  </div>
+</div>
+{% endif %}
+{% endif %}

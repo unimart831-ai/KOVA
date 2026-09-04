@@ -1,0 +1,93 @@
+{# Studio posts list — click a post to approve or edit #}
+{% load content_tags %}
+<section class="space-y-3">
+
+  {% if pending_images %}
+  <div class="flex items-center gap-3 rounded-xl border border-kova-500/20 bg-kova-500/10 px-4 py-3">
+    <div class="h-2 w-2 animate-pulse rounded-full bg-kova-400"></div>
+    <p class="text-sm text-white/70">Generating {{ pending_images }} image{{ pending_images|pluralize }}…</p>
+  </div>
+  {% endif %}
+
+  {% if seed_groups or ungrouped_posts %}
+  <ul class="space-y-2">
+    {% for group in seed_groups %}
+      {% for post in group.posts %}
+      <li>
+        <a href="{% url 'content:post_detail' post.id %}"
+           class="flex gap-3 rounded-2xl border border-white/10 bg-canvas-raised p-3 transition hover:border-white/20 hover:bg-white/[0.03] sm:p-4">
+          <div class="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-canvas">
+            {% if post.media_urls %}
+            <img src="{{ post.media_urls.0 }}" alt="" class="h-full w-full object-cover" loading="lazy">
+            {% else %}
+            <div class="flex h-full w-full items-center justify-center text-white/20">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            {% endif %}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              {% if post.social_account %}
+              <span class="text-xs font-medium capitalize text-white/70">{{ post.social_account.platform }}</span>
+              {% endif %}
+              {% if post.post_format %}
+              <span class="text-xs capitalize text-white/35">{{ post.post_format }}</span>
+              {% endif %}
+              <span class="text-[10px] font-semibold uppercase tracking-wide
+                {% if post.status == 'published' %}text-growth-400
+                {% elif post.status == 'scheduled' or post.status == 'approved' %}text-kova-400
+                {% elif post.status == 'failed' or post.status == 'rejected' %}text-red-400
+                {% else %}text-gold-400{% endif %}">
+                {{ post.get_status_display|default:post.status }}
+              </span>
+            </div>
+            <p class="mt-1 line-clamp-2 text-sm text-white/80">{{ post.content_text|default:"(No caption)"|truncatewords:28 }}</p>
+          </div>
+          <svg class="mt-1 h-4 w-4 shrink-0 text-white/25" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5l7 7-7 7"/></svg>
+        </a>
+      </li>
+      {% endfor %}
+    {% endfor %}
+
+    {% for post in ungrouped_posts %}
+    <li>
+      <a href="{% url 'content:post_detail' post.id %}"
+         class="flex gap-3 rounded-2xl border border-white/10 bg-canvas-raised p-3 transition hover:border-white/20 hover:bg-white/[0.03] sm:p-4">
+        <div class="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-canvas">
+          {% if post.media_urls %}
+          <img src="{{ post.media_urls.0 }}" alt="" class="h-full w-full object-cover" loading="lazy">
+          {% else %}
+          <div class="flex h-full w-full items-center justify-center text-white/20">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          {% endif %}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            {% if post.social_account %}
+            <span class="text-xs font-medium capitalize text-white/70">{{ post.social_account.platform }}</span>
+            {% endif %}
+            <span class="text-[10px] font-semibold uppercase tracking-wide text-white/40">{{ post.get_status_display|default:post.status }}</span>
+          </div>
+          <p class="mt-1 line-clamp-2 text-sm text-white/80">{{ post.content_text|default:"(No caption)"|truncatewords:28 }}</p>
+        </div>
+        <svg class="mt-1 h-4 w-4 shrink-0 text-white/25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if studio_overflow_groups %}
+  <p class="px-1 pt-2 text-center text-xs text-white/40">
+    Showing latest posts —
+    <a href="{% url 'content:queue' %}" class="text-kova-400 hover:text-kova-300">see schedule</a>
+  </p>
+  {% endif %}
+
+  {% else %}
+  <div class="rounded-2xl border border-dashed border-white/10 px-6 py-14 text-center">
+    <p class="font-serif text-lg font-semibold text-white">No posts yet</p>
+    <p class="mx-auto mt-2 max-w-xs text-sm text-white/45">Create a post to get started.</p>
+  </div>
+  {% endif %}
+</section>

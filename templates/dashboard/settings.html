@@ -1,0 +1,1123 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Settings — KOVA{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block dashboard_extra_head %}
+<style>
+  #settings-root { color-scheme: dark; }
+  #settings-root .input {
+    border-color: rgba(255,255,255,0.1);
+    background-color: #0e2634;
+    color: #fff;
+  }
+  #settings-root .input::placeholder { color: rgba(255,255,255,0.35); }
+  #settings-root .input:focus {
+    border-color: #0066FF;
+    outline: none;
+    box-shadow: 0 0 0 1px #0066FF;
+  }
+  #settings-root .input-time::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.75;
+    filter: invert(1);
+  }
+  #settings-root .input-file::file-selector-button {
+    margin-right: 0.75rem;
+    cursor: pointer;
+    border: 0;
+    border-radius: 0.375rem;
+    background: rgba(255,255,255,0.1);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #fff;
+  }
+  #settings-root select.input {
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ffffff99'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-position: right 0.6rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+  }
+  #settings-root .label {
+    margin-bottom: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="settings-root"
+     class="mx-auto max-w-3xl space-y-6"
+     x-data="{
+       tab: '{{ active_settings_tab|default:"account"|escapejs }}',
+       tabs: [
+         { key: 'account', label: 'Account' },
+         { key: 'brand', label: 'Brand' },
+         { key: 'voice', label: 'Voice' },
+         { key: 'goals', label: 'Goals' },
+         { key: 'autopilot', label: 'Autopilot' },
+         { key: 'cta', label: 'CTA' },
+         { key: 'visual', label: 'Visual' },
+         { key: 'brand-kit', label: 'Brand kit' },
+         { key: 'plan', label: 'Plan' },
+         { key: 'danger', label: 'Danger zone' }
+       ]
+     }">
+
+  <div class="px-0.5">
+    <h1 class="font-serif text-2xl font-bold tracking-tight text-white sm:text-3xl">Settings</h1>
+    <p class="mt-1 text-sm font-light text-white/50">Profile, brand voice, and automation</p>
+  </div>
+
+
+  <nav class="flex gap-1 overflow-x-auto overscroll-x-contain pb-1" aria-label="Settings sections">
+    <template x-for="item in tabs" :key="item.key">
+      <button type="button"
+              :data-tab="item.key"
+              @click="tab = item.key; if ($refs.tabField) $refs.tabField.value = item.key; history.replaceState(null, '', '?tab=' + item.key)"
+              :class="tab === item.key
+                ? (item.key === 'danger' ? 'bg-red-600 text-white' : 'bg-kova-500 text-white')
+                : (item.key === 'danger' ? 'text-red-400/80 hover:bg-red-500/10 hover:text-red-300' : 'text-white/50 hover:bg-white/5 hover:text-white')"
+              class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition"
+              x-text="item.label"></button>
+    </template>
+  </nav>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6" id="settings-form-main">
+    {% csrf_token %}
+    <input type="hidden" name="settings_tab" x-ref="tabField" :value="tab" value="account">
+
+
+  <section x-show="tab === 'account'" x-cloak class="space-y-6" aria-label="Account">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label for="id_full_name" class="label">{{ user_form.full_name.label }}</label>
+        {{ user_form.full_name }}
+        {% for error in user_form.full_name.errors %}<p class="mt-1 text-xs text-red-400">{{ error }}</p>{% endfor %}
+      </div>
+      <div>
+        <label for="id_phone_number" class="label">{{ user_form.phone_number.label }}</label>
+        {{ user_form.phone_number }}
+        {% for error in user_form.phone_number.errors %}<p class="mt-1 text-xs text-red-400">{{ error }}</p>{% endfor %}
+      </div>
+      <div>
+        <label for="id_timezone" class="label">{{ user_form.timezone.label }}</label>
+        {{ user_form.timezone }}
+        {% for error in user_form.timezone.errors %}<p class="mt-1 text-xs text-red-400">{{ error }}</p>{% endfor %}
+      </div>
+      <div>
+        <label for="id_daily_brief_time" class="label">Brief time</label>
+        {{ user_form.daily_brief_time }}
+        {% for error in user_form.daily_brief_time.errors %}<p class="mt-1 text-xs text-red-400">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="sm:col-span-2">
+        <label for="id_avatar" class="label">{{ user_form.avatar.label }}</label>
+        {{ user_form.avatar }}
+        {% for error in user_form.avatar.errors %}<p class="mt-1 text-xs text-red-400">{{ error }}</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <p class="text-xs font-medium uppercase tracking-wide text-white/40">Delivery</p>
+      <label class="flex cursor-pointer items-center gap-3 rounded-xl bg-canvas-raised px-4 py-3.5 {% if not plan_limits.email_brief %}opacity-50{% endif %}">
+        {{ user_form.brief_email_enabled }}
+        <span class="min-w-0">
+          <span class="block text-sm font-medium text-white">Email digest</span>
+          {% if not plan_limits.email_brief %}
+          <span class="block text-xs text-white/40"><a href="{% url 'billing:pricing' %}" class="text-kova-300 hover:text-kova-200">Upgrade</a> to enable</span>
+          {% endif %}
+        </span>
+      </label>
+      <label class="flex cursor-pointer items-center gap-3 rounded-xl bg-canvas-raised px-4 py-3.5 {% if not plan_limits.whatsapp_brief %}opacity-50{% endif %}">
+        {{ user_form.brief_whatsapp_enabled }}
+        <span class="min-w-0">
+          <span class="block text-sm font-medium text-white">WhatsApp ping</span>
+          {% if not plan_limits.whatsapp_brief %}
+          <span class="block text-xs text-white/40"><a href="{% url 'billing:pricing' %}" class="text-kova-300 hover:text-kova-200">Upgrade</a> or connect WhatsApp</span>
+          {% endif %}
+        </span>
+      </label>
+      <label class="flex cursor-pointer items-center gap-3 rounded-xl bg-canvas-raised px-4 py-3.5">
+        {{ user_form.money_board_digest_enabled }}
+        <span class="text-sm font-medium text-white">Money board digest</span>
+      </label>
+    </div>
+
+    <div class="flex justify-end pt-2">
+      <button type="submit" class="btn-primary">Save settings</button>
+    </div>
+  </section>
+
+  <section x-show="tab === 'brand'" x-cloak class="space-y-5" aria-label="Brand">
+    <div class="px-0.5">
+      <h2 class="font-serif text-xl font-semibold text-white">Brand</h2>
+      <p class="mt-1 text-sm text-white/45">Company info and content language</p>
+    </div>
+    <div class="space-y-5">
+<div class="" x-data="{ industry: '{{ brand_form.industry.value|default:'' }}', businessType: '{{ brand_form.business_model.value|default:'' }}' }">
+          {# ── Business type radio cards ── #}
+          <div class="mb-6 space-y-2">
+            <label class="text-sm font-medium text-white">Your business type</label>
+            <p class="text-xs text-white/45">This shapes your AI, content style, and navigation</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+              <label @click="businessType = 'product'"
+                     class="relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all duration-150"
+                     :class="businessType === 'product' ? 'border-kova-500 bg-kova-50 bg-kova-500/15 border-kova-500' : 'border-white/10 hover:border-kova-300 dark:hover:border-kova-600'">
+                <input type="radio" name="business_model" value="product" class="hidden" :checked="businessType === 'product'">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                     :class="businessType === 'product' ? 'bg-kova-100 dark:bg-kova-900/50' : 'bg-white/10'">
+                  <svg class="w-5 h-5" :class="businessType === 'product' ? 'text-kova-300' : 'text-white/45'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </div>
+                <span class="text-sm font-medium text-white text-center">I sell products</span>
+                <span class="text-xs text-white/45 text-center">Physical or digital goods — shops, boutiques, wholesale</span>
+              </label>
+
+              <label @click="businessType = 'service'"
+                     class="relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all duration-150"
+                     :class="businessType === 'service' ? 'border-kova-500 bg-kova-50 bg-kova-500/15 border-kova-500' : 'border-white/10 hover:border-kova-300 dark:hover:border-kova-600'">
+                <input type="radio" name="business_model" value="service" class="hidden" :checked="businessType === 'service'">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                     :class="businessType === 'service' ? 'bg-kova-100 dark:bg-kova-900/50' : 'bg-white/10'">
+                  <svg class="w-5 h-5" :class="businessType === 'service' ? 'text-kova-300' : 'text-white/45'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <span class="text-sm font-medium text-white text-center">I offer services</span>
+                <span class="text-xs text-white/45 text-center">Appointments, consultations, bookings</span>
+              </label>
+
+              <label @click="businessType = 'professional'"
+                     class="relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all duration-150"
+                     :class="businessType === 'professional' ? 'border-kova-500 bg-kova-50 bg-kova-500/15 border-kova-500' : 'border-white/10 hover:border-kova-300 dark:hover:border-kova-600'">
+                <input type="radio" name="business_model" value="professional" class="hidden" :checked="businessType === 'professional'">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                     :class="businessType === 'professional' ? 'bg-kova-100 dark:bg-kova-900/50' : 'bg-white/10'">
+                  <svg class="w-5 h-5" :class="businessType === 'professional' ? 'text-kova-300' : 'text-white/45'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <span class="text-sm font-medium text-white text-center">Professional / Agency</span>
+                <span class="text-xs text-white/45 text-center">Expertise, consulting, portfolio-based</span>
+              </label>
+            </div>
+          </div>
+
+          {% for field in brand_form %}
+            {% if field.name == 'business_model' %}
+              {# rendered as custom radio cards above #}
+            {% elif field.name in 'company_name,website_url,industry,industry_other,content_language,key_offerings_text,country,city,storefront_vibe' %}
+              {% if field.name == 'industry_other' %}
+              <div class="mb-4" x-show="industry === 'other'" x-cloak>
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+              {% elif field.name == 'storefront_vibe' %}
+              {% if business_model != 'professional' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                <p class="text-xs text-white/45 mt-1">Controls layout of your public <code>/shop/</code> pages. Auto picks a style from your industry.</p>
+                {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+              {% endif %}
+              {% elif field.name == 'country' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label flex items-center gap-1.5">
+                  {{ field.label }}
+                  <span class="text-[10px] font-normal px-1.5 py-0.5 rounded bg-kova-50 dark:bg-kova-950/40 text-kova-300">drives holiday awareness</span>
+                </label>
+                {{ field }}
+                <p class="text-xs text-white/45 mt-1">
+                  ISO 2-letter code (e.g. <code>RW</code>, <code>KE</code>, <code>US</code>). Sets which national holidays Kova surfaces in your Daily Brief.
+                </p>
+                {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+              {% else %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+
+          <div class="mt-4 p-4 rounded-xl border border-kova-500/25 bg-kova-500/10">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-kova-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="text-sm font-semibold text-white">Holidays & Cultural Moments</h4>
+                <p class="text-xs text-white/55 mt-1">Choose which religious, national, and commercial moments Kova should create content around. Your country setting above drives national holidays.</p>
+                <a href="{% url 'calendar_intel:preferences' %}" class="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-kova-300 hover:text-kova-900 dark:hover:text-kova-100">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  Configure moments
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ═══════ Voice & Audience ═══════ #}
+    </div>
+    
+        <div class="flex justify-end pt-6">
+          <button type="submit" class="btn-primary">Save settings</button>
+        </div>
+  </section>
+
+  <section x-show="tab === 'voice'" x-cloak class="space-y-5" aria-label="Voice">
+    <div class="px-0.5">
+      <h2 class="font-serif text-xl font-semibold text-white">Voice</h2>
+      <p class="mt-1 text-sm text-white/45">How your AI agents sound</p>
+    </div>
+    <div class="space-y-5">
+<div class="">
+          {# ── AI Brand Builder ── #}
+          <div x-data="settingsBrandBuilder()" class="mb-5">
+            <div class="p-4 rounded-xl border-2 transition-all duration-300"
+                 :class="open ? 'border-kova-500 bg-kova-50 bg-kova-500/15 border-kova-500' : 'border-white/10 bg-white/5'">
+              <div class="flex items-center justify-between cursor-pointer" @click="open = !open">
+                <div class="flex items-center gap-2">
+                  <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kova-100 dark:bg-kova-950/40">
+                    <svg class="h-4 w-4 text-kova-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-white">AI Brand Builder</h4>
+                    <p class="text-xs text-white/45">Regenerate your voice &amp; audience with AI — all fields below will be updated</p>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-white/40 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <div x-show="open" x-cloak class="mt-3 space-y-3">
+                <div>
+                  <label class="label mb-1">Describe your brand in your own words</label>
+                  <textarea x-model="hint" rows="2" class="input w-full"
+                            placeholder="E.g.: We help SMEs build modern websites. Friendly, approachable, no jargon."></textarea>
+                </div>
+                <button type="button" @click="generateBrand()" :disabled="loading"
+                        class="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm">
+                  <template x-if="loading">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </template>
+                  <span x-text="loading ? 'Generating...' : 'Regenerate Voice & Audience'"></span>
+                </button>
+                <p x-show="error" x-text="error" class="text-xs text-red-500 text-center"></p>
+                <a x-show="upgradeUrl" :href="upgradeUrl" x-cloak
+                   class="block mx-auto mt-1 text-xs font-semibold text-kova-300 hover:underline text-center">
+                  Upgrade plan &rarr;
+                </a>
+                <p x-show="success" x-cloak class="text-xs text-growth-600 dark:text-growth-400 text-center font-medium">
+                  Fields updated below — review and hit Save settings when ready.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {% for field in brand_form %}
+            {% if field.name == 'brand_voice' or field.name == 'target_audience' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+
+            {% elif field.name == 'tone_selection' %}
+              <div class="mb-4">
+                <label class="label mb-1">{{ field.label }}</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {% for choice in field.field.choices %}
+                    <label class="flex items-center space-x-2 p-2.5 border border-white/10 rounded-lg hover:border-kova-300 dark:hover:border-kova-600 cursor-pointer transition-colors has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/40">
+                      <input type="checkbox" name="{{ field.html_name }}" value="{{ choice.0 }}"
+                             {% if choice.0 in field.value %}checked{% endif %}
+                             class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+                      <span class="text-sm text-white/70">{{ choice.1 }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+
+            {% elif field.name == 'content_pillars_text' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+              </div>
+
+            {% elif field.name == 'brand_voice_examples_text' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                <p class="text-xs text-white/45 mb-2">{{ field.help_text }}</p>
+                {{ field }}
+              </div>
+
+            {% elif field.name == 'brand_restrictions' %}
+              <details class="mb-4 group" {% if field.value %}open{% endif %}>
+                <summary class="flex items-center justify-between cursor-pointer p-3 bg-white/5 rounded-xl border border-white/10 hover:border-kova-300 dark:hover:border-kova-600 transition-colors">
+                  <div>
+                    <span class="text-sm font-medium text-white">Brand guardrails</span>
+                    <span class="text-xs text-white/45 ml-2">(things your AI should never do)</span>
+                  </div>
+                  <svg class="w-4 h-4 text-white/40 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <div class="mt-3">
+                  {{ field }}
+                  <p class="text-xs text-white/45 mt-1">Topics, words, or approaches to avoid in all AI-generated content.</p>
+                </div>
+              </details>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {# ═══════ Goals & Automation ═══════ #}
+    </div>
+    
+        <div class="flex justify-end pt-6">
+          <button type="submit" class="btn-primary">Save settings</button>
+        </div>
+  </section>
+
+  <section x-show="tab === 'goals'" x-cloak class="space-y-5" aria-label="Goals">
+    <div class="px-0.5">
+      <h2 class="font-serif text-xl font-semibold text-white">Goals</h2>
+      <p class="mt-1 text-sm text-white/45">What your agents optimize for</p>
+    </div>
+    <div class="space-y-5">
+<div class="">
+          {% for field in brand_form %}
+            {% if field.name == 'goals_selection' %}
+              <div class="mb-4">
+                <label class="label mb-3">{{ field.label }}</label>
+                <div class="grid grid-cols-2 gap-3">
+                  {% for choice in field.field.choices %}
+                    <label class="flex items-center space-x-3 p-3 border border-white/10 rounded-lg hover:border-kova-300 dark:hover:border-kova-600 cursor-pointer transition-colors has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/40">
+                      <input type="checkbox" name="{{ field.html_name }}" value="{{ choice.0 }}"
+                             {% if choice.0 in field.value %}checked{% endif %}
+                             class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+                      <span class="text-sm text-white/70">{{ choice.1 }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+
+            {% elif field.name == 'posting_frequency' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+              </div>
+
+            {% elif field.name == 'commerce_autopilot' %}
+              {% if business_model != 'professional' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-kova-500/25 bg-kova-500/10">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-white">{{ field.label }}</label>
+                  {% if field.help_text %}<p class="text-xs text-white/45 mt-0.5">{{ field.help_text }}</p>{% endif %}
+                  <p class="text-xs text-white/45 mt-1">
+                    Turn on for true one-tap selling: snap a photo at
+                    <a href="{% url 'products:snap' %}" class="text-kova-300 underline font-medium">Snap to Sell</a>
+                    and agents handle naming, listing, content, and publishing.
+                  </p>
+                </div>
+              </div>
+              {% endif %}
+
+            {% elif field.name == 'catalog_showcase_weekly' %}
+              {% if business_model != 'professional' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-growth-500/25 bg-growth-500/10">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-growth-600 focus:ring-growth-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-white">{{ field.label }}</label>
+                  {% if field.help_text %}<p class="text-xs text-white/45 mt-0.5">{{ field.help_text }}</p>{% endif %}
+                  <p class="text-xs text-white/45 mt-1">
+                    Or trigger anytime from
+                    <a href="{% url 'products:list' %}" class="text-growth-600 dark:text-growth-400 underline font-medium">My offers</a>
+                    with <strong>Catalog showcase</strong> — branded carousel per item + showcase reel, out-of-stock skipped.
+                  </p>
+                </div>
+              </div>
+              {% endif %}
+
+            {% elif field.name == 'autopilot_enabled' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-kova-500/25 bg-kova-500/10">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-white">{{ field.label }}</label>
+                  {% if field.help_text %}<p class="text-xs text-white/45 mt-0.5">{{ field.help_text }}</p>{% endif %}
+                  <p class="text-xs text-white/45 mt-1">
+                    When enabled, Kova prepares weekly content for your approval in Studio.
+                  </p>
+                </div>
+              </div>
+
+            {% elif field.name == 'autopilot_posts_per_week' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+              </div>
+
+            {% elif field.name == 'autopilot_platforms_selection' %}
+              <div class="mb-4">
+                <label class="label">{{ field.label }}</label>
+                {% if field.help_text %}<p class="text-xs text-white/45 mb-2">{{ field.help_text }}</p>{% endif %}
+                {% if connected_platform_count == 0 %}
+                <div class="p-4 rounded-xl border border-dashed border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20">
+                  <p class="text-sm text-white/70">Connect a platform first — autopilot publishes to the accounts you link.</p>
+                  <a href="{% url 'platforms:list' %}" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-300 hover:underline">
+                    Go to Platforms
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                  </a>
+                </div>
+                {% else %}
+                <div class="grid grid-cols-2 gap-3">
+                  {% for choice in field.field.choices %}
+                    <label class="flex items-center space-x-3 p-3 border border-white/10 rounded-lg hover:border-kova-300 dark:hover:border-kova-600 cursor-pointer transition-colors has-[:checked]:border-kova-500 has-[:checked]:bg-kova-50 dark:has-[:checked]:bg-kova-950/40">
+                      <input type="checkbox" name="{{ field.html_name }}" value="{{ choice.0 }}"
+                             {% if choice.0 in field.value %}checked{% endif %}
+                             class="rounded border-gray-300 text-kova-600 focus:ring-kova-500">
+                      <span class="text-sm text-white/70">{{ choice.1 }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+                <p class="text-[11px] text-white/40 dark:text-white/45 mt-2">Only your connected accounts are listed. <a href="{% url 'platforms:list' %}" class="text-kova-300 hover:underline">Manage platforms</a></p>
+                {% endif %}
+              </div>
+
+            {% elif field.name == 'auto_approve_posts' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_brand_{{ field.name }}" class="text-sm font-medium text-white">{{ field.label }}</label>
+                  {% if field.help_text %}<p class="text-xs text-white/45 mt-0.5">{{ field.help_text }}</p>{% endif %}
+                  <p class="text-xs text-white/45 mt-1">
+                    Optional for Autopilot. When off, you still get weekly campaign previews — content lands in Studio for your approval before scheduling.
+                  </p>
+                </div>
+              </div>
+
+            {% elif field.name == 'engage_autonomy_level' %}
+              {# Engage Agent v2 graduated-autonomy dropdown — plan-tier-gated.
+                 The form's __init__ already narrows the choices to whatever
+                 the user's plan allows; we just render. #}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                <select name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
+                        class="input w-full">
+                  {% for value, label in field.field.choices %}
+                    <option value="{{ value }}" {% if value == field.value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {# ═══════ Operations Autopilot ═══════ #}
+    </div>
+    
+        <div class="flex justify-end pt-6">
+          <button type="submit" class="btn-primary">Save settings</button>
+        </div>
+  </section>
+
+  <section x-show="tab === 'autopilot'" x-cloak class="space-y-5" aria-label="Autopilot">
+    <div class="px-0.5">
+      <h2 class="font-serif text-xl font-semibold text-white">Autopilot</h2>
+      <p class="mt-1 text-sm text-white/45">Lead follow-up and WhatsApp automation</p>
+    </div>
+    <div class="space-y-5">
+<div class="">
+          <h3 class="text-base font-semibold text-white mb-1">Follow-up autopilot</h3>
+          <div class="mb-4 p-3 rounded-lg border border-kova-500/20 bg-kova-500/10">
+            {% if business_model == 'service' %}
+            <p class="text-sm font-medium text-kova-200">Autopilot for service businesses</p>
+            <p class="text-xs text-kova-300 mt-1">Kova handles booking confirmations, follow-ups, and lead nurture — you focus on your clients.</p>
+            {% elif business_model == 'professional' %}
+            <p class="text-sm font-medium text-kova-200">Autopilot for professionals</p>
+            <p class="text-xs text-kova-300 mt-1">Kova manages consultation follow-ups, authority content cadence, and lead qualification.</p>
+            {% else %}
+            <p class="text-sm font-medium text-kova-200">Autopilot for your store</p>
+            <p class="text-xs text-kova-300 mt-1">Kova handles product listing, stock updates, and customer follow-ups automatically.</p>
+            {% endif %}
+          </div>
+          <p class="text-sm text-white/45 mb-2">
+            Lead follow-up, WhatsApp nudges, and auto-publish — all off by default. Turn on only what you want.
+          </p>
+          <p class="text-xs text-white/45 mb-4">
+            <strong>Content autopilot</strong> (weekly campaign plans) lives in <a href="{% url 'content:studio' %}" class="text-kova-300 underline">Studio → Autopilot</a>.
+            {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}
+              <span class="block mt-1 text-gold-700 dark:text-gold-400">WhatsApp inbox requires an <a href="{% url 'billing:pricing' %}" class="underline font-medium">active Kova subscription</a>.</span>
+            {% elif not plan_limits.whatsapp_enabled %}
+              <span class="block mt-1 text-teal-700 dark:text-teal-400">Your plan includes WhatsApp inbox — connect your business number under Platforms.</span>
+            {% endif %}
+          </p>
+
+          {% for field in autopilot_form %}
+            {% if field.name == 'autopilot_auto_publish_approved' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-growth-500/25 bg-growth-500/10">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-growth-600 focus:ring-growth-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-white">Auto-publish approved posts</label>
+                  <p class="text-xs text-white/45 mt-0.5">
+                    {% if business_model == 'service' %}
+                    Publish approved booking promos and service showcases automatically when their schedule time arrives.
+                    {% elif business_model == 'professional' %}
+                    Publish approved authority posts and case studies automatically when their schedule time arrives.
+                    {% else %}
+                    When a post is approved and its schedule time arrives, publish without an extra click. Respects emergency pause and content safety.
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_auto_enroll_leads' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-kova-500/25 bg-kova-500/10">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-white">Auto-enroll new leads</label>
+                  <p class="text-xs text-white/45 mt-0.5">
+                    {% if business_model == 'service' %}
+                    New inquiries automatically join your booking follow-up sequence. Manual enroll still works anytime.
+                    {% elif business_model == 'professional' %}
+                    New leads automatically join your consultation nurture sequence. Manual enroll still works anytime.
+                    {% else %}
+                    New leads from forms, walk-ins, WhatsApp, and QR automatically join your Welcome nurture sequence. Manual enroll still works anytime.
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_auto_create_wa_leads' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-growth-500/25 bg-growth-500/10 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}disabled{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-growth-600 focus:ring-growth-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-white">Auto-create leads from WhatsApp</label>
+                  <p class="text-xs text-white/45 mt-0.5">First message from a new number creates a hot lead stub. Use Save as lead in inbox for one-off cases.</p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_wa_followup_24h' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-gold-500/25 bg-gold-500/10 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}disabled{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-gold-600 focus:ring-gold-500 dark:bg-gray-900">
+                <div>
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-white">24h WhatsApp follow-up</label>
+                  <p class="text-xs text-white/45 mt-0.5">If a customer messaged and you have not replied in 24 hours, send a gentle nudge (max once per week per chat, within the 24h window).</p>
+                </div>
+              </div>
+            {% elif field.name == 'autopilot_wa_faq_replies' %}
+              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-kova-500/20 bg-white/5 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
+                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
+                       {% if field.value %}checked{% endif %}
+                       {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}disabled{% endif %}
+                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 dark:bg-gray-900">
+                <div class="flex-1">
+                  <label for="id_{{ field.name }}" class="text-sm font-medium text-white">WhatsApp FAQ auto-replies</label>
+                  <p class="text-xs text-white/45 mt-0.5">Instant answers when messages match your keywords. Skips if you replied in the last 5 minutes. Max 3 auto-replies per chat per day.</p>
+                </div>
+              </div>
+            {% elif field.name|slice:":12" == 'faq_keywords' or field.name|slice:":9" == 'faq_reply' %}
+              {# rendered in FAQ block below #}
+            {% else %}
+              <div class="mb-4">
+                <label for="id_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+              </div>
+            {% endif %}
+          {% endfor %}
+
+          <div class="mt-2 p-4 rounded-xl border border-white/10 bg-white/5">
+            <h4 class="text-sm font-semibold text-white mb-2">FAQ keyword rules (up to 5)</h4>
+            <p class="text-xs text-white/45 mb-3">Comma-separated keywords, first match wins. Only used when FAQ auto-replies is on.</p>
+            {% for i in "01234" %}
+            <div class="grid sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs font-medium text-white/70">Keywords {{ forloop.counter }}</label>
+                {% if forloop.counter0 == 0 %}{{ autopilot_form.faq_keywords_0 }}{% endif %}
+                {% if forloop.counter0 == 1 %}{{ autopilot_form.faq_keywords_1 }}{% endif %}
+                {% if forloop.counter0 == 2 %}{{ autopilot_form.faq_keywords_2 }}{% endif %}
+                {% if forloop.counter0 == 3 %}{{ autopilot_form.faq_keywords_3 }}{% endif %}
+                {% if forloop.counter0 == 4 %}{{ autopilot_form.faq_keywords_4 }}{% endif %}
+              </div>
+              <div>
+                <label class="text-xs font-medium text-white/70">Reply {{ forloop.counter }}</label>
+                {% if forloop.counter0 == 0 %}{{ autopilot_form.faq_reply_0 }}{% endif %}
+                {% if forloop.counter0 == 1 %}{{ autopilot_form.faq_reply_1 }}{% endif %}
+                {% if forloop.counter0 == 2 %}{{ autopilot_form.faq_reply_2 }}{% endif %}
+                {% if forloop.counter0 == 3 %}{{ autopilot_form.faq_reply_3 }}{% endif %}
+                {% if forloop.counter0 == 4 %}{{ autopilot_form.faq_reply_4 }}{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          {% for error in autopilot_form.non_field_errors %}
+            <p class="text-xs text-red-600 dark:text-red-400 mt-2">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        {# ═══════ Default CTA ═══════ #}
+    </div>
+    
+        <div class="flex justify-end pt-6">
+          <button type="submit" class="btn-primary">Save settings</button>
+        </div>
+  </section>
+
+  <section x-show="tab === 'cta'" x-cloak class="space-y-5" aria-label="CTA">
+    <div class="px-0.5">
+      <h2 class="font-serif text-xl font-semibold text-white">CTA</h2>
+      <p class="mt-1 text-sm text-white/45">Default call-to-action on posts</p>
+    </div>
+    <div class="space-y-5">
+<div class="" x-data="{ ctaType: '{{ brand_form.default_cta_type.value|default:'none' }}' }">
+          {% for field in brand_form %}
+            {% if field.name == 'default_cta_type' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">CTA type</label>
+                {{ field }}
+              </div>
+            {% elif field.name == 'default_cta_url' %}
+              <div class="mb-4" x-show="ctaType === 'link' || ctaType === 'kova_link'" x-cloak>
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+              </div>
+            {% elif field.name == 'cta_phone' %}
+              <div class="mb-4" x-show="ctaType === 'phone'" x-cloak>
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+              </div>
+            {% elif field.name == 'cta_email' %}
+              <div class="mb-4" x-show="ctaType === 'email'" x-cloak>
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+              </div>
+            {% elif field.name == 'cta_whatsapp' %}
+              <div class="mb-4" x-show="ctaType === 'whatsapp'" x-cloak>
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                <p class="text-xs text-white/45 mt-1">International format without + (e.g. 254712345678)</p>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {# ═══════ Visual Identity ═══════ #}
+    </div>
+    
+        <div class="flex justify-end pt-6">
+          <button type="submit" class="btn-primary">Save settings</button>
+        </div>
+  </section>
+
+  <section x-show="tab === 'visual'" x-cloak class="space-y-5" aria-label="Visual">
+    <div class="px-0.5">
+      <h2 class="font-serif text-xl font-semibold text-white">Visual</h2>
+      <p class="mt-1 text-sm text-white/45">Colors, logo, and style</p>
+    </div>
+    <div class="space-y-5">
+<div class="">
+          {% for field in brand_form %}
+            {% if field.name == 'visual_style' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+              </div>
+
+            {% elif field.name == 'brand_colors_text' %}
+              <div class="mb-4" x-data="{
+                colors: '{{ field.value|default:''|escapejs }}'.split(',').map(c => c.trim()).filter(c => c.startsWith('#')),
+                labels: ['Primary', 'Secondary', 'Accent', 'Extra', 'Extra']
+              }">
+                <label class="label mb-1">{{ field.label }}</label>
+                <p class="text-xs text-white/45 mb-3">{{ field.help_text }}</p>
+                <div class="flex items-end gap-3 flex-wrap">
+                  <template x-for="(color, i) in colors" :key="i">
+                    <div class="flex flex-col items-center gap-1.5">
+                      <div class="relative">
+                        <input type="color" :value="color" @input="colors[i] = $el.value"
+                               class="w-12 h-12 rounded-xl cursor-pointer border-2 border-white/10 hover:border-kova-400 dark:hover:border-kova-400 transition-colors p-0.5">
+                        <button type="button" @click="colors.splice(i, 1)"
+                                class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] leading-none flex items-center justify-center hover:bg-red-600 transition-colors"
+                                x-show="colors.length > 1">&times;</button>
+                      </div>
+                      <span class="text-[10px] text-white/40 dark:text-white/45" x-text="labels[i] || 'Extra'"></span>
+                      <span class="text-[9px] text-gray-300 dark:text-gray-600 font-mono" x-text="color"></span>
+                    </div>
+                  </template>
+                  <button type="button" @click="colors.push('#0066FF')" x-show="colors.length < 5"
+                          class="w-12 h-12 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-white/40 dark:text-white/45 hover:border-kova-400 hover:text-kova-500 dark:hover:border-kova-400 dark:hover:text-kova-400 transition-colors text-xl flex items-center justify-center mb-6">+</button>
+                </div>
+                <p class="text-[10px] text-white/40 dark:text-white/45 mt-1" x-show="colors.length === 0">No colors set — AI will use elegant defaults.</p>
+                <input type="hidden" name="{{ field.html_name }}" :value="colors.join(', ')">
+              </div>
+
+            {% elif field.name == 'brand_logo_url' %}
+              <div class="mb-4">
+                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {# ═══════ Snap Brand Kit (Photoroom) ═══════ #}
+    </div>
+    
+        <div class="flex justify-end pt-6">
+          <button type="submit" class="btn-primary">Save settings</button>
+        </div>
+  </section>
+
+  <section x-show="tab === 'brand-kit'" x-cloak class="space-y-5" aria-label="Brand kit">
+    <div class="px-0.5">
+      <h2 class="font-serif text-xl font-semibold text-white">Brand kit</h2>
+      <p class="mt-1 text-sm text-white/45">Photo polish for Snap</p>
+    </div>
+    <div class="space-y-5">
+<div class="space-y-5" x-data="brandKitPreview({ enabled: {{ brand_kit_preview.enabled|yesno:'true,false' }}, bg: '{{ brand_kit_preview.bg_color|escapejs }}', shadow: '{{ brand_kit_form.shadow_mode.value|default:'ai.soft'|escapejs }}', padding: '{{ brand_kit_preview.padding|escapejs }}' })">
+          <div class="grid md:grid-cols-2 gap-5">
+            <div class="space-y-4">
+              <div class="flex items-start gap-3 p-3 rounded-xl border border-white/10">
+                {{ brand_kit_form.brand_kit_enabled }}
+                <div>
+                  <label for="id_brand_kit_enabled" class="text-sm font-medium text-white">{{ brand_kit_form.brand_kit_enabled.label }}</label>
+                  <p class="text-xs text-white/45 mt-0.5">{{ brand_kit_form.brand_kit_enabled.help_text }}</p>
+                </div>
+              </div>
+
+              <div>
+                <label for="id_shadow_mode" class="label">{{ brand_kit_form.shadow_mode.label }}</label>
+                <select name="shadow_mode" id="id_shadow_mode" class="input" x-model="shadow" @change="updateShadow($event.target.value)">
+                  {% for value, label in brand_kit_form.shadow_mode.field.choices %}
+                  <option value="{{ value }}" {% if brand_kit_form.shadow_mode.value == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {% if brand_kit_form.shadow_mode.help_text %}
+                <p class="text-xs text-white/45 mt-1">{{ brand_kit_form.shadow_mode.help_text }}</p>
+                {% endif %}
+              </div>
+
+              <div>
+                <label for="id_padding" class="label">{{ brand_kit_form.padding.label }}</label>
+                <select name="padding" id="id_padding" class="input" x-model="padding">
+                  {% for value, label in brand_kit_form.padding.field.choices %}
+                  <option value="{{ value }}" {% if brand_kit_form.padding.value == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                <label for="id_studio_bg_pref" class="label">{{ brand_kit_form.studio_bg_pref.label }}</label>
+                <select name="studio_bg_pref" id="id_studio_bg_pref" class="input" @change="updateBgPref($event.target.value)">
+                  {% for value, label in brand_kit_form.studio_bg_pref.field.choices %}
+                  <option value="{{ value }}" {% if brand_kit_form.studio_bg_pref.value == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                <label for="id_outline_color" class="label">{{ brand_kit_form.outline_color.label }}</label>
+                {{ brand_kit_form.outline_color }}
+                {% if brand_kit_form.outline_color.help_text %}
+                <p class="text-xs text-white/45 mt-1">{{ brand_kit_form.outline_color.help_text }}</p>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-white/10 p-4 bg-white/5">
+              <p class="text-xs font-medium text-white/70 mb-3">Studio preview</p>
+              <div class="aspect-square rounded-lg overflow-hidden relative mx-auto max-w-[220px]"
+                   :style="'background:' + (enabled ? bg : '#F3F4F6')">
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="relative w-24 h-28 rounded-lg bg-white/90 dark:bg-white/80"
+                       :class="shadowClass"
+                       style="transform: translateY(-4px);">
+                    <div class="absolute inset-2 rounded-md bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                  </div>
+                </div>
+                <div class="absolute bottom-2 left-2 right-2 text-center">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-black/50 text-white" x-text="shadowLabel"></span>
+                </div>
+              </div>
+              <p class="text-[10px] text-white/45 mt-3 text-center" x-show="enabled">
+                Padding <span x-text="padding"></span> · applied on every Snap polish
+              </p>
+              <p class="text-[10px] text-white/45 mt-3 text-center" x-show="!enabled">
+                Brand kit off — industry defaults apply
+              </p>
+            </div>
+          </div>
+        </div>
+    </div>
+    
+        <div class="flex justify-end pt-6">
+          <button type="submit" class="btn-primary">Save settings</button>
+        </div>
+  </section>
+  </form>
+
+<section x-show="tab === 'plan'" x-cloak class="space-y-5" aria-label="Plan">
+    <div class="px-6 py-4 border-b border-white/10">
+      <h2 class="text-lg font-semibold text-white">Plan &amp; billing</h2>
+      <p class="text-sm text-white/45 mt-1">
+        You're on <strong class="text-white/85">{{ request.user.profile.get_plan_display }}</strong>
+        {% if seed_usage %}
+        · <span class="tabular-nums">{{ seed_usage.used }} / {{ seed_usage.max }}</span> campaigns used this month
+        {% if seed_usage.bonus %}<span class="text-kova-300">(+{{ seed_usage.bonus }} add-on)</span>{% endif %}
+        {% endif %}
+      </p>
+    </div>
+    <div class="space-y-4 px-5 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <p class="text-sm text-white/55">
+        Manage subscription, M-Pesa receipts, campaign add-ons, and usage.
+        {% if seed_usage.at_limit and not seed_usage.unlimited %}
+        <span class="block mt-1 text-gold-700 dark:text-gold-400 font-medium">You've used all campaigns this month — add a Boost or Burst pack to keep creating.</span>
+        {% endif %}
+      </p>
+      <div class="flex flex-wrap gap-2 shrink-0">
+        {% if seed_usage.at_limit and not seed_usage.unlimited %}
+        <a href="{% url 'billing:pricing' %}" class="btn-primary btn-sm">Get more campaigns</a>
+        {% endif %}
+        <a href="{% url 'billing:overview' %}" class="btn-secondary btn-sm">Open billing</a>
+      </div>
+    </div>
+  </div>
+
+<section x-show="tab === 'danger'" x-cloak class="space-y-5" aria-label="Danger zone">
+    <div class="border-b border-red-500/20 px-5 py-4">
+      <h2 class="text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
+    </div>
+    <div class="space-y-4 px-5 py-5 space-y-6">
+
+      {# ═══════ Emergency Pause ═══════ #}
+      <div class="p-4 rounded-xl border-2 {% if request.user.profile.emergency_pause %}border-red-500 bg-red-50 dark:bg-red-950/30{% else %}border-gold-300 dark:border-gold-700 bg-gold-50/50 dark:bg-gold-950/20{% endif %}">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg {% if request.user.profile.emergency_pause %}bg-red-100 dark:bg-red-900/50{% else %}bg-gold-100 dark:bg-gold-900/40{% endif %} flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 {% if request.user.profile.emergency_pause %}text-red-600 dark:text-red-400{% else %}text-gold-600 dark:text-gold-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold {% if request.user.profile.emergency_pause %}text-red-800 dark:text-red-200{% else %}text-white{% endif %}">Emergency pause</h3>
+            <p class="text-xs {% if request.user.profile.emergency_pause %}text-red-700 dark:text-red-300{% else %}text-white/55{% endif %} mt-1">
+              {% if request.user.profile.emergency_pause %}
+                All autonomous agent actions are <strong>halted</strong> — publishing, auto-replies, strategist campaigns, and media queue are frozen.
+              {% else %}
+                Instantly halt ALL autonomous agent actions (publishing, auto-replies, strategist campaigns, media queue). Use this if something goes wrong.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:emergency_pause' %}" class="mt-3">
+          {% csrf_token %}
+          {% if request.user.profile.emergency_pause %}
+          <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-semibold bg-growth-600 hover:bg-growth-700 text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-growth-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+            Resume all agents
+          </button>
+          {% else %}
+          <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+            Activate emergency pause
+          </button>
+          {% endif %}
+        </form>
+      </div>
+
+      {# ═══════ Delete Account ═══════ #}
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p class="font-medium text-white">Delete account</p>
+          <p class="text-sm text-white/45">Permanently remove your account and deactivate access. Type your email to confirm.</p>
+        </div>
+        <form method="post" action="{% url 'accounts:delete_account' %}" class="shrink-0 w-full sm:w-auto"
+              onsubmit="return confirm('Delete your account permanently? This cannot be undone.');">
+          {% csrf_token %}
+          <input type="email" name="confirm_email" required autocomplete="off"
+                 placeholder="{{ request.user.email }}"
+                 class="input text-sm w-full sm:w-56 mb-2 sm:mb-0 sm:mr-2 inline-block">
+          <button type="submit" class="btn-danger w-full sm:w-auto">Delete account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function brandKitPreview(initial) {
+  const shadowLabels = {
+    'ai.soft': 'Soft shadow (AI)',
+    'ai.hard': 'Hard shadow (AI)',
+    'ai.floating': 'Floating shadow',
+    'ai.auto-with-overrides': 'AI auto shadow',
+    'ai.preset-soft': 'Soft shadow (AI)',
+    'ai.preset-hard': 'Hard shadow (AI)',
+  };
+  const bgByPref = {
+    brand: initial.bg || '#FFFFFF',
+    white: '#FFFFFF',
+    dark: '#1A1A2E',
+  };
+  return {
+    enabled: initial.enabled,
+    bg: initial.bg,
+    shadow: initial.shadow,
+    padding: initial.padding,
+    get shadowLabel() {
+      return shadowLabels[this.shadow] || 'Soft shadow';
+    },
+    get shadowClass() {
+      if (this.shadow === 'ai.hard') return 'shadow-[0_10px_18px_rgba(0,0,0,0.45)]';
+      if (this.shadow === 'ai.floating') return 'shadow-[0_28px_40px_rgba(0,0,0,0.22)]';
+      return 'shadow-[0_16px_28px_rgba(0,0,0,0.28)]';
+    },
+    updateShadow(value) {
+      this.shadow = value;
+    },
+    updateBgPref(pref) {
+      this.bg = bgByPref[pref] || this.bg;
+    },
+  };
+}
+
+function settingsBrandBuilder() {
+  return {
+    open: false,
+    hint: '',
+    loading: false,
+    error: '',
+    upgradeUrl: '',
+    success: false,
+
+    async generateBrand() {
+      this.loading = true;
+      this.error = '';
+      this.upgradeUrl = '';
+      this.success = false;
+      if (window.KovaBusy) {
+        window.KovaBusy.start({ instant: true, message: 'Training Kova on your brand voice…' });
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('hint', this.hint);
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60000);
+
+        const response = await fetch('{% url "accounts:ai_brand_builder" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+          body: formData,
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseErr) {
+          this.error = `Server error (${response.status}). Try again in a moment.`;
+          return;
+        }
+
+        if (!response.ok) {
+          if (data.error_type === 'plan_limit' && data.upgrade_url) {
+            this.error = (data.error || 'Daily AI budget reached.') +
+                         ' Tap “Upgrade” below to continue.';
+            this.upgradeUrl = data.upgrade_url;
+          } else {
+            this.error = data.error || 'Something went wrong. Try again.';
+            this.upgradeUrl = '';
+          }
+          return;
+        }
+
+        // Populate the settings form fields
+        const voiceField = document.querySelector('[name="brand_voice"]') || document.getElementById('id_brand_voice');
+        if (voiceField && data.brand_voice) voiceField.value = data.brand_voice;
+
+        const audienceField = document.querySelector('[name="target_audience"]') || document.getElementById('id_brand_target_audience');
+        if (audienceField && data.target_audience) audienceField.value = data.target_audience;
+
+        const pillarsField = document.querySelector('[name="content_pillars_text"]') || document.getElementById('id_brand_content_pillars_text');
+        if (pillarsField && data.content_pillars) pillarsField.value = data.content_pillars.join('\n');
+
+        const restrictionsField = document.querySelector('[name="brand_restrictions"]') || document.getElementById('id_brand_brand_restrictions');
+        if (restrictionsField && data.brand_restrictions) {
+          restrictionsField.value = data.brand_restrictions;
+          const details = restrictionsField.closest('details');
+          if (details) details.open = true;
+        }
+
+        const examplesField = document.querySelector('[name="brand_voice_examples_text"]') || document.getElementById('id_brand_brand_voice_examples_text');
+        if (examplesField && data.brand_voice_examples && data.brand_voice_examples.length) {
+          examplesField.value = data.brand_voice_examples.join('\n\n');
+        }
+
+        // Check the right tone checkboxes
+        if (data.tone_attributes && data.tone_attributes.length > 0) {
+          document.querySelectorAll('input[name="tone_selection"]').forEach(cb => cb.checked = false);
+          data.tone_attributes.forEach(tone => {
+            const cb = document.querySelector(`input[name="tone_selection"][value="${tone}"]`);
+            if (cb) cb.checked = true;
+          });
+        }
+
+        this.success = true;
+
+        // Scroll to the voice fields so user can see the result
+        const root = document.getElementById('settings-root');
+        if (root && root._x_dataStack && root._x_dataStack[0]) {
+          root._x_dataStack[0].tab = 'voice';
+          history.replaceState(null, '', '?tab=voice');
+        }
+
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          this.error = 'Request timed out. The AI is busy — please try again.';
+        } else {
+          this.error = 'Network error. Check your connection and try again.';
+        }
+      } finally {
+        if (window.KovaBusy) window.KovaBusy.stop();
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
+{% endblock %}

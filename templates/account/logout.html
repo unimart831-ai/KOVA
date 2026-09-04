@@ -1,21 +1,22 @@
-{% extends "layouts/marketing.html" %}
+{% extends "account/base.html" %}
 
-{% block title %}Sign Out — Kova Agent{% endblock %}
+{% block account_title %}Sign Out — KOVA{% endblock %}
+{% block account_heading %}Sign out{% endblock %}
+{% block account_messages %}{% endblock %}
 
-{% block content %}
-<div class="brand-atmosphere min-h-[60vh] flex items-center justify-center py-12 px-4">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative w-full max-w-sm text-center glass-panel rounded-2xl p-8 reveal">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Sign out</h1>
-    <p class="text-gray-600 dark:text-gray-400 mb-8">Are you sure you want to sign out?</p>
+{% block account_lead %}
+<p class="kova-auth__hint mt-2">Are you sure you want to sign out of KOVA?</p>
+{% endblock %}
 
-    <form method="post" action="{% url 'account_logout' %}">
-      {% csrf_token %}
-      <button type="submit" class="btn-primary w-full mb-3">Yes, sign me out</button>
-    </form>
-    <a href="{% url 'brief:home' %}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400">
-      Go back to dashboard
-    </a>
-  </div>
-</div>
+{% block account_body %}
+<form method="post" action="{% url 'account_logout' %}" class="kova-auth__form">
+  {% csrf_token %}
+  {% include "components/brand/_primary_cta_button.html" with label="Yes, sign me out" %}
+</form>
+{% endblock %}
+
+{% block account_footer %}
+<p class="kova-auth__foot">
+  <a href="{% url 'brief:home' %}">Back to dashboard</a>
+</p>
 {% endblock %}

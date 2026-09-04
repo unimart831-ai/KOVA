@@ -1,0 +1,166 @@
+{# Live catalog-showcase pipeline modal — opens when ?showcase=<seed_id> #}
+{% if showcase_seed_id %}
+<div x-data="catalogShowcaseModal('{{ showcase_seed_id|escapejs }}')"
+     x-init="init()"
+     x-cloak>
+  <div x-show="open"
+       class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="catalog-showcase-title">
+    <div class="absolute inset-0 bg-gray-950/70 backdrop-blur-sm" @click="close()"></div>
+
+    <div class="relative w-full max-w-xl max-h-[90vh] overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-growth-600 to-teal-600 dark:from-growth-700 dark:to-teal-700">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Catalog showcase</p>
+            <h2 id="catalog-showcase-title" class="text-lg font-bold text-white mt-0.5" x-text="headerTitle"></h2>
+            <p class="text-xs text-white/80 mt-1" x-text="headerSubtitle"></p>
+          </div>
+          <button type="button" @click="close()" class="text-white/70 hover:text-white p-1 shrink-0" aria-label="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+        <template x-if="!terminal">
+          <div>
+            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-growth-500 to-teal-500 rounded-full animate-pulse" style="width: 60%"></div>
+            </div>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-2 text-center">
+              Brand-matched carousel slides (name + price each) and showcase reel — runs in the background.
+            </p>
+          </div>
+        </template>
+
+        <template x-if="status === 'failed'">
+          <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <p class="text-sm font-medium text-red-800 dark:text-red-200" x-text="errorMessage || 'Showcase generation failed.'"></p>
+          </div>
+        </template>
+
+        <template x-if="items.length">
+          <div>
+            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              Generated visuals — <span x-text="carouselCount"></span> carousel(s) · <span x-text="reelCount"></span> reel(s)
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <template x-for="item in items" :key="item.post_id">
+                <div class="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                  <div class="relative aspect-square bg-gray-200 dark:bg-gray-700">
+                    <img x-show="item.thumbnail_url" :src="item.thumbnail_url" alt="" class="w-full h-full object-cover">
+                    <span class="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                          :class="item.format === 'reel' ? 'bg-kova-600 text-white' : 'bg-growth-600 text-white'"
+                          x-text="item.format === 'reel' ? 'Reel' : 'Carousel'"></span>
+                    <span x-show="item.format === 'reel' && item.status === 'composing'"
+                          class="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <span class="block w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    </span>
+                    <a x-show="item.format === 'reel' && item.status === 'ready' && item.video_url"
+                       :href="item.video_url" target="_blank" rel="noopener"
+                       class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/45 transition-colors">
+                      <svg class="w-9 h-9 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </a>
+                  </div>
+                  <div class="px-2 py-1.5 flex items-center justify-between gap-1">
+                    <span class="text-[10px] font-medium text-gray-600 dark:text-gray-300 capitalize truncate" x-text="item.platform"></span>
+                    <span class="text-[9px]"
+                          :class="{
+                            'text-growth-600': item.status === 'ready',
+                            'text-gold-600 animate-pulse': item.status === 'composing' || item.status === 'rendering',
+                            'text-red-600': item.status === 'failed'
+                          }"
+                          x-text="item.status === 'ready' ? 'Ready' : (item.status === 'failed' ? 'Failed' : 'Working…')"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2">
+              Tap a reel to preview the video. Full posts (with captions) are in the Studio review queue.
+            </p>
+          </div>
+        </template>
+
+        <template x-if="terminal && !items.length && status !== 'failed'">
+          <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-6">No visuals were generated.</p>
+        </template>
+      </div>
+
+      <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
+        <a :href="studioUrl"
+           class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-growth-600 text-white hover:bg-growth-700 text-center">
+          Review &amp; publish in Studio
+        </a>
+        <button type="button" @click="close()" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">
+          <span x-text="terminal ? 'Close' : 'Run in background'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function catalogShowcaseModal(seedId) {
+  return {
+    open: true,
+    seedId: seedId,
+    status: 'generating',
+    terminal: false,
+    items: [],
+    carouselCount: 0,
+    reelCount: 0,
+    errorMessage: '',
+    studioUrl: '/content/studio/',
+    pollTimer: null,
+    get headerTitle() {
+      if (this.status === 'completed') return 'Showcase ready';
+      if (this.status === 'failed') return 'Showcase failed';
+      if (this.status === 'composing') return 'Composing your reel…';
+      return 'Building your catalog showcase…';
+    },
+    get headerSubtitle() {
+      if (this.status === 'completed') return 'Preview below, then review & publish in Studio.';
+      if (this.status === 'failed') return 'Nothing was published. Check the message below.';
+      return 'Branded carousel per item + showcase reel with names and prices.';
+    },
+    init() {
+      this.poll();
+      this.pollTimer = setInterval(() => this.poll(), 2500);
+    },
+    close() {
+      this.open = false;
+      if (this.pollTimer) clearInterval(this.pollTimer);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('showcase');
+      window.history.replaceState({}, '', url);
+    },
+    async poll() {
+      try {
+        const resp = await fetch(`/products/catalog-showcase/${this.seedId}/status/`, {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        this.status = data.status;
+        this.terminal = data.terminal;
+        this.items = data.items || [];
+        this.carouselCount = data.carousel_count || 0;
+        this.reelCount = data.reel_count || 0;
+        this.errorMessage = data.error_message || '';
+        this.studioUrl = data.studio_url || '/content/studio/';
+        if (data.terminal && this.pollTimer) {
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
+      } catch (e) {
+        console.warn('Catalog showcase poll failed', e);
+      }
+    },
+  };
+}
+</script>
+{% endif %}

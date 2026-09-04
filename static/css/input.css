@@ -63,6 +63,9 @@ textarea {
     --brand-accent: #3385FF;
     --brand-accent-hover: #0066FF;
     --brand-accent-subtle: #E6F0FF;
+    --kova-canvas: #06131a;
+    --kova-canvas-muted: #0a1c27;
+    --kova-canvas-raised: #0e2634;
 
     /* Legacy aliases → blue + slate */
     --brand-emerald: #0066FF;
@@ -127,10 +130,10 @@ textarea {
   }
 
   html {
-    @apply scroll-smooth overflow-x-hidden;
+    @apply scroll-smooth overflow-x-hidden overflow-y-auto;
   }
   body {
-    @apply bg-white text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100 overflow-x-hidden;
+    @apply bg-canvas text-gray-100 antialiased;
     max-width: 100%;
     font-feature-settings: "cv05", "ss01";
     -webkit-font-smoothing: antialiased;
@@ -233,8 +236,35 @@ textarea {
   .input-field {
     @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-accent-500 focus:ring-1 focus:ring-accent-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500;
   }
+  /* Dashboard dark canvas — time/select/file pickers */
+  .dark .input,
+  .dark .input-field {
+    color-scheme: dark;
+    @apply border-white/10 bg-canvas-raised text-white placeholder-white/35 focus:border-kova-500 focus:ring-kova-500;
+  }
+  .dark .input-time {
+    @apply min-h-[2.5rem] appearance-none;
+  }
+  .dark .input-time::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.7;
+    filter: invert(1);
+  }
+  .dark .input-file::file-selector-button {
+    @apply mr-3 cursor-pointer rounded-md border-0 bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/15;
+  }
+  .dark select.input {
+    @apply pr-8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ffffff99'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-position: right 0.6rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+  }
   .label {
     @apply block text-sm font-semibold text-gray-800 mb-1 dark:text-gray-200;
+  }
+  .dark .label {
+    @apply mb-1.5 text-xs font-medium text-white/55;
   }
 
   /* Onboarding / form section headings — high contrast */
@@ -346,6 +376,74 @@ textarea {
   /* Glass card — solid surfaces (no frosted glass on marketing) */
   .glass-panel {
     @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm;
+  }
+
+  /* Legal docs on marketing dark canvas */
+  .legal-doc {
+    @apply font-sans text-[15px] font-light leading-relaxed text-white/70;
+  }
+  .legal-doc h2 {
+    @apply mb-3 font-serif text-xl font-semibold tracking-tight text-white;
+  }
+  .legal-doc h3 {
+    @apply mb-2 mt-5 text-lg font-medium text-white/90;
+  }
+  .legal-doc p {
+    @apply mb-3 last:mb-0;
+  }
+  .legal-doc ul {
+    @apply mb-3 list-disc space-y-1 pl-6 last:mb-0;
+  }
+  .legal-doc ol {
+    @apply mb-3 list-decimal space-y-1 pl-6 last:mb-0;
+  }
+  .legal-doc li {
+    @apply text-white/70;
+  }
+  .legal-doc strong {
+    @apply font-semibold text-white;
+  }
+  .legal-doc a {
+    @apply font-medium text-kova-400 transition-colors hover:text-kova-300;
+  }
+  .legal-doc table {
+    @apply w-full text-sm text-white/70;
+  }
+  .legal-doc thead tr {
+    @apply border-b border-white/15 text-left text-white/45;
+  }
+  .legal-doc th {
+    @apply pb-2 pr-4 font-medium;
+  }
+  .legal-doc tbody tr {
+    @apply border-b border-white/10 last:border-0;
+  }
+  .legal-doc td {
+    @apply py-2 pr-4 align-top;
+  }
+  .legal-doc .legal-panel {
+    @apply mt-4 rounded-xl border border-white/10 bg-canvas-muted p-5;
+  }
+  .legal-doc .legal-ok {
+    @apply mb-8 rounded-xl border border-kova-500/30 bg-kova-500/10 p-5;
+  }
+  .legal-doc .legal-ok > p:first-child {
+    @apply m-0 font-semibold text-kova-300;
+  }
+  .legal-doc .legal-warn {
+    @apply mb-8 rounded-xl border border-white/15 bg-white/5 p-5;
+  }
+  .legal-doc .legal-warn > p:first-child {
+    @apply m-0 font-semibold text-white;
+  }
+  .legal-doc dl {
+    @apply grid gap-3 text-sm text-white/70;
+  }
+  .legal-doc dt {
+    @apply font-medium text-white;
+  }
+  .legal-doc dd {
+    @apply mt-0.5;
   }
 
   /* Marketing / auth surfaces — white canvas, Pure Blue accents */

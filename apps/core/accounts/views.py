@@ -82,7 +82,14 @@ def settings_view(request):
                 from apps.core.accounts.onboarding_express import apply_business_model_defaults
                 apply_business_model_defaults(profile, request.user)
             messages.success(request, "Settings saved.")
-            return redirect("accounts:settings")
+            tab = (request.POST.get("settings_tab") or "account").strip()
+            allowed = {
+                "account", "brand", "voice", "goals", "autopilot",
+                "cta", "visual", "brand-kit", "plan", "danger",
+            }
+            if tab not in allowed:
+                tab = "account"
+            return redirect(f"{reverse('accounts:settings')}?tab={tab}")
     else:
         user_form = UserSettingsForm(instance=request.user)
         brand_form = BrandProfileForm(instance=profile, user=request.user)
@@ -97,7 +104,19 @@ def settings_view(request):
 
     seed_usage = get_seed_usage(request.user)
 
-    return render(request, "accounts/settings.html", {
+    active_tab = (
+        request.POST.get("settings_tab")
+        or request.GET.get("tab")
+        or "account"
+    ).strip()
+    allowed_tabs = {
+        "account", "brand", "voice", "goals", "autopilot",
+        "cta", "visual", "brand-kit", "plan", "danger",
+    }
+    if active_tab not in allowed_tabs:
+        active_tab = "account"
+
+    return render(request, "dashboard/settings.html", {
         "user_form": user_form,
         "brand_form": brand_form,
         "brand_kit_form": brand_kit_form,
@@ -113,6 +132,8 @@ def settings_view(request):
         "seed_usage": seed_usage,
         "page_title": "Settings",
         "business_model": getattr(profile, "business_model", ""),
+        "hide_page_heading": True,
+        "active_settings_tab": active_tab,
     })
 
 
@@ -131,7 +152,7 @@ def cta_settings_view(request):
 
     kova_pages = request.user.kova_pages.filter(is_published=True).only("slug", "title")[:10]
 
-    return render(request, "accounts/cta_settings.html", {
+    return render(request, "dashboard/accounts/cta_settings.html", {
         "form": form,
         "kova_pages": kova_pages,
         "page_title": "CTA Settings",
@@ -175,7 +196,7 @@ def _looks_like_social_profile_url(value: str) -> bool:
 
 @login_required
 def collect_phone(request):
-    """Required for OAuth signups — email signup collects phone on the form."""
+    """Collect phone after email or OAuth signup before onboarding continues."""
     if _user_has_phone(request.user):
         return redirect("accounts:onboarding_choose_path")
 
@@ -887,7 +908,7 @@ def ai_learning_view(request):
             "is_reverted": "reverted" in (a.input_data or {}),
         })
 
-    return render(request, "accounts/ai_learning.html", {
+    return render(request, "dashboard/accounts/ai_learning.html", {
         "actions": annotated,
         "profile": request.user.profile,
         "page_title": "AI Learning",
@@ -1154,7 +1175,7 @@ def business_brain_view(request):
         .distinct()
     )
 
-    return render(request, "accounts/business_brain.html", {
+    return render(request, "dashboard/business.html", {
         "profile": profile,
         "snapshot": snapshot,
         "completeness": snapshot.get("completeness", 0),
@@ -1163,7 +1184,7 @@ def business_brain_view(request):
         "catalog_count": catalog_count,
         "catalog_names": catalog_names,
         "connected_channels": connected_channels,
-        "page_title": "Business Brain",
+        "page_title": "Business",
     })
 
 

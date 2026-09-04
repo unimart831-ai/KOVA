@@ -1,0 +1,162 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}WhatsApp{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">AI-powered WhatsApp conversations</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  {% include "dashboard/whatsapp/_whatsapp_tabs.html" %}
+
+  {# No WhatsApp Account Connected #}
+  {% if not wa_accounts %}
+  <div class="card border-dashed border-gray-200 dark:border-gray-700">
+    <div class="card-body text-center py-14 px-6">
+      <div class="w-14 h-14 mx-auto rounded-xl bg-growth-100 dark:bg-growth-900 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-growth-600 dark:text-growth-400" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.29-1.24l-.28-.17-2.93.77.78-2.85-.18-.29A8 8 0 1112 20z"/></svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Connect WhatsApp Business</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+        Connect your WhatsApp Business account to start AI-powered customer conversations.
+        You'll need a Meta Business account with WhatsApp Cloud API access.
+      </p>
+      <a href="{% url 'platforms:list' %}" class="btn-primary btn-sm">
+        Connect Platform
+      </a>
+    </div>
+  </div>
+  {% else %}
+
+  {# Stats Bar #}
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Conversations</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ stats.active }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ stats.escalated }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Needs Human</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.ai_handling }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">AI Handling</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.messages_today }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Messages Today</p>
+    </div>
+    <div class="card px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ stats.ai_replies_today }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">AI Replies</p>
+    </div>
+    {% if stats.pending_ai_drafts %}
+    <div class="card px-4 py-3 text-center border-2 border-amber-400 dark:border-amber-600">
+      <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.pending_ai_drafts }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">Drafts to approve</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {# Quick Actions #}
+  <div class="flex flex-wrap items-center gap-3">
+    <form method="get" class="flex flex-wrap items-center gap-2 flex-1">
+      <select name="status" class="input-field !w-auto text-sm" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="escalated" {% if status_filter == 'escalated' %}selected{% endif %}>Needs Human</option>
+        <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+      </select>
+      <select name="language" class="input-field !w-auto text-sm" onchange="this.form.submit()">
+        <option value="">All Languages</option>
+        <option value="en" {% if language_filter == 'en' %}selected{% endif %}>English</option>
+        <option value="sw" {% if language_filter == 'sw' %}selected{% endif %}>Swahili</option>
+        <option value="sheng" {% if language_filter == 'sheng' %}selected{% endif %}>Sheng</option>
+      </select>
+      {% if status_filter or language_filter %}
+        <a href="{% url 'whatsapp:inbox' %}" class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Clear</a>
+      {% endif %}
+    </form>
+    <a href="{% url 'whatsapp:template_list' %}" class="btn-secondary btn-sm">
+      Templates
+    </a>
+  </div>
+
+  {# Conversation List #}
+  {% if conversations %}
+    <ul class="card divide-y divide-gray-100 dark:divide-gray-800 list-none p-0 m-0">
+      {% for convo in conversations %}
+      <li>
+        <a href="{% url 'whatsapp:conversation' convo.pk %}"
+           class="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
+          {# Avatar #}
+          <div class="w-10 h-10 rounded-full bg-growth-100 dark:bg-growth-900 flex items-center justify-center shrink-0">
+            <span class="text-sm font-bold text-growth-700 dark:text-growth-300">
+              {{ convo.contact_name|default:convo.contact_wa_id|truncatechars:2|upper }}
+            </span>
+          </div>
+          {# Content #}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-medium text-gray-900 dark:text-white truncate">
+                {{ convo.contact_name|default:convo.contact_wa_id }}
+              </span>
+              {% if convo.status == 'escalated' %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200">
+                  Needs Human
+                </span>
+              {% endif %}
+              {% if convo.ai_handling %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-kova-100 text-kova-800 dark:bg-kova-900 dark:text-kova-200">
+                  AI
+                </span>
+              {% endif %}
+              {% if convo.language and convo.language != 'unknown' %}
+                <span class="text-xs text-gray-400 dark:text-gray-500 uppercase">{{ convo.language }}</span>
+              {% endif %}
+            </div>
+            {% with last_msg=convo.messages.last %}
+            {% if last_msg %}
+            <p class="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
+              {% if last_msg.direction == 'outbound' %}You: {% endif %}{{ last_msg.content|truncatechars:80 }}
+            </p>
+            {% endif %}
+            {% endwith %}
+          </div>
+          {# Time #}
+          <div class="text-right shrink-0">
+            {% if convo.last_message_at %}
+              <p class="text-xs text-gray-400 dark:text-gray-500">{{ convo.last_message_at|timesince }} ago</p>
+            {% endif %}
+            {% if convo.is_window_open %}
+              <p class="text-xs text-growth-600 dark:text-growth-400 mt-0.5">Window open</p>
+            {% else %}
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Template only</p>
+            {% endif %}
+          </div>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="card border-dashed border-gray-200 dark:border-gray-700">
+      <div class="card-body text-center py-14 px-6">
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+          <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No conversations yet</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+          When customers message your WhatsApp Business number, conversations will appear here.
+          AI will handle replies automatically.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

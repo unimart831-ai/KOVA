@@ -222,7 +222,7 @@ feature: it may have been deferred to a later phase. Check
 
 ## For developers — the template that drives this
 
-The nav lives in [`templates/layouts/app.html`](../templates/layouts/app.html).
+The nav lives in [`templates/dashboard/includes/_sidebar.html`](../templates/dashboard/includes/_sidebar.html).
 The pattern for every contextual subnav is:
 
 ```django

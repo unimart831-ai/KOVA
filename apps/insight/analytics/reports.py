@@ -163,7 +163,7 @@ def generate_report_pdf(user, days=30):
     branding = get_report_branding(user)
     data.update(branding)
 
-    html = render_to_string("analytics/report_pdf.html", data)
+    html = render_to_string("dashboard/analytics/report_pdf.html", data)
 
     buffer = io.BytesIO()
     pisa_status = pisa.CreatePDF(io.StringIO(html), dest=buffer, encoding="utf-8")

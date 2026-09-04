@@ -1,0 +1,93 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}My offers{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
+  {{ kova_sell_subtitle }} · {{ stats.total }} live · {{ stats.in_stock }} in stock{% if stats.low_stock or stats.out_of_stock %} · {% if stats.out_of_stock %}{{ stats.out_of_stock }} out{% endif %}{% if stats.low_stock %}{% if stats.out_of_stock %}, {% endif %}{{ stats.low_stock }} low{% endif %}{% endif %}
+</p>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  {% include "dashboard/products/_products_subnav.html" %}
+  {% include "dashboard/products/_batch_snap_pipeline_modal.html" %}
+  {% include "dashboard/products/_catalog_showcase_modal.html" %}
+
+  {% if unread_alerts %}
+  <a href="{% url 'products:alerts' %}" class="card border-l-4 border-gold-500 px-4 py-3 block hover:bg-gold-50/50 dark:hover:bg-gold-900/10 transition-colors">
+    <p class="text-sm font-medium text-gold-800 dark:text-gold-200">
+      {{ unread_alerts }} stock alert{{ unread_alerts|pluralize }} — tap to review
+    </p>
+  </a>
+  {% endif %}
+
+  {# Filters + actions #}
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+    <form method="get" class="flex flex-wrap items-center gap-2">
+      <input type="text" name="q" value="{{ current_q }}" placeholder="Search catalog…" class="input text-sm w-full sm:w-44">
+      <select name="status" class="input text-sm w-auto" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        <option value="in_stock" {% if current_status == 'in_stock' %}selected{% endif %}>In Stock</option>
+        <option value="low_stock" {% if current_status == 'low_stock' %}selected{% endif %}>Low Stock</option>
+        <option value="out_of_stock" {% if current_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+        <option value="made_to_order" {% if current_status == 'made_to_order' %}selected{% endif %}>Made to Order</option>
+        <option value="unlimited" {% if current_status == 'unlimited' %}selected{% endif %}>Unlimited</option>
+      </select>
+      {% if categories %}
+      <select name="category" class="input text-sm w-auto" onchange="this.form.submit()">
+        <option value="">All categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.pk }}" {% if current_category == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+    </form>
+    <div class="flex items-center gap-2 flex-wrap">
+      {% if promotable_count %}
+      <form method="post" action="{% url 'products:catalog_showcase' %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary text-sm px-3 py-1.5" title="Carousel + reel for all in-stock items (name & price per slide)">
+          Catalog showcase
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-4 py-1.5">Snap to Sell</a>
+      <a href="{% url 'products:snap_batch' %}" class="btn-secondary text-sm px-3 py-1.5 hidden sm:inline-flex">Batch to sell</a>
+    </div>
+  </div>
+
+  {# Product grid #}
+  {% if products %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for product in products %}
+    {% include "dashboard/products/partials/product_card.html" %}
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="flex items-center justify-center gap-2 pt-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" class="btn-secondary text-sm px-3 py-1.5">← Previous</a>
+    {% endif %}
+    <span class="text-sm text-gray-500 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" class="btn-secondary text-sm px-3 py-1.5">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="card px-6 py-16 text-center">
+    <div class="flex justify-center mb-3"><svg class="w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ segment_surface.catalog_empty_title|default:"No offers yet" }}</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">{{ segment_surface.catalog_empty_description|default:"Snap a photo and price — we handle the rest." }}</p>
+    {% if segment_surface.catalog_primary %}
+    <a href="{% url segment_surface.catalog_primary.url_name %}" class="btn-primary text-sm px-5 py-2">{{ segment_surface.catalog_primary.label }}</a>
+    {% else %}
+    <a href="{% url 'products:snap' %}" class="btn-primary text-sm px-5 py-2">Add your first offer</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

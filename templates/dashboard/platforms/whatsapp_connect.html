@@ -1,0 +1,239 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Connect WhatsApp — KOVA{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto mt-2 max-w-md" x-data="whatsappConnect()">
+  <a href="{% url 'platforms:list' %}" class="mb-4 inline-flex text-sm text-kova-300 hover:text-kova-200">← Channels</a>
+  <div class="card">
+    <div class="card-body space-y-6">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-growth-50 dark:bg-growth-950/50 mb-4">
+          <svg class="w-9 h-9 text-[#25D366]" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Connect WhatsApp</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          Connect your WhatsApp Business account so Kova can send and manage messages for you.
+        </p>
+      </div>
+
+      {% if embedded_signup_available %}
+      {# ══════ PRIMARY: Embedded Signup (one-click) ══════ #}
+      <div class="space-y-4">
+        <div class="bg-growth-50 dark:bg-growth-950/30 border border-growth-200 dark:border-growth-900 rounded-lg p-4">
+          <p class="text-xs font-semibold text-growth-800 dark:text-growth-200 mb-1">Recommended: One-click setup</p>
+          <p class="text-xs text-growth-700 dark:text-growth-300">
+            Sign in with your Facebook account that manages your WhatsApp Business. We'll handle the rest automatically.
+          </p>
+        </div>
+
+        <button type="button"
+                @click="launchEmbeddedSignup()"
+                :disabled="loading"
+                class="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg font-medium text-white bg-[#25D366] hover:bg-[#20bd5a] transition-colors disabled:opacity-50 disabled:cursor-wait">
+          <template x-if="loading">
+            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+          </template>
+          <template x-if="!loading">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          </template>
+          <span x-text="loading ? 'Connecting...' : 'Connect with WhatsApp'"></span>
+        </button>
+
+        <p x-show="error" x-text="error" x-cloak class="text-xs text-red-500 text-center"></p>
+
+        {# Manual fallback toggle #}
+        <div class="text-center pt-2 border-t border-gray-100 dark:border-gray-800">
+          <button type="button" @click="showManual = !showManual"
+                  class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <span x-text="showManual ? 'Hide manual setup' : 'Already have a token? Manual setup →'"></span>
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ══════ MANUAL SETUP (fallback or only option) ══════ #}
+      <div x-show="{% if embedded_signup_available %}showManual{% else %}true{% endif %}"
+           {% if embedded_signup_available %}x-cloak{% endif %}
+           class="space-y-4">
+
+        {% if embedded_signup_available %}
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Manual setup</p>
+        </div>
+        {% endif %}
+
+        <div class="bg-growth-50 dark:bg-growth-950/30 border border-growth-200 dark:border-growth-900 rounded-lg p-4">
+          <p class="text-xs font-semibold text-growth-800 dark:text-growth-200 mb-2">How to get your credentials:</p>
+          <ol class="text-xs text-growth-700 dark:text-growth-300 space-y-1 list-decimal list-inside">
+            <li>Go to <a href="https://business.facebook.com/settings" target="_blank" class="underline font-medium">Meta Business Suite</a> → Settings</li>
+            <li>Navigate to <strong>WhatsApp → API Setup</strong> — copy your <strong>Phone Number ID</strong> and <strong>Business Account ID</strong></li>
+            <li>Go to <strong>Users → System Users</strong> → create one with <strong>Admin</strong> role</li>
+            <li>Click <strong>"Generate New Token"</strong> with <code class="bg-growth-100 dark:bg-growth-900 px-1 rounded">whatsapp_business_messaging</code> permission</li>
+            <li>Paste all three values below</li>
+          </ol>
+        </div>
+
+        <form method="post" class="space-y-4">
+          {% csrf_token %}
+
+          <div>
+            <label for="phone_number_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number ID</label>
+            <input type="text" id="phone_number_id" name="phone_number_id" placeholder="1234567890123456" required
+                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-kova-500 focus:border-kova-500">
+            <p class="text-[10px] text-gray-400 mt-1">Meta Business Suite → WhatsApp → API Setup → Phone Number ID</p>
+          </div>
+
+          <div>
+            <label for="waba_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Business Account ID</label>
+            <input type="text" id="waba_id" name="waba_id" placeholder="1234567890123456" required
+                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-kova-500 focus:border-kova-500">
+            <p class="text-[10px] text-gray-400 mt-1">Meta Business Suite → WhatsApp → API Setup → Business Account ID</p>
+          </div>
+
+          <div>
+            <label for="access_token" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Access Token</label>
+            <input type="password" id="access_token" name="access_token" placeholder="EAAxxxxxxxx..." required
+                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-kova-500 focus:border-kova-500">
+            <p class="text-[10px] text-gray-400 mt-1">System User permanent token from Meta Business Suite</p>
+          </div>
+
+          <div class="flex items-center gap-3 pt-2">
+            <button type="submit" class="flex-1 btn-primary text-sm py-2.5">Connect WhatsApp</button>
+            <a href="{% url 'platforms:list' %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if embedded_signup_available %}
+{# ── Facebook JS SDK for Embedded Signup ── #}
+<div id="fb-root"></div>
+<script>
+(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "https://connect.facebook.net/en_US/sdk.js";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));
+
+window.fbAsyncInit = function() {
+  FB.init({
+    appId: '{{ facebook_app_id }}',
+    autoLogAppEvents: true,
+    xfbml: true,
+    version: 'v21.0'
+  });
+};
+
+function whatsappConnect() {
+  return {
+    loading: false,
+    error: '',
+    showManual: false,
+    sessionInfo: {},
+
+    init() {
+      window.addEventListener('message', (event) => {
+        if (event.origin !== 'https://www.facebook.com' &&
+            event.origin !== 'https://web.facebook.com') return;
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'WA_EMBEDDED_SIGNUP') {
+            this.sessionInfo = data.data || {};
+          }
+        } catch(e) { /* Not our message */ }
+      });
+    },
+
+    launchEmbeddedSignup() {
+      this.error = '';
+      this.loading = true;
+
+      if (typeof FB === 'undefined') {
+        this.error = 'Facebook SDK not loaded. Please refresh the page.';
+        this.loading = false;
+        return;
+      }
+
+      FB.login((response) => {
+        if (response.authResponse) {
+          const code = response.authResponse.code;
+          if (!code) {
+            this.error = 'No authorization code received. Please try again.';
+            this.loading = false;
+            return;
+          }
+          this.submitToBackend(code, this.sessionInfo);
+        } else {
+          this.error = 'WhatsApp signup was cancelled or not completed.';
+          this.loading = false;
+        }
+      }, {
+        config_id: '{{ fb_wa_config_id }}',
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          setup: {},
+          featureType: '',
+          sessionInfoVersion: '3',
+        }
+      });
+    },
+
+    async submitToBackend(code, session) {
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+      const body = new URLSearchParams({
+        csrfmiddlewaretoken: csrfToken,
+        code: code,
+        phone_number_id: session.phone_number_id || '',
+        waba_id: session.waba_id || '',
+      });
+
+      try {
+        const resp = await fetch('{% url "platforms:whatsapp_embedded_callback" %}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+          redirect: 'follow',
+        });
+
+        if (resp.redirected) {
+          window.location.href = resp.url;
+          return;
+        }
+
+        if (!resp.ok) {
+          const text = await resp.text();
+          this.error = `Connection failed (${resp.status}). Please try the manual setup below.`;
+          this.loading = false;
+          this.showManual = true;
+          return;
+        }
+
+        // If not redirected, follow the response URL
+        window.location.href = resp.url || '{% url "platforms:list" %}';
+      } catch(err) {
+        this.error = 'Network error during connection. Please try again.';
+        this.loading = false;
+      }
+    },
+  };
+}
+</script>
+{% else %}
+<script>
+function whatsappConnect() {
+  return { loading: false, error: '', showManual: true, sessionInfo: {} };
+}
+</script>
+{% endif %}
+{% endblock %}

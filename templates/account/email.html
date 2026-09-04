@@ -1,49 +1,48 @@
-{% extends "layouts/marketing.html" %}
+{% extends "account/base.html" %}
 
-{% block title %}Manage Email — Kova Agent{% endblock %}
+{% block account_title %}Manage Email — KOVA{% endblock %}
+{% block account_heading %}Email addresses{% endblock %}
+{% block account_messages %}{% endblock %}
 
-{% block content %}
-<div class="brand-atmosphere min-h-[60vh] flex items-center justify-center py-12 px-4">
-  {% include "components/brand/_atmosphere_orbs.html" %}
-  <div class="relative w-full max-w-md reveal">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Email Addresses</h1>
+{% block account_lead %}
+<p class="kova-auth__hint mt-2">Manage the emails linked to your KOVA account.</p>
+{% endblock %}
 
-    <div class="card">
-      <div class="card-body space-y-4">
-        {% if emailaddresses %}
-          {% for emailaddress in emailaddresses %}
-            <div class="flex items-center justify-between py-2 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-800{% endif %}">
-              <div>
-                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ emailaddress.email }}</span>
-                <div class="flex gap-2 mt-1">
-                  {% if emailaddress.verified %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-growth-100 text-growth-700 dark:bg-growth-900/30 dark:text-growth-400">Verified</span>
-                  {% else %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400">Unverified</span>
-                  {% endif %}
-                  {% if emailaddress.primary %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-kova-100 text-kova-700 dark:bg-kova-900/30 dark:text-kova-400">Primary</span>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-          {% endfor %}
-        {% endif %}
-
-        <form method="post" action="{% url 'account_email' %}" class="pt-4 border-t border-gray-100 dark:border-gray-800">
-          {% csrf_token %}
-          <label for="id_email" class="label">Add email address</label>
-          <div class="flex gap-2 mt-1">
-            <input type="email" name="email" id="id_email" class="input flex-1" placeholder="new@example.com" required>
-            <button type="submit" name="action_add" class="btn-secondary">Add</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div class="mt-4 text-center">
-      <a href="{% url 'brief:home' %}" class="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">Back to dashboard</a>
+{% block account_body %}
+{% if emailaddresses %}
+<div class="kova-auth__email-list">
+  {% for emailaddress in emailaddresses %}
+  <div class="kova-auth__email-row">
+    <span class="kova-auth__email-addr">{{ emailaddress.email }}</span>
+    <div class="kova-auth__chips">
+      {% if emailaddress.verified %}
+      <span class="kova-auth__chip is-ok">Verified</span>
+      {% else %}
+      <span class="kova-auth__chip is-warn">Unverified</span>
+      {% endif %}
+      {% if emailaddress.primary %}
+      <span class="kova-auth__chip is-primary">Primary</span>
+      {% endif %}
     </div>
   </div>
+  {% endfor %}
 </div>
+{% endif %}
+
+<form method="post" action="{% url 'account_email' %}" class="kova-auth__form">
+  {% csrf_token %}
+  <div>
+    <label for="id_email" class="label">Add email address</label>
+    <div class="kova-auth__add-row">
+      <input type="email" name="email" id="id_email" class="input" placeholder="new@example.com" required>
+      <button type="submit" name="action_add" class="kova-auth__ghost">Add</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block account_footer %}
+<p class="kova-auth__foot">
+  <a href="{% url 'brief:home' %}">Back to dashboard</a>
+</p>
 {% endblock %}

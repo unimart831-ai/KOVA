@@ -1,0 +1,79 @@
+{# Queue filters + section pills — refreshed via HTMX with sections #}
+<div class="space-y-3">
+  <form method="get" action="{% url 'content:queue' %}" id="queue-filter-form" class="filter-row">
+    <input type="hidden" name="section" value="{{ current_section|default:'all' }}">
+
+    <div class="relative flex-1 min-w-0 sm:max-w-xs">
+      <input type="search" name="q" value="{{ current_search }}" placeholder="Search posts…"
+             class="input pl-9 w-full touch-target sm:touch-target-none sm:h-9 sm:text-sm"
+             hx-get="{% url 'content:queue_sections' %}"
+             hx-trigger="keyup changed delay:300ms, search"
+             hx-target="#queue-content"
+             hx-swap="innerHTML"
+             hx-include="#queue-filter-form">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-2">
+      <select name="platform" aria-label="Filter by platform"
+              class="input w-full sm:w-auto sm:min-w-[8.5rem] sm:h-9 sm:text-sm"
+              hx-get="{% url 'content:queue_sections' %}"
+              hx-trigger="change"
+              hx-target="#queue-content"
+              hx-swap="innerHTML"
+              hx-include="#queue-filter-form">
+        <option value="">All platforms</option>
+        <option value="instagram" {% if current_platform == 'instagram' %}selected{% endif %}>Instagram</option>
+        <option value="facebook" {% if current_platform == 'facebook' %}selected{% endif %}>Facebook</option>
+        <option value="tiktok" {% if current_platform == 'tiktok' %}selected{% endif %}>TikTok</option>
+        <option value="linkedin" {% if current_platform == 'linkedin' %}selected{% endif %}>LinkedIn</option>
+        <option value="whatsapp" {% if current_platform == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+      </select>
+
+      <select name="post_format" aria-label="Filter by format"
+              class="input w-full sm:w-auto sm:min-w-[8.5rem] sm:h-9 sm:text-sm"
+              hx-get="{% url 'content:queue_sections' %}"
+              hx-trigger="change"
+              hx-target="#queue-content"
+              hx-swap="innerHTML"
+              hx-include="#queue-filter-form">
+        <option value="">All formats</option>
+        <option value="text" {% if current_format == 'text' %}selected{% endif %}>Text</option>
+        <option value="image" {% if current_format == 'image' %}selected{% endif %}>Image</option>
+        <option value="carousel" {% if current_format == 'carousel' %}selected{% endif %}>Carousel</option>
+        <option value="story" {% if current_format == 'story' %}selected{% endif %}>Story</option>
+        <option value="reel" {% if current_format == 'reel' %}selected{% endif %}>Reel</option>
+        <option value="video" {% if current_format == 'video' %}selected{% endif %}>Video</option>
+      </select>
+    </div>
+
+    {% if current_search or current_platform or current_format or current_section != 'all' %}
+    <a href="{% url 'content:queue' %}"
+       class="inline-flex items-center justify-center w-full sm:w-auto h-10 sm:h-9 px-3 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+      Clear
+    </a>
+    {% endif %}
+  </form>
+
+  <nav class="queue-section-nav subnav-pills mb-0 pb-0" aria-label="Queue sections">
+    {% with section=current_section|default:"all" %}
+    {% with qparam=current_search|urlencode pfparam=current_platform ffparam=current_format %}
+    <a href="{% url 'content:queue' %}?section=all{% if pfparam %}&platform={{ pfparam }}{% endif %}{% if ffparam %}&post_format={{ ffparam }}{% endif %}{% if current_search %}&q={{ qparam }}{% endif %}"
+       class="queue-section-pill {% if section == 'all' %}queue-section-pill-active{% endif %}">
+      All
+      {% if filtered_total %}<span class="queue-section-count">{{ filtered_total }}</span>{% endif %}
+    </a>
+    <a href="{% url 'content:queue' %}?section=review{% if pfparam %}&platform={{ pfparam }}{% endif %}{% if ffparam %}&post_format={{ ffparam }}{% endif %}{% if current_search %}&q={{ qparam }}{% endif %}"
+       class="queue-section-pill {% if section == 'review' %}queue-section-pill-active{% elif review_count %}queue-section-pill-warn{% endif %}">
+      Review
+      {% if review_count %}<span class="queue-section-count">{{ review_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'content:queue' %}?section=live{% if pfparam %}&platform={{ pfparam }}{% endif %}{% if ffparam %}&post_format={{ ffparam }}{% endif %}{% if current_search %}&q={{ qparam }}{% endif %}"
+       class="queue-section-pill {% if section == 'live' %}queue-section-pill-active{% endif %}">
+      Going live
+      {% if live_count %}<span class="queue-section-count">{{ live_count }}</span>{% endif %}
+    </a>
+    {% endwith %}
+    {% endwith %}
+  </nav>
+</div>

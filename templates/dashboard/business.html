@@ -1,0 +1,341 @@
+{% extends "dashboard/base.html" %}
+{% load nav_tags %}
+
+{% block title %}Business — {{ profile.company_name|default:"KOVA" }}{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+{% with bd=snapshot.business br=snapshot.brand cu=snapshot.customer gr=snapshot.growth mk=snapshot.market le=snapshot.learning %}
+<div class="mx-auto max-w-3xl">
+
+  {# ── Hero ── #}
+  <section class="relative overflow-hidden rounded-2xl border border-white/10 bg-canvas-raised" aria-labelledby="business-heading">
+    <div class="absolute inset-0 bg-gradient-to-br from-kova-500/15 via-transparent to-transparent" aria-hidden="true"></div>
+    <div class="relative z-10 px-5 py-10 sm:px-8 sm:py-12">
+      <p class="text-sm font-medium tracking-wide text-kova-300">Business</p>
+      <h1 id="business-heading" class="mt-2 max-w-xl text-balance font-serif text-[2rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-4xl sm:leading-[1.1]">
+        {{ profile.company_name|default:"Your business" }}
+      </h1>
+      <p class="mt-3 max-w-md font-sans text-[15px] font-light leading-relaxed text-white/65 sm:text-base">
+        {% if completeness >= 80 %}
+          Kova understands you well — campaigns and replies stay on-brand.
+        {% elif completeness >= 50 %}
+          Solid picture so far. A few more details will sharpen every recommendation.
+        {% else %}
+          Still learning. Teach Kova more and every campaign gets better.
+        {% endif %}
+      </p>
+
+      <div class="mt-7 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        {% url 'accounts:settings' as settings_url %}
+        {% include "components/brand/_primary_cta.html" with href=settings_url label="Update profile" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
+        {% if not connected_channels %}
+          {% url 'platforms:list' as channels_url %}
+          {% include "components/brand/_secondary_cta.html" with href=channels_url label="Connect a channel" %}
+        {% endif %}
+      </div>
+
+      <div class="mt-8 max-w-sm">
+        <div class="flex items-baseline justify-between gap-3 text-xs text-white/45">
+          <span>{{ things_learned|default:0 }} insight{{ things_learned|default:0|pluralize }} learned</span>
+          <span class="font-semibold tabular-nums text-white/70">{{ completeness }}%</span>
+        </div>
+        <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+          <div class="h-full rounded-full bg-kova-500 transition-all duration-700" style="width: {{ completeness }}%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ── Business DNA ── #}
+  <section class="mt-10 sm:mt-12" aria-labelledby="dna-business">
+    <div class="mb-4 px-0.5">
+      <h2 id="dna-business" class="font-serif text-xl font-semibold tracking-tight text-white sm:text-2xl">Business DNA</h2>
+      <p class="mt-1 text-sm font-light text-white/50">How you make money</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-5 sm:px-6">
+      <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Name</dt>
+          <dd class="mt-1 text-sm text-white/90">{{ bd.company_name|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Industry</dt>
+          <dd class="mt-1 text-sm text-white/90">{{ profile.get_industry_display|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Model</dt>
+          <dd class="mt-1 text-sm text-white/90">{{ profile.get_business_model_display|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Website</dt>
+          <dd class="mt-1 truncate text-sm text-white/90">{{ bd.website_url|default:"—" }}</dd>
+        </div>
+        {% if profile.key_offerings or catalog_count %}
+        <div class="sm:col-span-2">
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Offerings</dt>
+          <dd class="mt-2">
+            {% if profile.key_offerings %}
+            <div class="flex flex-wrap gap-2">
+              {% for o in profile.key_offerings %}
+              <span class="text-sm text-white/80">{{ o }}{% if not forloop.last %}<span class="text-white/25"> ·</span>{% endif %}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% if catalog_count %}
+            <p class="mt-2 text-xs text-white/45">
+              Catalog: <span class="font-medium text-white/70">{{ catalog_count }}</span> item{{ catalog_count|pluralize }}
+              {% if catalog_names %} — {{ catalog_names|join:", " }}{% if catalog_count > catalog_names|length %}…{% endif %}{% endif %}
+            </p>
+            {% endif %}
+          </dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+  </section>
+
+  {# ── Market DNA ── #}
+  <section class="mt-10 sm:mt-12" aria-labelledby="dna-market">
+    <div class="mb-4 px-0.5">
+      <h2 id="dna-market" class="font-serif text-xl font-semibold tracking-tight text-white sm:text-2xl">Market DNA</h2>
+      <p class="mt-1 text-sm font-light text-white/50">Where you sell</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-5 sm:px-6">
+      <dl class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Country</dt>
+          <dd class="mt-1 text-sm text-white/90">{{ mk.country|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">City</dt>
+          <dd class="mt-1 text-sm text-white/90">{{ mk.city|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Language</dt>
+          <dd class="mt-1 text-sm text-white/90">{{ profile.get_content_language_display|default:"—" }}</dd>
+        </div>
+        <div class="sm:col-span-3">
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-white/40">Channels</dt>
+          <dd class="mt-2">
+            {% if connected_channels %}
+            <p class="text-sm text-white/80">
+              {% for ch in connected_channels %}
+              <span class="capitalize">{{ ch }}</span>{% if not forloop.last %}<span class="text-white/25"> · </span>{% endif %}
+              {% endfor %}
+            </p>
+            {% else %}
+            <p class="text-sm text-white/45">
+              None connected —
+              <a href="{% url 'platforms:list' %}" class="text-kova-400 transition hover:text-kova-300">add a channel</a>
+            </p>
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  {# ── Brand DNA ── #}
+  <section class="mt-10 sm:mt-12" aria-labelledby="dna-brand">
+    <div class="mb-4 px-0.5">
+      <h2 id="dna-brand" class="font-serif text-xl font-semibold tracking-tight text-white sm:text-2xl">Brand DNA</h2>
+      <p class="mt-1 text-sm font-light text-white/50">Voice and story</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-5 sm:px-6 space-y-5">
+      {% if br.brand_voice %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Voice</p>
+        <p class="mt-1.5 text-[15px] font-light leading-relaxed text-white/75">{{ br.brand_voice|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+      {% if br.founder_story %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Founder story</p>
+        <p class="mt-1.5 text-[15px] font-light italic leading-relaxed text-white/70">“{{ br.founder_story|truncatewords:50 }}”</p>
+      </div>
+      {% endif %}
+      {% if br.tone_attributes %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Tone</p>
+        <p class="mt-2 text-sm text-white/80">
+          {% for t in br.tone_attributes %}
+          {{ t }}{% if not forloop.last %}<span class="text-white/25"> · </span>{% endif %}
+          {% endfor %}
+        </p>
+      </div>
+      {% endif %}
+      {% if not br.brand_voice and not br.founder_story %}
+      <p class="text-sm text-white/45">
+        Not set yet —
+        <a href="{% url 'accounts:settings' %}" class="text-kova-400 transition hover:text-kova-300">add your brand voice</a>
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Customer DNA ── #}
+  <section class="mt-10 sm:mt-12" aria-labelledby="dna-customer">
+    <div class="mb-4 px-0.5">
+      <h2 id="dna-customer" class="font-serif text-xl font-semibold tracking-tight text-white sm:text-2xl">Customer DNA</h2>
+      <p class="mt-1 text-sm font-light text-white/50">Who you serve</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-5 sm:px-6 space-y-5">
+      {% if cu.target_audience %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Ideal customer</p>
+        <p class="mt-1.5 text-[15px] font-light leading-relaxed text-white/75">{{ cu.target_audience|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+      {% if cu.customer_problems %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Problems they face</p>
+        <p class="mt-1.5 text-[15px] font-light leading-relaxed text-white/75">{{ cu.customer_problems|truncatewords:40 }}</p>
+      </div>
+      {% endif %}
+      {% if cu.buy_triggers %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Why they choose you</p>
+        <p class="mt-1.5 text-[15px] font-light leading-relaxed text-white/75">{{ cu.buy_triggers|truncatewords:40 }}</p>
+      </div>
+      {% endif %}
+      {% if cu.common_questions %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Questions Kova answers</p>
+        <ul class="mt-2 space-y-2">
+          {% for q in cu.common_questions|slice:":6" %}
+          <li class="text-sm font-light text-white/70">{{ q }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if not cu.target_audience and not cu.customer_problems %}
+      <p class="text-sm text-white/45">
+        Help Kova know your buyers —
+        <a href="{% url 'accounts:settings' %}" class="text-kova-400 transition hover:text-kova-300">add customer details</a>
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Growth DNA ── #}
+  <section class="mt-10 sm:mt-12" aria-labelledby="dna-growth">
+    <div class="mb-4 px-0.5">
+      <h2 id="dna-growth" class="font-serif text-xl font-semibold tracking-tight text-white sm:text-2xl">Growth DNA</h2>
+      <p class="mt-1 text-sm font-light text-white/50">Where you’re headed</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-5 sm:px-6 space-y-5">
+      {% if gr.success_vision %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">One-year vision</p>
+        <p class="mt-1.5 text-[15px] font-light italic leading-relaxed text-white/75">“{{ gr.success_vision }}”</p>
+      </div>
+      {% endif %}
+      {% if profile.goals %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Goals</p>
+        <p class="mt-2 text-sm text-white/80">
+          {% for goal in profile.goals %}
+          {{ goal|humanize_slug }}{% if not forloop.last %}<span class="text-white/25"> · </span>{% endif %}
+          {% endfor %}
+        </p>
+      </div>
+      {% endif %}
+      {% if gr.posting_frequency %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Posting cadence</p>
+        <p class="mt-1 text-sm text-white/90">{{ gr.posting_frequency }} post{{ gr.posting_frequency|pluralize }} / week</p>
+      </div>
+      {% endif %}
+      {% if not gr.success_vision and not profile.goals and not gr.posting_frequency %}
+      <p class="text-sm text-white/45">
+        No growth goals yet —
+        <a href="{% url 'accounts:settings' %}" class="text-kova-400 transition hover:text-kova-300">set your vision</a>
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Learning ── #}
+  <section class="mt-10 sm:mt-12" aria-labelledby="dna-learning">
+    <div class="mb-4 flex items-end justify-between gap-3 px-0.5">
+      <div>
+        <h2 id="dna-learning" class="font-serif text-xl font-semibold tracking-tight text-white sm:text-2xl">What Kova learned</h2>
+        <p class="mt-1 text-sm font-light text-white/50">{{ things_learned|default:0 }} insight{{ things_learned|default:0|pluralize }} from live results</p>
+      </div>
+      <a href="{% url 'accounts:ai_learning' %}" class="shrink-0 text-sm font-medium text-white/40 transition hover:text-kova-400">Full history</a>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-5 sm:px-6 space-y-5">
+      {% if le.dna_preferences %}
+        {% with promoted=le.dna_preferences.promoted retired=le.dna_preferences.retired %}
+        {% if promoted %}
+        <div>
+          <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Working for you</p>
+          <ul class="mt-2 space-y-2">
+            {% for p in promoted|slice:":5" %}
+            <li class="text-sm text-white/80">
+              {{ p.combo.pillar|default:"" }}{% if p.combo.format %} · {{ p.combo.format }}{% endif %}{% if p.combo.tone %} · {{ p.combo.tone }}{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        {% if retired %}
+        <div>
+          <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Stepping back from</p>
+          <ul class="mt-2 space-y-2">
+            {% for r in retired|slice:":3" %}
+            <li class="text-sm text-white/45">
+              {{ r.combo.pillar|default:"" }}{% if r.combo.format %} · {{ r.combo.format }}{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        {% endwith %}
+      {% endif %}
+      {% if le.optimal_schedule %}
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-wider text-white/40">Best times to post</p>
+        <ul class="mt-2 space-y-2">
+          {% for platform, sched in le.optimal_schedule.items %}
+          <li class="flex flex-wrap items-baseline gap-x-2 text-sm text-white/70">
+            <span class="font-medium capitalize text-white/90">{{ platform }}</span>
+            <span>{{ sched.best_days|join:", "|default:"Any day" }}</span>
+            {% if sched.best_hours %}
+            <span class="text-white/35">·</span>
+            <span>
+              {% for h in sched.best_hours %}{% if h >= 12 %}{{ h|add:"-12" }}pm{% else %}{{ h }}am{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if not le.dna_preferences and not le.optimal_schedule %}
+      <p class="text-sm font-light text-white/45">
+        Learning starts after a few published posts. Kova then adapts your strategy from real performance.
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if completeness < 80 %}
+  <section class="mt-10 sm:mt-12 mb-4">
+    <div class="rounded-2xl border border-kova-500/25 bg-kova-500/10 px-5 py-5 sm:px-6 sm:py-6">
+      <h2 class="font-serif text-lg font-semibold text-white">Teach Kova more</h2>
+      <p class="mt-1 max-w-md text-sm font-light text-white/60">
+        The clearer the brain, the better every campaign, reply, and recommendation.
+      </p>
+      <div class="mt-5">
+        {% include "components/brand/_primary_cta.html" with href=settings_url label="Update Business Profile" extra_class="w-full justify-between sm:w-auto" %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+{% endwith %}
+{% endblock %}

@@ -143,7 +143,7 @@ def content_queue(request):
         search_query=request.GET.get("q"),
     )
     ctx["page_title"] = "Content Queue"
-    return render(request, "content/queue.html", ctx)
+    return render(request, "dashboard/content/queue.html", ctx)
 
 
 @login_required
@@ -156,7 +156,7 @@ def queue_sections(request):
         format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
     )
-    return render(request, "content/_queue_content.html", ctx)
+    return render(request, "dashboard/content/_queue_content.html", ctx)
 
 
 @login_required
@@ -189,7 +189,7 @@ def clear_failed_posts(request):
             format_filter=request.GET.get("post_format"),
             search_query=request.GET.get("q"),
         )
-        return render(request, "content/_archive_content.html", ctx)
+        return render(request, "dashboard/content/_archive_content.html", ctx)
 
     if cleared:
         messages.success(request, f"Cleared {cleared} failed post{'s' if cleared != 1 else ''}.")
@@ -262,7 +262,7 @@ def calendar_view(request):
             if seed_obj:
                 unscheduled_batches.append({"seed": seed_obj, "posts": seed_posts})
 
-    return render(request, "content/calendar.html", {
+    return render(request, "dashboard/content/calendar.html", {
         "posts_by_date": posts_by_date,
         "unscheduled_batches": unscheduled_batches,
         "unscheduled_ungrouped": unscheduled_ungrouped,
@@ -335,8 +335,8 @@ def content_calendar_grid(request):
     }
 
     if request.headers.get("HX-Request"):
-        return render(request, "content/_calendar_grid.html", ctx)
-    return render(request, "content/calendar_grid.html", ctx)
+        return render(request, "dashboard/content/_calendar_grid.html", ctx)
+    return render(request, "dashboard/content/calendar_grid.html", ctx)
 
 
 def _has_team_access(user, post):

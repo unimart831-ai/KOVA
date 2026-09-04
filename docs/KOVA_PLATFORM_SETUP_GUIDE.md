@@ -1,7 +1,7 @@
 # Kova Platform Setup Guide — Meta, WhatsApp, TikTok & LinkedIn
 
 > **Version**: 1.0 · **Last updated**: May 2026  
-> **Audience**: Kova platform administrators (infrastructure + developer portal setup)  
+> **Audience**: Kova platform administrators (infrastructure + developer portal setup) 
 > **Scope**: WhatsApp Cloud API, Facebook Pages, Instagram, TikTok, LinkedIn — verified against `config/settings/`, `.env.example`, and `apps/platforms/`
 
 This is the **master setup guide** for connecting Kova to social platforms. It consolidates infrastructure steps that were previously split across multiple docs. For WhatsApp **user-facing** features (inbox, AI auto-reply, broadcasts), see [`WHATSAPP_SETUP_GUIDE.md`](./WHATSAPP_SETUP_GUIDE.md). For OAuth-only platform developer steps covering all 9 platforms, see [`PLATFORM_DEVELOPER_SETUP.md`](./PLATFORM_DEVELOPER_SETUP.md).

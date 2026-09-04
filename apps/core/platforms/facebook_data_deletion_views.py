@@ -26,11 +26,13 @@ def facebook_data_deletion_instructions(request):
     site_url = getattr(settings, "SITE_URL", "http://localhost:8000").rstrip("/")
     return render(
         request,
-        "pages/facebook_data_deletion.html",
+        "legal/facebook_data_deletion.html",
         {
             "site_url": site_url,
             "support_email": "support@kovaagent.com",
             "privacy_email": "privacy@kovaagent.com",
+            "page_title": "Facebook & Instagram Data Deletion",
+            "page_subtitle": "How to request removal of data obtained via Meta",
         },
     )
 
@@ -41,12 +43,14 @@ def facebook_data_deletion_status(request, confirmation_code: str):
     site_url = getattr(settings, "SITE_URL", "http://localhost:8000").rstrip("/")
     return render(
         request,
-        "pages/facebook_data_deletion_status.html",
+        "legal/facebook_data_deletion_status.html",
         {
             "site_url": site_url,
             "confirmation_code": confirmation_code,
             "record": record,
             "found": record is not None,
+            "page_title": "Data Deletion Status",
+            "page_subtitle": "Meta Facebook / Instagram removal request",
         },
     )
 

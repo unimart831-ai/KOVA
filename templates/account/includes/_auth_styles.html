@@ -1,0 +1,474 @@
+<style>
+  /* Auth shell — marketing dark canvas + landing-style photo veil */
+  .kova-auth {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100svh - 3.5rem);
+    padding: 1.5rem 1rem 2.5rem;
+    overflow: hidden;
+    background: #06131a;
+  }
+  @media (min-width: 640px) {
+    .kova-auth {
+      min-height: calc(100svh - 4rem);
+      padding: 2.5rem 1.5rem 3rem;
+    }
+  }
+
+  .kova-auth__visual {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .kova-auth__media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  /* Match landing hero: from-canvas/70 via-canvas/70 to-canvas/60 */
+  .kova-auth__veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(6, 19, 26, 0.7) 0%,
+      rgba(6, 19, 26, 0.7) 50%,
+      rgba(6, 19, 26, 0.6) 100%
+    );
+  }
+
+  .kova-auth__panel {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 22rem;
+  }
+
+  .kova-auth__card {
+    width: 100%;
+    padding: 1.5rem 1.25rem 1.35rem;
+    border-radius: 1rem;
+    background: #0e2634;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.55);
+  }
+  @media (min-width: 640px) {
+    .kova-auth__card { padding: 1.75rem 1.5rem 1.5rem; }
+  }
+
+  .kova-auth__title {
+    margin: 0;
+    font-family: "IBM Plex Serif", ui-serif, Georgia, serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: #fff;
+    text-align: center;
+  }
+
+  .kova-auth__form {
+    margin-top: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .kova-auth__step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .kova-auth__form .label {
+    color: rgba(255, 255, 255, 0.8);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 0.8125rem;
+    margin-bottom: 0.35rem;
+  }
+  .kova-auth__form .input {
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #0a1c27 !important;
+    padding: 0.7rem 0.9rem;
+    width: 100%;
+    color: #fff !important;
+    font-size: 0.9375rem;
+    font-weight: 400;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .kova-auth__form .input::placeholder { color: rgba(255, 255, 255, 0.35); }
+  .kova-auth__form .input:focus {
+    outline: none;
+    border-color: rgba(51, 133, 255, 0.7);
+    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.25);
+  }
+
+  .kova-auth__password {
+    position: relative;
+  }
+  .kova-auth__password .input {
+    padding-right: 2.75rem;
+  }
+  .kova-auth__password-toggle {
+    position: absolute;
+    right: 0.35rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .kova-auth__password-toggle:hover,
+  .kova-auth__password-toggle:focus-visible {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    outline: none;
+  }
+
+  .kova-auth__form .text-xs { color: rgba(255, 255, 255, 0.55) !important; font-size: 0.75rem !important; }
+  .kova-auth__form .text-sm,
+  .kova-auth__form label.ml-2 { color: rgba(255, 255, 255, 0.75) !important; font-size: 0.8125rem !important; }
+  .kova-auth__form a.text-xs,
+  .kova-auth__form a.text-kova-600 {
+    color: #3385FF !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    text-decoration: none;
+  }
+  .kova-auth__form a.text-kova-600:hover { color: #66A3FF !important; }
+
+  /* Primary CTA — matches components/brand/_primary_cta.html */
+  .kova-auth__submit,
+  .kova-auth__next {
+    margin-top: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    height: 3rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: #0066FF;
+    color: #fff;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    padding: 0.35rem 1.15rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .kova-auth__submit:has(.kova-auth__submit-icon),
+  .kova-auth__next:has(.kova-auth__next-icon) {
+    justify-content: space-between;
+    padding: 0.35rem 0.35rem 0.35rem 1.15rem;
+  }
+  .kova-auth__submit:has(.kova-auth__submit-icon:first-child),
+  .kova-auth__next:has(.kova-auth__next-icon:first-child) {
+    padding: 0.35rem 1.15rem 0.35rem 0.35rem;
+  }
+  .kova-auth__submit:hover,
+  .kova-auth__next:hover { background: #0052CC; }
+  .kova-auth__submit:active,
+  .kova-auth__next:active { transform: translateY(1px); }
+  .kova-auth__submit:focus-visible,
+  .kova-auth__next:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #06131a, 0 0 0 4px #3385FF;
+  }
+  .kova-auth__submit-icon,
+  .kova-auth__next-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    background: #0a1c27;
+    color: #fff;
+    transition: transform 0.2s ease;
+  }
+  .kova-auth__submit:hover .kova-auth__submit-icon,
+  .kova-auth__next:hover .kova-auth__next-icon {
+    transform: translateX(2px);
+  }
+
+  .kova-auth__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    margin-top: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.35rem;
+  }
+  .kova-auth__back:hover { color: #fff; }
+
+  .kova-auth__foot {
+    margin-top: 1.15rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.65);
+  }
+  .kova-auth__foot a {
+    color: #3385FF;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .kova-auth__foot a:hover { color: #66A3FF; }
+
+  .kova-auth__legal {
+    margin: 0;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+  }
+  .kova-auth__legal a {
+    color: #3385FF;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .kova-auth__legal a:hover { color: #66A3FF; }
+
+  .kova-auth__ref {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(0, 102, 255, 0.35);
+    background: rgba(0, 102, 255, 0.12);
+    padding: 0.55rem 0.75rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
+  }
+  .kova-auth__hint {
+    margin: 0;
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.65);
+  }
+  .kova-auth__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto 1rem;
+    border-radius: 0.75rem;
+    background: rgba(0, 102, 255, 0.18);
+    color: #66A3FF;
+  }
+  .kova-auth__icon.is-ok {
+    background: rgba(0, 102, 255, 0.22);
+    color: #93c5fd;
+  }
+  .kova-auth__icon.is-warn {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+  }
+  .kova-auth__steps {
+    margin: 0.85rem 0 0;
+    padding: 0.85rem 1rem;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #0a1c27;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.65);
+  }
+  .kova-auth__steps strong {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #fff;
+    font-weight: 600;
+  }
+  .kova-auth__steps ol {
+    margin: 0;
+    padding-left: 1.15rem;
+    list-style: decimal;
+  }
+  .kova-auth__steps li + li { margin-top: 0.3rem; }
+  .kova-auth__steps-note {
+    margin: 0.75rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .kova-auth__steps-note a {
+    color: #3385FF;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .kova-auth__steps-note a:hover { color: #66A3FF; }
+  .kova-auth__email-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+  }
+  .kova-auth__email-row {
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .kova-auth__email-row:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .kova-auth__email-addr {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #fff;
+    word-break: break-all;
+  }
+  .kova-auth__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+  }
+  .kova-auth__chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.3rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .kova-auth__chip.is-ok {
+    background: rgba(0, 102, 255, 0.2);
+    color: #93c5fd;
+  }
+  .kova-auth__chip.is-warn {
+    background: rgba(250, 204, 21, 0.15);
+    color: #fde68a;
+  }
+  .kova-auth__chip.is-primary {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .kova-auth__add-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+  }
+  .kova-auth__add-row .input { flex: 1; }
+  .kova-auth__ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 2.65rem;
+    padding: 0 0.9rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .kova-auth__ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+  .kova-auth__cta-link {
+    display: block;
+    width: 100%;
+  }
+  .kova-auth__cta-link > a {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .kova-auth__field-msg {
+    margin: 0.35rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+  .kova-auth__field-msg.is-error { color: #fca5a5; }
+  .kova-auth__field-msg.is-ok { color: #86efac; }
+  .kova-auth__form .input.is-invalid {
+    border-color: rgba(252, 165, 165, 0.55);
+  }
+  .kova-auth__form .input.is-invalid:focus {
+    border-color: rgba(252, 165, 165, 0.75);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  }
+  .kova-auth__submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .kova-auth__submit:disabled:hover { background: #0066FF; }
+  .kova-auth__submit:disabled:hover .kova-auth__submit-icon { transform: none; }
+
+  .kova-auth__card a[href*="facebook"],
+  .kova-auth__card a[href*="google"] {
+    border-radius: 0.5rem !important;
+    padding-top: 0.7rem !important;
+    padding-bottom: 0.7rem !important;
+    font-size: 0.875rem !important;
+  }
+  .kova-auth__card .space-y-3 { gap: 0.55rem; }
+  .kova-auth__card .mb-5 { margin-bottom: 0.85rem !important; }
+  .kova-auth__card .relative.mb-5 span {
+    background: #0e2634 !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+  }
+  .kova-auth__card .relative.mb-5 .border-t {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .kova-auth__card .bg-red-50 {
+    background: rgba(127, 29, 29, 0.45) !important;
+    border-color: rgba(252, 165, 165, 0.35) !important;
+    color: #fecaca !important;
+  }
+  .kova-auth__card .bg-kova-50 {
+    background: rgba(0, 102, 255, 0.18) !important;
+    border-color: rgba(51, 133, 255, 0.35) !important;
+    color: #eff6ff !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kova-auth__submit,
+    .kova-auth__next,
+    .kova-auth__submit-icon,
+    .kova-auth__next-icon {
+      transition: none;
+    }
+  }
+</style>

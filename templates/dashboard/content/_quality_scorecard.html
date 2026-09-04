@@ -1,0 +1,64 @@
+{# AI Quality Review Board scorecard. Expects `quality_review` dict in context. #}
+{% if quality_review %}
+<div class="app-surface p-5 space-y-4">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-kova-700 dark:text-kova-300">AI Quality Review Board</p>
+      <h3 class="text-base font-bold text-gray-900 dark:text-white mt-0.5">
+        {% if quality_review.passed %}Ready to publish{% else %}Needs a look before publishing{% endif %}
+      </h3>
+    </div>
+    <div class="text-right shrink-0">
+      <div class="text-3xl font-black tabular-nums leading-none {% if quality_review.passed %}text-growth-600 dark:text-growth-400{% else %}text-amber-500{% endif %}">
+        {{ quality_review.overall }}<span class="text-base text-gray-400 font-bold">/100</span>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Confidence {{ quality_review.confidence }}%</p>
+    </div>
+  </div>
+
+  {# Per-dimension scorecard #}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    {% for key, dim in quality_review.dimensions.items %}
+    <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-gray-600 dark:text-gray-400">{{ dim.label }}</span>
+        <span class="text-sm font-bold tabular-nums {% if dim.score >= 75 %}text-growth-600 dark:text-growth-400{% elif dim.score >= 60 %}text-gray-700 dark:text-gray-300{% else %}text-amber-500{% endif %}">{{ dim.score }}</span>
+      </div>
+      <div class="mt-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+        <div class="h-full rounded-full {% if dim.score >= 75 %}bg-growth-500{% elif dim.score >= 60 %}bg-kova-500{% else %}bg-amber-500{% endif %}" style="width: {{ dim.score }}%"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Why this will succeed #}
+  {% if quality_review.why %}
+  <div>
+    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Why this will succeed</p>
+    <ul class="space-y-1.5">
+      {% for reason in quality_review.why %}
+      <li class="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200">
+        <svg class="w-4 h-4 text-growth-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span>{{ reason }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {# Risks / what to improve #}
+  {% if quality_review.risks %}
+  <div>
+    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Before you publish</p>
+    <ul class="space-y-1.5">
+      {% for risk in quality_review.risks %}
+      <li class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <span>{{ risk }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endif %}

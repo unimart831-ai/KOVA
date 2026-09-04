@@ -127,7 +127,7 @@ def help_center(request):
     HelpPageView.objects.create(user=request.user, page_type="center")
 
     articles = list(_user_visible_articles())
-    return render(request, "help/index.html", {
+    return render(request, "dashboard/help/index.html", {
         "grouped_articles": _group_by_category(articles),
         "articles_json": mark_safe(json.dumps(_search_payload(articles))),
     })
@@ -148,7 +148,7 @@ def help_article(request, slug):
         category=article.category,
     )
 
-    return render(request, "help/article.html", {
+    return render(request, "dashboard/help/article.html", {
         "article": article,
         "category": category,
         "prev_article": prev_article,

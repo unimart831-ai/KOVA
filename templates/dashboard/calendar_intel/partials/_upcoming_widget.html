@@ -1,0 +1,43 @@
+{# Upcoming holidays / cultural moments — included on Today & brief detail #}
+{% if moments or holiday_drafts_ready %}
+<div class="card" id="upcoming-moments-widget">
+  <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2 min-w-0">
+      <svg class="w-4 h-4 text-kova-600 dark:text-kova-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Upcoming moments</h3>
+    </div>
+    {% if holiday_drafts_ready %}
+    <span class="text-xs font-bold text-kova-700 dark:text-kova-300 bg-kova-50 dark:bg-kova-950/40 px-2 py-1 rounded-full">
+      {{ holiday_drafts_ready }} draft{{ holiday_drafts_ready|pluralize }} ready
+    </span>
+    {% endif %}
+  </div>
+  {% if moments %}
+  <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+    {% for moment in moments %}
+    <li class="px-6 py-3 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ moment.name|default:moment.title }}</p>
+        {% if moment.date or moment.occurs_on %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">{{ moment.date|default:moment.occurs_on }}</p>
+        {% endif %}
+      </div>
+      {% if moment.draft_ready or moment.has_draft %}
+      <a href="{% url 'content:studio' %}?source=holiday" class="text-xs font-medium text-kova-600 dark:text-kova-400 hover:underline shrink-0">Review</a>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="px-6 py-4">
+    <p class="text-sm text-gray-600 dark:text-gray-400">Holiday drafts are ready in Studio.</p>
+    <a href="{% url 'content:studio' %}?source=holiday" class="inline-flex items-center gap-1 mt-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:underline">
+      Open holiday drafts →
+    </a>
+  </div>
+  {% endif %}
+  <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-800">
+    <a href="{% url 'calendar_intel:preferences' %}" class="text-xs text-gray-500 dark:text-gray-400 hover:text-kova-600 dark:hover:text-kova-400">Configure moments</a>
+  </div>
+</div>
+{% endif %}

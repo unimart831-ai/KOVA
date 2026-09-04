@@ -80,7 +80,9 @@ class TestAuthFlow:
         page.goto(f"{base_url}/accounts/signup/")
         assert page.locator("form").is_visible()
         assert page.locator("input[name='email']").is_visible()
-        assert page.locator("input[name='phone_number']").is_visible()
+        assert page.locator("input[name='password1']").is_visible()
+        assert page.locator("input[name='password2']").is_visible()
+        assert page.locator("input[name='phone_number']").count() == 0
 
     def test_login_page_loads(self, page, base_url):
         page.goto(f"{base_url}/accounts/login/")
@@ -89,12 +91,18 @@ class TestAuthFlow:
     def test_signup_with_valid_data(self, page, base_url):
         page.goto(f"{base_url}/accounts/signup/")
         page.fill("input[name='email']", "testuser@example.com")
-        page.fill("input[name='phone_number']", "0712345678")
         page.fill("input[name='password1']", "TestPass123!@#")
+        page.fill("input[name='password2']", "TestPass123!@#")
         page.click("button[type='submit']")
         page.wait_for_load_state("networkidle")
         user = User.objects.filter(email="testuser@example.com").first()
         assert user is not None
+        assert (user.phone_number or "") == ""
+        assert "/accounts/onboarding/phone/" in page.url or "phone" in page.url.lower()
+        page.fill("input[name='phone_number']", "0712345678")
+        page.click("button[type='submit']")
+        page.wait_for_load_state("networkidle")
+        user.refresh_from_db()
         assert user.phone_number == "0712345678"
 
     def test_login_redirect_unauthenticated(self, page, base_url):
@@ -171,7 +179,7 @@ class TestHealthCheck:
 class TestLegalPages:
     """Legal pages must be accessible."""
 
-    @pytest.mark.parametrize("path", ["/privacy/", "/terms/", "/cookies/"])
+    @pytest.mark.parametrize("path", ["/legal/privacy/", "/legal/terms/", "/legal/cookies/"])
     def test_legal_page_loads(self, page, base_url, path):
         response = page.goto(f"{base_url}{path}")
         assert response.status == 200

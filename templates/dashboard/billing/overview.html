@@ -1,0 +1,219 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}Billing{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Plan, usage, and payment method</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  {# ── Current Plan Hero ── #}
+  <div class="card overflow-hidden">
+    <div class="px-6 py-5 bg-kova-50 dark:bg-kova-950/30 border-b border-gray-100 dark:border-gray-800">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-kova-600 dark:text-kova-400">Current plan</p>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ profile.get_plan_display }}</h2>
+          {% if profile.subscription_status == 'trialing' %}
+            <p class="text-xs text-gold-600 dark:text-gold-400 mt-1 font-medium">
+              Kova trial — ends {{ profile.trial_ends_at|date:"M d, Y" }}
+            </p>
+          {% elif profile.subscription_status == 'active' and profile.current_period_end %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Renews {{ profile.current_period_end|date:"M d, Y" }}
+            </p>
+          {% elif profile.subscription_status == 'past_due' %}
+            <p class="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+              Payment past due — please update your card
+            </p>
+          {% elif profile.subscription_status == 'canceled' %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Canceled — access until {{ profile.current_period_end|date:"M d, Y" }}
+            </p>
+          {% endif %}
+        </div>
+        <div class="flex gap-2">
+          {% if profile.stripe_subscription_id %}
+            <a href="{% url 'billing:portal' %}" class="btn-secondary text-sm px-4 py-2">Manage subscription</a>
+          {% endif %}
+          <a href="{% url 'billing:pricing' %}" class="btn-primary text-sm px-4 py-2">
+            {% if profile.subscription_status == 'none' or profile.subscription_status == 'canceled' %}Subscribe to Kova{% else %}Campaign add-ons{% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {# Plan limits #}
+    <div class="card-body">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Your plan includes</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+            {% if seed_usage.unlimited %}∞{% else %}{{ seed_usage.used }} / {{ seed_usage.max }}{% endif %}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Campaigns this month</p>
+          {% if seed_usage.bonus %}
+          <p class="text-[10px] text-kova-600 dark:text-kova-400 mt-1">includes +{{ seed_usage.bonus }} add-on</p>
+          {% endif %}
+        </div>
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">∞</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Publishing from campaigns</p>
+        </div>
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ limits.max_social_accounts }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Social accounts</p>
+        </div>
+        <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ limits.agents_enabled|length }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">AI agents</p>
+        </div>
+      </div>
+
+      {# ── Today's AI usage ── #}
+      {% if tokens_cap %}
+        <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div class="flex items-baseline justify-between mb-2">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">AI usage today</p>
+              <p class="text-sm text-gray-700 dark:text-gray-200 mt-0.5">
+                <span class="font-bold tabular-nums">{{ tokens_used_today|stringformat:"i" }}</span>
+                <span class="text-gray-400 dark:text-gray-500"> / {{ tokens_cap|stringformat:"i" }} tokens</span>
+              </p>
+            </div>
+            <span class="text-xs text-gray-400 dark:text-gray-500 font-medium tabular-nums">{{ tokens_pct }}%</span>
+          </div>
+          <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all
+                        {% if tokens_pct >= 90 %}bg-red-500
+                        {% elif tokens_pct >= 70 %}bg-gold-500
+                        {% else %}bg-kova-500{% endif %}"
+                 style="width: {{ tokens_pct }}%"
+                 role="progressbar" aria-valuenow="{{ tokens_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          {% if tokens_pct >= 90 %}
+            <p class="mt-2 text-xs text-red-600 dark:text-red-400">
+              You're close to today's AI cap. Resets at 00:00 UTC, or
+              <a href="{% url 'billing:pricing' %}" class="font-medium underline">upgrade for a bigger allowance</a>.
+            </p>
+          {% else %}
+            <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+              Counts every token your agents read or write. Resets daily at 00:00 UTC.
+            </p>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.daily_brief %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Daily AI brief
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.ai_image_generation %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          {% if limits.ai_image_generation %}AI images (Instagram, TikTok, Pinterest){% else %}AI image generation (upload your own){% endif %}
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.email_brief %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Email brief reports
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.whatsapp_brief %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          WhatsApp morning brief
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.engagement_agent %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Engagement inbox
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.competitor_tracking %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Competitor tracking
+        </li>
+        <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-4 h-4 {% if limits.auto_approve %}text-growth-500{% else %}text-gray-300 dark:text-gray-600{% endif %} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Auto-approve publishing
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  {# ── Payment Management ── #}
+  <div class="card">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Payment & Invoices</h3>
+    </div>
+
+    {% if profile.payment_provider == 'mpesa' %}
+      {# ── M-Pesa Payment Info ── #}
+      <div class="card-body space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-growth-100 dark:bg-growth-900/50 rounded-lg flex items-center justify-center">
+            
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">M-Pesa</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ profile.mpesa_phone|default:"Phone not set" }}</p>
+          </div>
+        </div>
+
+        {% if profile.current_period_end %}
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">Next payment due</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ profile.current_period_end|date:"M d, Y" }}</span>
+            </div>
+          </div>
+        {% endif %}
+
+        {# Payment history #}
+        {% if recent_payments %}
+          <div>
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Recent payments</h4>
+            <div class="space-y-2">
+              {% for payment in recent_payments %}
+                <div class="flex items-center justify-between text-sm py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                  <div>
+                    <span class="text-gray-900 dark:text-white font-medium">KSh {{ payment.amount }}</span>
+                    <span class="text-gray-400 dark:text-gray-500 ml-1">— {{ payment.created_at|date:"M d" }}</span>
+                  </div>
+                  <span class="{% if payment.status == 'completed' %}text-growth-600 dark:text-growth-400{% else %}text-red-500{% endif %} text-xs font-medium">
+                    {% if payment.status == 'completed' %}Paid{% elif payment.status == 'pending' %}Pending{% else %}Failed{% endif %}
+                  </span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="flex gap-3">
+          <a href="{% url 'billing:pricing' %}" class="btn-secondary text-sm flex-1 justify-center">Change plan</a>
+        </div>
+      </div>
+
+    {% elif profile.stripe_subscription_id %}
+      {# ── Stripe Payment Info ── #}
+      <div class="card-body space-y-3">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Manage your payment method, view invoices, and update billing details through the secure Stripe portal.
+        </p>
+        <a href="{% url 'billing:portal' %}" class="inline-flex items-center gap-2 text-sm font-medium text-kova-600 dark:text-kova-400 hover:text-kova-700 dark:hover:text-kova-300">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Open billing portal
+        </a>
+      </div>
+
+    {% else %}
+      {# ── No Subscription ── #}
+      <div class="card-body text-center py-8">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">No active subscription.</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Pay with M-Pesa to unlock more features.</p>
+        <a href="{% url 'billing:pricing' %}" class="btn-primary text-sm px-6 py-2 mt-4 inline-block">View plans</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

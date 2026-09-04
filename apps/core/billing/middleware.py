@@ -151,6 +151,11 @@ class PlanEnforcementMiddleware:
         if not request.user.is_authenticated:
             return None
 
+        # Dev tooling / static — never paywall (browser-reload SSE would 302-loop).
+        path = request.path or ""
+        if path.startswith(("/__reload__/", "/static/", "/media/", "/health/", "/favicon.ico")):
+            return None
+
         # Resolve URL name
         url_name = request.resolver_match.url_name if request.resolver_match else ""
         namespace = request.resolver_match.namespace if request.resolver_match else ""

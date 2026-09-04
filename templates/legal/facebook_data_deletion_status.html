@@ -1,0 +1,41 @@
+{% extends "legal/base.html" %}
+
+{% block legal_doc_class %}{% endblock %}
+
+{% block legal_body %}
+{% if found %}
+    <div class="legal-ok">
+      <p>Request completed</p>
+      <p class="mt-2 text-sm text-white/70">We disconnected your Facebook/Instagram data from Kova and cleared stored OAuth tokens.</p>
+    </div>
+    <dl>
+      <div>
+        <dt>Confirmation code</dt>
+        <dd class="font-mono break-all">{{ confirmation_code }}</dd>
+      </div>
+      {% if record.completed_at %}
+      <div>
+        <dt>Completed at</dt>
+        <dd>{{ record.completed_at }}</dd>
+      </div>
+      {% endif %}
+      {% if record.counts %}
+      <div>
+        <dt>Summary</dt>
+        <dd>
+          Facebook connections cleared: {{ record.counts.facebook_accounts|default:0 }}<br>
+          Instagram connections cleared: {{ record.counts.instagram_accounts|default:0 }}
+        </dd>
+      </div>
+      {% endif %}
+    </dl>
+    {% else %}
+    <div class="legal-warn">
+      <p>Confirmation code not found</p>
+      <p class="mt-2 text-sm text-white/70">This code may have expired, or the request is still processing. If you removed Kova from Facebook recently, your data deletion may already be complete.</p>
+    </div>
+    {% endif %}
+
+    <p class="mt-8">To delete your full Kova account, email <a href="mailto:support@kovaagent.com">support@kovaagent.com</a>. See also our <a href="{% url 'facebook_data_deletion' %}">data deletion instructions</a> and <a href="{% url 'legal' 'privacy' %}">Privacy Policy</a>.</p>
+    <p><a href="{{ site_url }}/">← Back to Kova</a></p>
+{% endblock %}

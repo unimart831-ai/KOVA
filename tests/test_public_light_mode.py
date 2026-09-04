@@ -9,9 +9,9 @@ PUBLIC_PAGES = [
     ("/", "landing"),
     ("/accounts/login/", "login"),
     ("/accounts/signup/", "signup"),
-    ("/privacy/", "privacy"),
-    ("/terms/", "terms"),
-    ("/cookies/", "cookies"),
+    ("/legal/privacy/", "privacy"),
+    ("/legal/terms/", "terms"),
+    ("/legal/cookies/", "cookies"),
 ]
 
 # Decorative animation classes removed from public light surfaces (Jun 2026 audit)

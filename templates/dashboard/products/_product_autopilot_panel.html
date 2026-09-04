@@ -1,0 +1,166 @@
+{# Live Commerce Autopilot — polls pipeline + shows posts as agents work #}
+{% if show_autopilot_panel %}
+<div id="commerce-autopilot-panel"
+     class="card overflow-hidden border-2 border-kova-200 dark:border-kova-800"
+     x-data="productAutopilot('{{ product.pk }}', {{ pipeline_initial_json|safe }})"
+     x-init="init()">
+
+  <div class="px-5 py-4 bg-gradient-to-r from-kova-600 to-kova-600 dark:from-kova-800 dark:to-kova-800">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Commerce Autopilot</p>
+        <h2 class="text-lg font-bold text-white mt-0.5" x-text="headerTitle">Agents at work</h2>
+        <p class="text-xs text-white/85 mt-1" x-text="headerSubtitle"></p>
+      </div>
+      <div class="flex flex-wrap gap-2 shrink-0">
+        {% if product.image %}
+        <form method="post" action="{% url 'products:expand_photos' product_id=product.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/20" title="Rebuild balanced studio pack: hero, AI backgrounds, category polish">
+            Refresh studio pack
+          </button>
+        </form>
+        <form method="post" action="{% url 'products:fix_promote' product_id=product.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white text-kova-700 hover:bg-kova-50 shadow-sm">
+            Fix &amp; Promote
+          </button>
+        </form>
+        <form method="post" action="{% url 'products:quick_post' product_id=product.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white border border-white/30">
+            Quick Post Photo
+          </button>
+        </form>
+        {% endif %}
+        {% if name_is_placeholder %}
+        <form method="post" action="{% url 'products:reidentify' product_id=product.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/20">
+            Read name only
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    <template x-if="processing">
+      <div class="mt-3">
+        <div class="h-1.5 bg-white/20 rounded-full overflow-hidden">
+          <div class="h-full bg-white rounded-full transition-all duration-700" :style="'width:' + progressPercent + '%'"></div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <div class="p-5 space-y-4">
+    {% if name_is_placeholder %}
+    <div class="text-sm rounded-lg px-3 py-2 bg-gold-50 dark:bg-gold-950/30 border border-gold-200 dark:border-gold-800 text-gold-800 dark:text-gold-200">
+      Name still generic? Tap <strong>Fix &amp; Promote</strong> — AI reads the label, posts your photo, then builds reels and platform content.
+    </div>
+    {% endif %}
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Pipeline</h3>
+        <ul class="space-y-1.5">
+          <template x-for="step in steps" :key="step.id">
+            <li class="flex gap-2 text-xs rounded-lg px-2.5 py-2 border"
+                :class="{
+                  'border-kova-200 bg-kova-50/50 dark:border-kova-800': step.status === 'running',
+                  'border-growth-200 bg-growth-50/30 dark:border-growth-900': step.status === 'completed',
+                  'border-gray-100 dark:border-gray-800 text-gray-400': step.status === 'skipped' || step.status === 'pending',
+                  'border-red-200 bg-red-50/30': step.status === 'failed',
+                }">
+              <span class="shrink-0" x-text="step.status === 'completed' ? '✓' : step.status === 'running' ? '…' : step.status === 'failed' ? '✕' : '○'"></span>
+              <span><span class="font-medium" x-text="step.message"></span>
+                <span x-show="step.detail" class="text-gray-500 block" x-text="step.detail"></span>
+              </span>
+            </li>
+          </template>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          Content (<span x-text="posts.length"></span>)
+        </h3>
+        <template x-if="!posts.length">
+          <p class="text-sm text-gray-500 dark:text-gray-400">Posts, reels, and carousels appear here as agents create them…</p>
+        </template>
+        <ul class="space-y-2 max-h-48 overflow-y-auto">
+          <template x-for="(post, i) in posts" :key="post.id || i">
+            <li class="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700 text-xs">
+              <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                <span class="font-medium text-gray-600 dark:text-gray-300" x-text="post.platform"></span>
+                <span x-show="post.post_format === 'reel'" class="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">Reel</span>
+                <span x-show="post.visual_strategy === 'carousel' && post.post_format !== 'reel'" class="px-1.5 py-0.5 rounded bg-kova-100 text-kova-700">Carousel</span>
+                <span x-show="post.post_format === 'image'" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Photo</span>
+                <span class="text-gray-400" x-text="post.status"></span>
+              </div>
+              <p class="line-clamp-2 text-gray-800 dark:text-gray-200" x-text="post.preview"></p>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 pt-1">
+      <a href="{% url 'content:studio' %}" class="btn-secondary text-sm px-3 py-1.5">Open Studio</a>
+      <a href="{% url 'content:queue' %}" class="btn-secondary text-sm px-3 py-1.5">Approval Queue</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function productAutopilot(productId, initial) {
+  initial = initial || {};
+  return {
+    productId,
+    status: initial.status || 'processing',
+    steps: initial.steps || [],
+    posts: initial.posts || [],
+    productName: initial.product_name || '',
+    progressPercent: initial.progress_percent || 10,
+    pollTimer: null,
+    get processing() { return this.status === 'processing'; },
+    get headerTitle() {
+      if (this.status === 'completed') return this.productName ? this.productName + ' — ready' : 'Campaign ready';
+      if (this.status === 'failed') return 'Needs attention';
+      return this.productName || 'Agents building your campaign';
+    },
+    get headerSubtitle() {
+      if (this.status === 'completed') return 'Balanced studio pack, portrait feed, carousel (IG + FB), story, reel & WhatsApp — review in Studio or auto-publish.';
+      if (this.status === 'failed') return 'Try Fix & Promote or Quick Post Photo below.';
+      return 'Studio polish mix → brand match → posts, carousels, reels — live below.';
+    },
+    init() {
+      this.poll();
+      this.pollTimer = setInterval(() => this.poll(), 2500);
+    },
+    async poll() {
+      try {
+        const resp = await fetch(`/products/${this.productId}/snap-status/`, {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        this.status = data.status;
+        this.steps = data.steps || [];
+        this.posts = data.posts || [];
+        this.progressPercent = data.progress_percent || 10;
+        if (data.product_name && data.product_name !== 'New product') {
+          this.productName = data.product_name;
+          const title = document.querySelector('[data-product-title]');
+          if (title) title.textContent = data.product_name;
+        }
+        if (data.terminal && this.pollTimer) {
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
+      } catch (e) { /* ignore */ }
+    },
+  };
+}
+</script>
+{% endif %}

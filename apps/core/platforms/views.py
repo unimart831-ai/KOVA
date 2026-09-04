@@ -169,7 +169,7 @@ def platform_list(request):
 
     sorted_platforms = _sort_platforms_for_model(platforms, business_model)
 
-    return render(request, "platforms/list.html", {
+    return render(request, "dashboard/channels.html", {
         "accounts": accounts,
         "platforms": sorted_platforms,
         "coming_soon_platforms": COMING_SOON_PLATFORMS,
@@ -200,7 +200,7 @@ def connect_platform(request, platform):
 
     # TikTok — require acknowledgment before OAuth (posts may be private until app audit)
     if platform == "tiktok" and request.GET.get("ack") != "1":
-        return render(request, "platforms/tiktok_connect_notice.html", {
+        return render(request, "dashboard/platforms/tiktok_connect_notice.html", {
             "page_title": "Connect TikTok",
             "connect_url": (
                 reverse("platforms:connect", kwargs={"platform": "tiktok"}) + "?ack=1"
@@ -241,7 +241,7 @@ def connect_platform(request, platform):
                 logger.error("WhatsApp connect failed: %s", exc, exc_info=True)
                 messages.error(request, f"Failed to connect WhatsApp: {exc}")
             return redirect("platforms:list")
-        return render(request, "platforms/whatsapp_connect.html", {
+        return render(request, "dashboard/platforms/whatsapp_connect.html", {
             "page_title": "Connect WhatsApp",
             "facebook_app_id": getattr(settings, "FACEBOOK_APP_ID", ""),
             "fb_wa_config_id": getattr(settings, "FB_WA_CONFIG_ID", ""),
@@ -668,7 +668,7 @@ def linkedin_select_page(request):
         )
         return redirect("platforms:list")
 
-    return render(request, "platforms/linkedin_select_page.html", {
+    return render(request, "dashboard/platforms/linkedin_select_page.html", {
         "organizations": organizations,
         "page_title": "Connect LinkedIn Company Page",
     })

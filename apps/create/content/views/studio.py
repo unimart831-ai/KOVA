@@ -107,7 +107,7 @@ def content_studio(request):
 
     studio_assets = studio_assets_for_user(request.user, limit=8)
 
-    return render(request, "content/studio.html", {
+    return render(request, "dashboard/studio.html", {
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
         "active_seeds": active_seeds,
@@ -146,7 +146,13 @@ def _get_studio_posts(user, status_filter=None, platform_filter=None, format_fil
     visible_user_ids = get_teammate_ids(user)
 
     default_statuses = ["draft", "pending_approval"]
-    filter_statuses = [status_filter] if status_filter and status_filter in dict(Post.Status.choices) else default_statuses
+    valid_statuses = dict(Post.Status.choices)
+    if status_filter in valid_statuses:
+        filter_statuses = [status_filter]
+    elif status_filter == "":
+        filter_statuses = list(valid_statuses.keys())
+    else:
+        filter_statuses = default_statuses
 
     posts = Post.objects.filter(
         user_id__in=visible_user_ids,
@@ -318,7 +324,7 @@ def studio_posts(request):
     )
     all_posts = [p for g in seed_groups for p in g["posts"]] + list(ungrouped)
     pending_images = sum(1 for p in all_posts if p.media_status == "pending")
-    return render(request, "content/_studio_posts.html", {
+    return render(request, "dashboard/content/_studio_posts.html", {
         "seed_groups": seed_groups,
         "ungrouped_posts": ungrouped,
         "total_pending": total_pending,
@@ -471,7 +477,7 @@ def share_moment(request):
     profile = getattr(request.user, "profile", None)
     autopilot_on = should_auto_publish_commerce(request.user) or should_auto_publish_approved(request.user)
     platform_labels = ", ".join(sorted({a.platform.title() for a in accounts})) if accounts else ""
-    return render(request, "content/share_moment.html", {
+    return render(request, "dashboard/content/share_moment.html", {
         "share_accounts": accounts,
         "reel_accounts": [a for a in accounts if a.platform in _REEL_UPLOAD_PLATFORMS],
         "autopilot_on": autopilot_on,
@@ -747,7 +753,7 @@ def refresh_suggestions(request):
 
     seed_suggestions = get_seed_suggestions(request.user)
 
-    return render(request, "content/_suggestions.html", {
+    return render(request, "dashboard/content/_suggestions.html", {
         "seed_suggestions": seed_suggestions,
     })
 
@@ -770,7 +776,7 @@ def seed_status(request, seed_id):
     profile = getattr(request.user, "profile", None)
     auto_approve_posts = bool(profile and profile.auto_approve_posts)
     pending_for_review_count = posts.filter(status__in=["pending_approval", "draft"]).count()
-    response = render(request, "content/_seed_status.html", {
+    response = render(request, "dashboard/content/_seed_status.html", {
         "seed": seed,
         "posts": posts,
         "auto_approve_posts": auto_approve_posts,

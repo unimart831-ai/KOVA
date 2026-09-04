@@ -1,0 +1,227 @@
+{# PDF Report Template — rendered by xhtml2pdf (inline CSS only, table layout) #}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Social Media Report</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1f2937; line-height: 1.5; }
+  h1 { font-size: 22px; color: {{ primary_color|default:"#4c1d95" }}; margin: 0 0 4px; }
+  h2 { font-size: 14px; color: {{ primary_color|default:"#4c1d95" }}; margin: 16px 0 8px; border-bottom: 2px solid #e5e7eb; padding-bottom: 4px; }
+  h3 { font-size: 12px; color: #374151; margin: 12px 0 6px; }
+  .subtitle { font-size: 12px; color: #6b7280; margin: 0 0 20px; }
+  .hero-table { width: 100%; background-color: #4c1d95; color: #ffffff; border-radius: 8px; margin-bottom: 16px; }
+  .hero-table td { padding: 16px 20px; }
+  .hero-big { font-size: 32px; font-weight: bold; }
+  .hero-label { font-size: 10px; color: #ddd6fe; }
+  .hero-delta { font-size: 10px; }
+  .metric-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .metric-table td { padding: 10px 12px; text-align: center; border: 1px solid #e5e7eb; }
+  .metric-value { font-size: 18px; font-weight: bold; color: #111827; }
+  .metric-label { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+  .funnel-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .funnel-table td { padding: 8px; text-align: center; }
+  .funnel-stage { font-size: 16px; font-weight: bold; color: #111827; }
+  .funnel-label { font-size: 9px; color: #6b7280; }
+  .funnel-arrow { font-size: 14px; color: #9ca3af; }
+  .funnel-rate { font-size: 8px; color: #6b7280; }
+  .data-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .data-table th { background-color: #f9fafb; padding: 6px 10px; text-align: left; font-size: 10px; color: #374151; border-bottom: 2px solid #e5e7eb; }
+  .data-table td { padding: 6px 10px; border-bottom: 1px solid #f3f4f6; font-size: 10px; }
+  .data-table .number { text-align: right; font-weight: 600; }
+  .response-box { padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; }
+  .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 9px; color: #9ca3af; text-align: center; }
+  .green { color: #0066FF; }
+  .red { color: #dc2626; }
+</style>
+</head>
+<body>
+
+{# Header #}
+{% if logo_url %}<img src="{{ logo_url }}" alt="" style="max-height:48px;margin-bottom:8px;">{% endif %}
+<h1>{% if brand_name %}{{ brand_name }} — {% endif %}Social Media Performance Report</h1>
+<p class="subtitle">
+  {% if business_name %}{{ business_name }} &mdash; {% endif %}
+  {{ period_start|date:"M d" }} to {{ period_end|date:"M d, Y" }} ({{ days }} days)
+</p>
+
+{# Hero: The Answer #}
+<table class="hero-table">
+  <tr>
+    <td style="width:50%;">
+      <div class="hero-big">{{ sales }}</div>
+      <div class="hero-label">Customer{{ sales|pluralize }} from social media</div>
+      {% if sales_delta %}
+      <div class="hero-delta" style="color:{% if sales_delta > 0 %}#86efac{% else %}#fca5a5{% endif %};">
+        {% if sales_delta > 0 %}+{% endif %}{{ sales_delta }} vs previous period
+      </div>
+      {% endif %}
+    </td>
+    <td style="width:50%;">
+      <div class="hero-big">KES {{ revenue|floatformat:0 }}</div>
+      <div class="hero-label">Revenue attributed to social</div>
+      {% if revenue_delta %}
+      <div class="hero-delta" style="color:{% if revenue_delta > 0 %}#86efac{% else %}#fca5a5{% endif %};">
+        {% if revenue_delta > 0 %}+{% endif %}KES {{ revenue_delta|floatformat:0 }} vs previous period
+      </div>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+{# Key Metrics #}
+<h2>Key Metrics</h2>
+<table class="metric-table">
+  <tr>
+    <td>
+      <div class="metric-value">{{ posts_published }}</div>
+      <div class="metric-label">Posts Published</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ reach|default:"0" }}</div>
+      <div class="metric-label">Total Reach</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ leads_total }}</div>
+      <div class="metric-label">Leads Captured</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ link_clicks }}</div>
+      <div class="metric-label">Link Clicks</div>
+    </td>
+  </tr>
+</table>
+
+{# Funnel #}
+<h2>Conversion Funnel</h2>
+<table class="funnel-table">
+  <tr>
+    <td>
+      <div class="funnel-stage">{{ reach|default:"0" }}</div>
+      <div class="funnel-label">Reach</div>
+    </td>
+    <td><span class="funnel-arrow">&rarr;</span><br><span class="funnel-rate">{{ reach_to_engage }}%</span></td>
+    <td>
+      <div class="funnel-stage">{{ engagements }}</div>
+      <div class="funnel-label">Engagements</div>
+    </td>
+    <td><span class="funnel-arrow">&rarr;</span></td>
+    <td>
+      <div class="funnel-stage">{{ total_clicks }}</div>
+      <div class="funnel-label">Clicks</div>
+    </td>
+    <td><span class="funnel-arrow">&rarr;</span><br><span class="funnel-rate">{{ click_to_lead }}%</span></td>
+    <td>
+      <div class="funnel-stage">{{ leads_total }}</div>
+      <div class="funnel-label">Leads</div>
+    </td>
+    <td><span class="funnel-arrow">&rarr;</span><br><span class="funnel-rate">{{ lead_to_sale }}%</span></td>
+    <td>
+      <div class="funnel-stage">{{ sales }}</div>
+      <div class="funnel-label">Sales</div>
+    </td>
+  </tr>
+</table>
+
+{# Engagement Breakdown #}
+<h2>Engagement Breakdown</h2>
+<table class="metric-table">
+  <tr>
+    <td>
+      <div class="metric-value">{{ impressions|default:"0" }}</div>
+      <div class="metric-label">Impressions</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ likes }}</div>
+      <div class="metric-label">Likes</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ comments }}</div>
+      <div class="metric-label">Comments</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ shares }}</div>
+      <div class="metric-label">Shares</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ saves }}</div>
+      <div class="metric-label">Saves</div>
+    </td>
+    <td>
+      <div class="metric-value">{% if avg_engagement_rate %}{{ avg_engagement_rate|floatformat:2 }}%{% else %}&mdash;{% endif %}</div>
+      <div class="metric-label">Avg Rate</div>
+    </td>
+  </tr>
+</table>
+
+{# Platform Breakdown #}
+{% if platform_breakdown %}
+<h2>Revenue by Platform</h2>
+<table class="data-table">
+  <tr>
+    <th>Platform</th>
+    <th style="text-align:right;">Revenue</th>
+    <th style="text-align:right;">Sales</th>
+    <th style="text-align:right;">Leads</th>
+  </tr>
+  {% for p in platform_breakdown %}
+  <tr>
+    <td style="text-transform:capitalize;">{{ p.social_account__platform }}</td>
+    <td class="number">KES {{ p.revenue|floatformat:0 }}</td>
+    <td class="number">{{ p.sales }}</td>
+    <td class="number">{{ p.leads }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{# Lead Sources #}
+{% if leads_by_source %}
+<h2>Lead Sources</h2>
+<table class="data-table">
+  <tr>
+    <th>Source</th>
+    <th style="text-align:right;">Count</th>
+  </tr>
+  {% for item in leads_by_source %}
+  <tr>
+    <td style="text-transform:capitalize;">{{ item.source_type }}</td>
+    <td class="number">{{ item.count }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{# Community Management #}
+{% if total_interactions %}
+<h2>Community Management</h2>
+<table class="metric-table">
+  <tr>
+    <td>
+      <div class="metric-value">{{ total_interactions }}</div>
+      <div class="metric-label">Messages Received</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ replied_interactions }}</div>
+      <div class="metric-label">Replied To</div>
+    </td>
+    <td>
+      <div class="metric-value">{{ reply_rate }}%</div>
+      <div class="metric-label">Reply Rate</div>
+    </td>
+    <td>
+      <div class="metric-value">{% if avg_response_minutes %}{{ avg_response_minutes }} min{% else %}&mdash;{% endif %}</div>
+      <div class="metric-label">Avg Response Time</div>
+    </td>
+  </tr>
+</table>
+{% endif %}
+
+{# Footer #}
+<div class="footer">
+  {% if powered_by_kova %}Generated by Kova Agent &mdash; {% endif %}{{ generated_at|date:"M d, Y h:i A" }}
+</div>
+
+</body>
+</html>

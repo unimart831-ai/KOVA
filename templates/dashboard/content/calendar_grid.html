@@ -1,0 +1,47 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}Content Calendar{% endblock %}
+{% block page_subtitle %}
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Visual monthly view of scheduled and published posts</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <!-- Header with month nav -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <a href="?year={{ prev_year }}&month={{ prev_month }}"
+         hx-get="{% url 'content:calendar_grid' %}?year={{ prev_year }}&month={{ prev_month }}"
+         hx-target="#calendar-wrapper" hx-swap="innerHTML" hx-push-url="?year={{ prev_year }}&month={{ prev_month }}"
+         class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+         aria-label="Previous month">
+        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white min-w-[160px] text-center">{{ month_name }} {{ year }}</h2>
+      <a href="?year={{ next_year }}&month={{ next_month }}"
+         hx-get="{% url 'content:calendar_grid' %}?year={{ next_year }}&month={{ next_month }}"
+         hx-target="#calendar-wrapper" hx-swap="innerHTML" hx-push-url="?year={{ next_year }}&month={{ next_month }}"
+         class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+         aria-label="Next month">
+        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+    <div class="flex items-center gap-2">
+      {% if total_scheduled %}
+      <span class="text-xs text-gray-500 dark:text-gray-400">{{ total_scheduled }} post{{ total_scheduled|pluralize }}</span>
+      {% endif %}
+      <a href="{% url 'content:calendar_grid' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Today</a>
+      <a href="{% url 'content:calendar' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Timeline</a>
+      <a href="{% url 'content:queue' %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">List view</a>
+    </div>
+  </div>
+
+  <div id="calendar-wrapper">
+    {% include "dashboard/content/_calendar_grid.html" %}
+  </div>
+</div>
+{% endblock %}

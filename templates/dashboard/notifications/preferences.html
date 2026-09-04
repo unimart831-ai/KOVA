@@ -1,0 +1,115 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}Notification Preferences{% endblock %}
+{% block page_subtitle %}
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">Choose which notifications you receive</p>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+  {% if saved %}
+  <div class="mb-4 bg-growth-50 dark:bg-growth-950/30 border border-growth-200 dark:border-growth-800 rounded-lg px-4 py-3 text-sm text-growth-700 dark:text-growth-300">
+    Preferences saved.
+  </div>
+  {% endif %}
+
+  <form method="post"
+        hx-post="{% url 'notifications:preferences' %}"
+        hx-target="#save-confirm"
+        hx-swap="innerHTML"
+        class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+
+    {% csrf_token %}
+
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">In-App Notifications</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Toggle off notification types you don't want to see. System alerts (errors, security) are always shown.</p>
+    </div>
+
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+
+      <!-- Post Published -->
+      <label class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-growth-100 dark:bg-growth-900/40 flex items-center justify-center">
+            <svg class="w-4 h-4 text-growth-600 dark:text-growth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">Post Published</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">When your posts go live on social platforms</p>
+          </div>
+        </div>
+        <input type="checkbox" name="post_published" {% if prefs.post_published %}checked{% endif %}
+               class="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-800">
+      </label>
+
+      <!-- Publish Failed -->
+      <label class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+            <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">Publish Failed</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">When a post fails to publish (token expired, API error)</p>
+          </div>
+        </div>
+        <input type="checkbox" name="publish_failed" {% if prefs.publish_failed %}checked{% endif %}
+               class="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-800">
+      </label>
+
+      <!-- Posts Generated -->
+      <label class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">Posts Generated</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">When AI generates new posts ready for review</p>
+          </div>
+        </div>
+        <input type="checkbox" name="posts_generated" {% if prefs.posts_generated %}checked{% endif %}
+               class="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-800">
+      </label>
+
+      <!-- Agent Action -->
+      <label class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-kova-100 dark:bg-kova-900/40 flex items-center justify-center">
+            <svg class="w-4 h-4 text-kova-600 dark:text-kova-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">Agent Actions</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">When AI agents complete tasks (replies ready, research done)</p>
+          </div>
+        </div>
+        <input type="checkbox" name="agent_action" {% if prefs.agent_action %}checked{% endif %}
+               class="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-kova-600 focus:ring-kova-500 dark:bg-gray-800">
+      </label>
+
+    </div>
+
+    <!-- System notice -->
+    <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <p class="text-xs text-gray-500 dark:text-gray-400">System alerts (errors, security, token expiry) cannot be turned off.</p>
+      </div>
+    </div>
+
+    <!-- Save -->
+    <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <div id="save-confirm"></div>
+      <button type="submit" class="btn-primary btn-sm">Save preferences</button>
+    </div>
+
+  </form>
+
+  <p class="mt-4 text-center text-xs text-gray-400 dark:text-gray-500">
+    <a href="{% url 'notifications:list' %}" class="hover:text-kova-600 dark:hover:text-kova-400">&larr; Back to notifications</a>
+  </p>
+
+</div>
+{% endblock %}

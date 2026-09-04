@@ -13,6 +13,17 @@ def humanize_slug(value):
 
 
 @register.filter
+def first_word(value):
+    """Return the first whitespace-separated token (e.g. greeting first name)."""
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    return text.split()[0]
+
+
+@register.filter
 def dedupe_messages(messages):
     """Show each distinct message text once (OAuth failures sometimes duplicate)."""
     if not messages:

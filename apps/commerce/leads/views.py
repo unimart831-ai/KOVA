@@ -44,7 +44,7 @@ def lead_list(request):
         converted=Count("id", filter=Q(status="converted")),
     )
 
-    return render(request, "leads/lead_list.html", {
+    return render(request, "dashboard/leads.html", {
         "leads": leads,
         "stats": stats,
         "current_status": status,
@@ -67,7 +67,7 @@ def lead_pipeline(request):
             "label": status_label,
             "leads": list(base_qs.filter(status=status_value)[:30]),
         })
-    return render(request, "leads/lead_pipeline.html", {
+    return render(request, "dashboard/leads/lead_pipeline.html", {
         "columns": columns,
         "page_title": "Lead Pipeline",
     })
@@ -98,7 +98,7 @@ def lead_create(request):
     else:
         form = LeadForm()
 
-    return render(request, "leads/lead_form.html", {
+    return render(request, "dashboard/leads/lead_form.html", {
         "form": form,
         "page_title": "Add Lead",
         "is_edit": False,
@@ -140,7 +140,7 @@ def lead_detail(request, lead_id):
             user=request.user, is_active=True,
         ).first()
 
-    return render(request, "leads/lead_detail.html", {
+    return render(request, "dashboard/leads/lead_detail.html", {
         "lead": lead,
         "activities": activities,
         "note_form": note_form,
@@ -171,7 +171,7 @@ def lead_edit(request, lead_id):
     else:
         form = LeadForm(instance=lead)
 
-    return render(request, "leads/lead_form.html", {
+    return render(request, "dashboard/leads/lead_form.html", {
         "form": form,
         "lead": lead,
         "page_title": "Edit Lead",
@@ -203,7 +203,7 @@ def lead_change_status(request, lead_id):
     )
 
     if request.headers.get("HX-Request"):
-        return render(request, "leads/partials/lead_status_badge.html", {"lead": lead})
+        return render(request, "dashboard/leads/partials/lead_status_badge.html", {"lead": lead})
     return redirect("leads:detail", lead_id=lead.pk)
 
 
@@ -229,7 +229,7 @@ def lead_add_note(request, lead_id):
 
     if request.headers.get("HX-Request"):
         activities = lead.activities.all()[:50]
-        return render(request, "leads/partials/activity_timeline.html", {"activities": activities, "lead": lead})
+        return render(request, "dashboard/leads/partials/activity_timeline.html", {"activities": activities, "lead": lead})
     return redirect("leads:detail", lead_id=lead.pk)
 
 
@@ -251,7 +251,7 @@ def lead_add_tag(request, lead_id):
             )
 
     if request.headers.get("HX-Request"):
-        return render(request, "leads/partials/lead_tags.html", {"lead": lead})
+        return render(request, "dashboard/leads/partials/lead_tags.html", {"lead": lead})
     return redirect("leads:detail", lead_id=lead.pk)
 
 
@@ -266,7 +266,7 @@ def lead_remove_tag(request, lead_id):
         lead.save(update_fields=["tags", "last_activity_at"])
 
     if request.headers.get("HX-Request"):
-        return render(request, "leads/partials/lead_tags.html", {"lead": lead})
+        return render(request, "dashboard/leads/partials/lead_tags.html", {"lead": lead})
     return redirect("leads:detail", lead_id=lead.pk)
 
 
@@ -313,7 +313,7 @@ def lead_analytics(request):
         float(a.metadata.get("amount", 0)) for a in commerce_activities.only("metadata")[:500]
     )
 
-    return render(request, "leads/lead_analytics.html", {
+    return render(request, "dashboard/leads/lead_analytics.html", {
         "by_status": by_status,
         "by_source": by_source,
         "by_priority": by_priority,
@@ -344,7 +344,7 @@ def nurture_list(request):
     total_enrolled = LeadEnrollment.objects.filter(sequence__user=request.user).count()
     total_completed = LeadEnrollment.objects.filter(sequence__user=request.user, completed=True).count()
 
-    return render(request, "leads/nurture_list.html", {
+    return render(request, "dashboard/leads/nurture_list.html", {
         "sequences": sequences,
         "active_count": active_count,
         "total_enrolled": total_enrolled,
@@ -409,7 +409,7 @@ def nurture_create(request):
         messages.success(request, f"Nurture sequence '{name}' created!")
         return redirect("leads:nurture_detail", sequence_id=sequence.pk)
 
-    return render(request, "leads/nurture_form.html", {
+    return render(request, "dashboard/leads/nurture_form.html", {
         "page_title": "New Nurture Sequence",
         "is_edit": False,
         "whatsapp_enabled": whatsapp_enabled,
@@ -425,7 +425,7 @@ def nurture_detail(request, sequence_id):
     steps = sequence.steps.all()
     enrollments = sequence.enrollments.select_related("lead").all()[:50]
 
-    return render(request, "leads/nurture_detail.html", {
+    return render(request, "dashboard/leads/nurture_detail.html", {
         "sequence": sequence,
         "steps": steps,
         "enrollments": enrollments,

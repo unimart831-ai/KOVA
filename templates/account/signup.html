@@ -1,76 +1,179 @@
-{% extends "layouts/marketing.html" %}
+{% extends "account/base.html" %}
 
-{% block title %}Join free - KOVA{% endblock %}
+{% block account_title %}Join free - KOVA{% endblock %}
+{% block account_heading %}Join free{% endblock %}
 
-{% block extra_head %}
-{% include "account/_auth_styles.html" %}
+{% block account_head %}
+{% include "account/includes/_auth_styles.html" %}
+<script nonce="{{ request.csp_nonce }}">
+  function kovaSignupForm(initialEmail) {
+    return {
+      email: initialEmail || '',
+      password1: '',
+      password2: '',
+      show1: false,
+      show2: false,
+      emailTouched: false,
+      password1Touched: false,
+      password2Touched: false,
+      emailOk: function () {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((this.email || '').trim());
+      },
+      emailError: function () {
+        if (!this.emailTouched && !(this.email || '').trim()) return '';
+        var value = (this.email || '').trim();
+        if (!value) return 'Email is required.';
+        if (!this.emailOk()) return 'Enter a valid email address.';
+        return '';
+      },
+      password1Error: function () {
+        if (!this.password1Touched && !this.password1) return '';
+        if ((this.password1 || '').length < 8) return 'Use at least 8 characters.';
+        return '';
+      },
+      password2Error: function () {
+        if (!this.password2Touched && !this.password2) return '';
+        if (!this.password2) return 'Confirm your password.';
+        if (this.password2 !== this.password1) return 'Passwords do not match.';
+        return '';
+      },
+      canSubmit: function () {
+        return this.emailOk()
+          && (this.password1 || '').length >= 8
+          && this.password1 === this.password2
+          && !!this.password2;
+      }
+    };
+  }
+</script>
 {% endblock %}
 
-{% block content %}
-<section class="kova-auth">
-  {% include "account/_auth_visual.html" %}
+{% block account_social %}
+{% include "account/includes/_social_login.html" %}
+{% endblock %}
 
-  <div class="kova-auth__panel">
-    <div class="kova-auth__card">
-      <h1 class="kova-auth__title">Join free</h1>
-
-      {% include "account/_auth_messages.html" %}
-      {% include "account/_social_login.html" %}
-
-      <form method="post" action="{% url 'account_signup' %}" class="kova-auth__form">
-        {% csrf_token %}
-        {% if request.COOKIES.kova_ref %}
-        <input type="hidden" name="ref_code" value="{{ request.COOKIES.kova_ref }}">
-        <div class="kova-auth__ref">
-          <svg class="w-4 h-4 text-blue-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          <p>Referred by partner <span class="font-mono font-semibold">{{ request.COOKIES.kova_ref }}</span></p>
-        </div>
-        {% endif %}
-
-        {% if form.errors %}
-          <div class="rounded-xl px-4 py-3 text-sm bg-red-50 border border-red-200 text-red-700">
-            {% for field in form %}
-              {% for error in field.errors %}<p>{{ error }}</p>{% endfor %}
-            {% endfor %}
-            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-          </div>
-        {% endif %}
-
-        <div>
-          <label for="id_email" class="label">Work email</label>
-          <input type="email" name="email" id="id_email" class="input" placeholder="you@business.com"
-                 value="{% if form.email.value %}{{ form.email.value }}{% else %}{% for k, v in request.GET.items %}{% if k == 'email' %}{{ v }}{% endif %}{% endfor %}{% endif %}"
-                 required autofocus autocomplete="email">
-        </div>
-        <div>
-          <label for="id_phone_number" class="label">Phone</label>
-          <input type="tel" name="phone_number" id="id_phone_number" class="input" placeholder="07XX XXX XXX"
-                 value="{{ form.phone_number.value|default:'' }}" required autocomplete="tel">
-        </div>
-        <div>
-          <label for="id_password1" class="label">Password</label>
-          <input type="password" name="password1" id="id_password1" class="input" placeholder="At least 8 characters"
-                 required autocomplete="new-password" minlength="8">
-        </div>
-
-        {% if redirect_field_value %}
-          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
-        {% endif %}
-
-        <button type="submit" class="kova-auth__submit">Join free</button>
-
-        <p class="kova-auth__legal">
-          By joining, you agree to our
-          <a href="{% url 'terms' %}">Terms</a> and
-          <a href="{% url 'privacy' %}">Privacy Policy</a>.
-        </p>
-      </form>
-
-      <p class="kova-auth__foot">
-        Already have an account?
-        <a href="{% url 'account_login' %}">Sign in</a>
-      </p>
-    </div>
+{% block account_body %}
+<form method="post"
+      action="{% url 'account_signup' %}"
+      class="kova-auth__form"
+      x-data="kovaSignupForm('{% if form.email.value %}{{ form.email.value|escapejs }}{% else %}{% for k, v in request.GET.items %}{% if k == 'email' %}{{ v|escapejs }}{% endif %}{% endfor %}{% endif %}')"
+      @submit="if (!canSubmit()) { $event.preventDefault(); emailTouched = true; password1Touched = true; password2Touched = true; }">
+  {% csrf_token %}
+  {% if request.COOKIES.kova_ref %}
+  <input type="hidden" name="ref_code" value="{{ request.COOKIES.kova_ref }}">
+  <div class="kova-auth__ref">
+    <svg class="w-4 h-4 text-blue-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    <p>Referred by partner <span class="font-mono font-semibold">{{ request.COOKIES.kova_ref }}</span></p>
   </div>
-</section>
+  {% endif %}
+
+  {% if form.errors %}
+    <div class="rounded-xl px-4 py-3 text-sm bg-red-50 border border-red-200 text-red-700">
+      {% for field in form %}
+        {% for error in field.errors %}<p>{{ error }}</p>{% endfor %}
+      {% endfor %}
+      {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <div>
+    <label for="id_email" class="label">Work email</label>
+    <input type="email"
+           name="email"
+           id="id_email"
+           class="input"
+           placeholder="you@business.com"
+           x-model="email"
+           :class="{ 'is-invalid': emailError() }"
+           @blur="emailTouched = true"
+           @input="emailTouched = true"
+           required
+           autofocus
+           autocomplete="email"
+           inputmode="email">
+    <p class="kova-auth__field-msg is-error" x-show="emailError()" x-cloak x-text="emailError()"></p>
+  </div>
+
+  <div>
+    <label for="id_password1" class="label">Password</label>
+    <div class="kova-auth__password">
+      <input type="password"
+             :type="show1 ? 'text' : 'password'"
+             name="password1"
+             id="id_password1"
+             class="input"
+             placeholder="••••••••"
+             x-model="password1"
+             :class="{ 'is-invalid': password1Error() }"
+             @blur="password1Touched = true"
+             @input="password1Touched = true"
+             required
+             autocomplete="new-password"
+             minlength="8">
+      <button type="button"
+              class="kova-auth__password-toggle"
+              @click="show1 = !show1"
+              :aria-pressed="show1.toString()"
+              :aria-label="show1 ? 'Hide password' : 'Show password'">
+        <svg x-show="!show1" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <svg x-cloak x-show="show1" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+        </svg>
+      </button>
+    </div>
+    <p class="kova-auth__field-msg is-error" x-show="password1Error()" x-cloak x-text="password1Error()"></p>
+  </div>
+
+  <div>
+    <label for="id_password2" class="label">Confirm password</label>
+    <div class="kova-auth__password">
+      <input type="password"
+             :type="show2 ? 'text' : 'password'"
+             name="password2"
+             id="id_password2"
+             class="input"
+             placeholder="••••••••"
+             x-model="password2"
+             :class="{ 'is-invalid': password2Error() }"
+             @blur="password2Touched = true"
+             @input="password2Touched = true"
+             required
+             autocomplete="new-password"
+             minlength="8">
+      <button type="button"
+              class="kova-auth__password-toggle"
+              @click="show2 = !show2"
+              :aria-pressed="show2.toString()"
+              :aria-label="show2 ? 'Hide password' : 'Show password'">
+        <svg x-show="!show2" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <svg x-cloak x-show="show2" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+        </svg>
+      </button>
+    </div>
+    <p class="kova-auth__field-msg is-error" x-show="password2Error()" x-cloak x-text="password2Error()"></p>
+    <p class="kova-auth__field-msg is-ok"
+       x-show="password2 && !password2Error() && password1.length >= 8"
+       x-cloak></p>
+  </div>
+
+  {% if redirect_field_value %}
+    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+  {% endif %}
+
+  {% include "components/brand/_primary_cta_button.html" with label="Join free" alpine_disabled="!canSubmit()" %}
+</form>
+{% endblock %}
+
+{% block account_footer %}
+<p class="kova-auth__foot">
+  Already have an account?
+  <a href="{% url 'account_login' %}">Sign in</a>
+</p>
 {% endblock %}

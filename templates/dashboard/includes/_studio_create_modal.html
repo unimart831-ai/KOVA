@@ -1,0 +1,163 @@
+{# Create Post modal #}
+<div x-show="createOpen"
+     x-cloak
+     x-effect="document.documentElement.classList.toggle('overflow-hidden', createOpen); if (createOpen) $nextTick(() => document.getElementById('idea-input')?.focus())"
+     class="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="studio-create-title"
+     @keydown.escape.window="createOpen = false">
+  <div class="absolute inset-0 bg-canvas/80 backdrop-blur-sm" @click="createOpen = false" aria-hidden="true"
+       x-show="createOpen"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"></div>
+
+  <div class="relative flex max-h-[min(92vh,40rem)] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-canvas-raised shadow-2xl sm:rounded-2xl"
+       @click.stop
+       x-show="createOpen"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-2 sm:scale-[0.98]"
+       x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0 translate-y-4 sm:scale-[0.98]">
+
+    <div class="flex shrink-0 items-center justify-between gap-3 px-5 pb-2 pt-5">
+      <div>
+        <h2 id="studio-create-title" class="font-serif text-xl font-semibold tracking-tight text-white">Create Post</h2>
+        {% if not seed_usage.unlimited %}
+        <p class="mt-0.5 text-xs text-white/40">
+          {% if seed_usage.at_limit %}Limit reached{% else %}{{ seed_usage.remaining }} left this month{% endif %}
+        </p>
+        {% endif %}
+      </div>
+      <button type="button" @click="createOpen = false"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/5 hover:text-white"
+              aria-label="Close">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    {% if at_seed_limit %}
+    <div class="px-5 pb-6 pt-2">
+      <p class="text-sm text-white/60">You’ve used this month’s posts.</p>
+      <a href="{% url 'billing:pricing' %}" class="mt-4 inline-flex text-sm font-medium text-kova-400 hover:text-kova-300">Get more →</a>
+    </div>
+    {% else %}
+
+    <form method="post" action="{% url 'content:submit_seed' %}"
+          hx-post="{% url 'content:submit_seed' %}"
+          hx-target="#seed-processing-zone"
+          hx-swap="afterbegin"
+          hx-on::after-request="if(event.detail.successful) { this.reset(); createOpen = false; }"
+          data-kova-busy="instant"
+          data-kova-busy-message="Creating posts…"
+          class="group/form flex min-h-0 flex-1 flex-col"
+          x-data="seedForm()"
+          @keydown.meta.enter.prevent="$el.requestSubmit()"
+          @keydown.ctrl.enter.prevent="$el.requestSubmit()">
+      {% csrf_token %}
+
+      <div class="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-4 pt-3">
+        {# Idea first #}
+        <div>
+          <div class="relative">
+            <textarea id="idea-input" name="idea" rows="4"
+                      x-ref="ideaInput"
+                      placeholder="What’s the post about?"
+                      class="w-full resize-none rounded-xl border border-white/10 bg-canvas px-4 py-3 pr-12 text-[15px] leading-relaxed text-white placeholder:text-white/30 focus:border-kova-500 focus:outline-none focus:ring-1 focus:ring-kova-500"></textarea>
+            <div class="absolute bottom-2.5 right-2.5" x-data="voiceRecorder()"
+                 @voice-transcribed.window="
+                   const el = document.getElementById('idea-input');
+                   if (el) { el.value = $event.detail.text; el.dispatchEvent(new Event('input')); }
+                 ">
+              <button type="button" x-show="state === 'idle'" id="voice-seed-trigger" @click="startRecording()"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white"
+                      title="Voice">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+              </button>
+              <div x-show="state === 'recording'" x-cloak class="flex items-center gap-1.5 rounded-lg bg-red-500/15 px-2 py-1">
+                <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400"></span>
+                <span class="text-[11px] font-medium tabular-nums text-red-300" x-text="recordingTime"></span>
+                <button type="button" @click="stopRecording()" class="text-[10px] font-bold text-red-300">Stop</button>
+              </div>
+              <div x-show="state === 'transcribing'" x-cloak class="p-1.5">
+                <svg class="h-4 w-4 animate-spin text-kova-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              </div>
+              <button type="button" x-show="state === 'error'" x-cloak @click="state = 'idle'" class="max-w-[8rem] truncate text-[10px] text-red-400" x-text="errorMsg"></button>
+            </div>
+          </div>
+          <button type="button" @click="showNotes = !showNotes" class="mt-2 text-xs text-white/35 transition hover:text-white/60">
+            <span x-text="showNotes ? 'Hide notes' : 'Add notes'"></span>
+          </button>
+          <div x-show="showNotes" x-cloak class="mt-2">
+            <textarea id="notes-input" name="notes" rows="2" placeholder="Tone, audience, CTA…"
+                      class="w-full resize-none rounded-xl border border-white/10 bg-canvas px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-kova-500 focus:outline-none focus:ring-1 focus:ring-kova-500"></textarea>
+          </div>
+        </div>
+
+        {# Goal #}
+        <div>
+          <p class="mb-2 text-xs text-white/40">Goal</p>
+          <div class="flex flex-wrap gap-1.5">
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="sales" class="peer sr-only" checked>
+              <span class="inline-flex rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/55 transition peer-checked:border-kova-500 peer-checked:bg-kova-500 peer-checked:text-white hover:border-white/20">Sales</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="leads" class="peer sr-only">
+              <span class="inline-flex rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/55 transition peer-checked:border-kova-500 peer-checked:bg-kova-500 peer-checked:text-white hover:border-white/20">Leads</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="bookings" class="peer sr-only">
+              <span class="inline-flex rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/55 transition peer-checked:border-kova-500 peer-checked:bg-kova-500 peer-checked:text-white hover:border-white/20">Bookings</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="objective" value="awareness" class="peer sr-only">
+              <span class="inline-flex rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/55 transition peer-checked:border-kova-500 peer-checked:bg-kova-500 peer-checked:text-white hover:border-white/20">Awareness</span>
+            </label>
+          </div>
+        </div>
+
+        {# Channels #}
+        <div>
+          <p class="mb-2 text-xs text-white/40">Channels</p>
+          <input type="hidden" name="target_platforms" :value="JSON.stringify(selectedPlatforms)">
+          <div class="flex flex-wrap gap-1.5">
+            <template x-for="p in platforms" :key="p.platform">
+              <button type="button" @click="togglePlatform(p.platform)"
+                      :class="selectedPlatforms.includes(p.platform) ? 'border-kova-500 bg-kova-500 text-white' : 'border-white/10 text-white/55 hover:border-white/20'"
+                      class="rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition"
+                      x-text="p.platform"></button>
+            </template>
+            <a x-show="platforms.length === 0" href="{% url 'platforms:list' %}" class="text-xs text-kova-400 hover:text-kova-300">Connect a channel</a>
+          </div>
+        </div>
+
+        {% if can_generate_images %}
+        <label class="flex cursor-pointer items-center gap-2.5">
+          <input type="checkbox" name="generate_images" class="h-3.5 w-3.5 rounded border-white/20 bg-canvas text-kova-500 focus:ring-kova-500 focus:ring-offset-0">
+          <span class="text-xs text-white/50">Generate AI images</span>
+        </label>
+        {% endif %}
+      </div>
+
+      <div class="shrink-0 border-t border-white/[0.06] px-5 py-4">
+        <button type="submit"
+                class="group inline-flex h-10 w-full items-center justify-between gap-2 rounded-lg bg-kova-500 py-1 pl-4 pr-1 font-sans text-white transition hover:bg-kova-600 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="$el.closest('form')?.classList.contains('htmx-request') || selectedPlatforms.length === 0">
+          <span class="text-sm font-semibold group-[.htmx-request]/form:hidden">Create</span>
+          <span class="hidden text-sm font-semibold group-[.htmx-request]/form:inline">Creating…</span>
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-canvas-muted" aria-hidden="true">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          </span>
+        </button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>

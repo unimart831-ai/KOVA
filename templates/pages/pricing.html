@@ -1,0 +1,93 @@
+{# Public landing — single Kova plan + campaign add-ons (matches dashboard/billing/pricing.html) #}
+{% with plan=kova_plan %}
+<section id="pricing" class="py-14 sm:py-20 md:py-24 border-y border-white/10 bg-canvas-muted" x-data="{ currency: 'kes' }">
+  <div class="max-w-5xl mx-auto px-5 sm:px-6 lg:px-8">
+    <div class="text-center mb-10 sm:mb-12 reveal">
+      <h2 class="text-balance text-[1.5rem] font-bold leading-snug tracking-tight text-white sm:text-3xl md:text-4xl">One plan. <span class="text-kova-400">Full marketing department.</span></h2>
+      <p class="mt-3 text-[15px] leading-relaxed text-white/70 max-w-2xl mx-auto sm:mt-4 sm:text-lg">
+        {{ plan.max_seeds_per_month }} marketing campaigns per month — formats you pick (reels, IG/FB carousels, posts…) plus commerce page.
+        Publishing, brief, inbox, and shop are included.
+      </p>
+
+      <div class="mt-8 inline-flex items-center rounded-full p-1 border border-white/15 bg-canvas-raised">
+        <button type="button" @click="currency = 'kes'"
+                :class="currency === 'kes' ? 'bg-kova-500 text-white' : 'text-white/60 hover:text-white'"
+                class="px-5 py-2 rounded-full text-sm font-medium transition-all">KES</button>
+        <button type="button" @click="currency = 'usd'"
+                :class="currency === 'usd' ? 'bg-kova-500 text-white' : 'text-white/60 hover:text-white'"
+                class="px-5 py-2 rounded-full text-sm font-medium transition-all">USD</button>
+      </div>
+    </div>
+
+    <div class="relative mx-auto max-w-xl rounded-xl border-2 border-kova-500 bg-canvas-raised p-6 sm:p-8 reveal">
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-kova-500 text-white text-xs font-semibold px-4 py-1 rounded-full">
+        AI Marketing + Commerce
+      </div>
+
+      <h3 class="text-2xl font-bold text-white mt-1 font-display">KOVA</h3>
+      <p class="text-sm text-white/55 mt-1">Your AI marketing department — approve in ~5 minutes a day.</p>
+
+      <div class="mt-6 flex items-baseline gap-1">
+        <template x-if="currency === 'kes'">
+          <span class="text-5xl font-extrabold text-white font-display">KSh {{ plan.price_kes }}</span>
+        </template>
+        <template x-if="currency === 'usd'">
+          <span class="text-5xl font-extrabold text-white font-display">${{ plan.price_usd }}</span>
+        </template>
+        <span class="text-white/50">/month</span>
+      </div>
+
+      <ul class="mt-8 space-y-2.5 text-sm text-white/70">
+        <li class="flex gap-2"><span class="text-kova-400 shrink-0 font-bold">✓</span> <strong class="text-white">{{ plan.max_seeds_per_month }} marketing campaigns</strong> / month</li>
+        <li class="flex gap-2"><span class="text-kova-400 shrink-0 font-bold">✓</span> Each campaign: reels, carousels (IG + Facebook), stories &amp; platform posts</li>
+        <li class="flex gap-2"><span class="text-kova-400 shrink-0 font-bold">✓</span> Kova Commerce shop + M-Pesa checkout</li>
+        <li class="flex gap-2"><span class="text-kova-400 shrink-0 font-bold">✓</span> Daily brief, WhatsApp inbox, lead capture</li>
+        <li class="flex gap-2"><span class="text-kova-400 shrink-0 font-bold">✓</span> {{ plan.max_social_accounts }} social accounts · revenue attribution</li>
+        <li class="flex gap-2"><span class="text-kova-400 shrink-0 font-bold">✓</span> Studio polish packs — hero, AI scenes &amp; category polish</li>
+      </ul>
+
+      {% url 'account_signup' as signup_url %}
+      <div class="mt-8 flex justify-center">
+        {% include "components/brand/_primary_cta.html" with href=signup_url label="Join free" %}
+      </div>
+      <p class="text-center text-xs text-white/40 mt-3">{{ trial_campaigns }} campaigns during trial · no card required</p>
+    </div>
+
+    <div class="mt-14 reveal">
+      <h3 class="text-lg font-semibold text-white text-center mb-2">Need more campaigns?</h3>
+      <p class="text-sm text-white/55 text-center mb-6">Add extra opportunities on top of your {{ plan.max_seeds_per_month }}/month.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+        {% for pack in campaign_addons.values %}
+        <div class="rounded-xl border border-white/10 bg-canvas-raised p-5 text-center flex flex-col">
+          <p class="font-semibold text-white">{{ pack.label }}</p>
+          <p class="text-2xl font-bold text-kova-400 mt-2 font-display">KSh {{ pack.price_kes }}</p>
+          <p class="text-xs text-white/40 mt-1">{% if pack.recurring %}recurring{% else %}one-time this month{% endif %}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="mt-10 max-w-3xl mx-auto reveal">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-white/10 bg-canvas-raised p-6">
+        <div>
+          <h3 class="text-lg font-semibold text-white">Agency</h3>
+          <p class="text-xs text-white/40 -mt-0.5">Wakala · Multi-client teams</p>
+          <p class="text-sm text-white/55 mt-1">White-label · multi-brand · custom caps · sales onboarding</p>
+          <p class="mt-2 text-sm text-white/70">
+            <template x-if="currency === 'kes'"><span class="font-bold text-white">KSh {{ agency_plan.price_kes }}</span></template>
+            <template x-if="currency === 'usd'"><span class="font-bold text-white">${{ agency_plan.price_usd }}</span></template>
+            <span class="text-white/50">/mo — contact us to get approved</span>
+          </p>
+        </div>
+        <a href="{% url 'billing:contact_sales' %}" class="inline-flex shrink-0 justify-center whitespace-nowrap rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10">Contact sales</a>
+      </div>
+    </div>
+
+    <div x-show="currency === 'kes'" x-transition class="mt-10 text-center">
+      <div class="inline-flex items-center gap-2 bg-kova-500/15 text-kova-300 text-sm font-medium px-5 py-2.5 rounded-full border border-kova-500/30">
+        Pay with M-Pesa — instant activation
+      </div>
+    </div>
+  </div>
+</section>
+{% endwith %}

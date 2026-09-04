@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load nav_tags %}
+
+{% block body_class %}bg-canvas{% endblock %}
+
+{% block extra_head %}
+{# Dashboard is dark-first — match marketing canvas #}
+<script nonce="{{ request.csp_nonce }}">
+  try { document.documentElement.classList.add("dark"); } catch (e) {}
+</script>
+{% block dashboard_extra_head %}{% endblock %}
+{% endblock %}
+
+{% block body %}
+{% if agency_brand_theme %}
+<style>:root { --brand-accent: {{ agency_brand_theme.primary_color }}; }</style>
+{% endif %}
+{% csrf_token %}
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-kova-600 focus:text-white focus:shadow-lg">
+  Skip to main content
+</a>
+<div class="flex h-dvh max-h-dvh flex-col overflow-hidden bg-canvas" x-data="{ sidebarOpen: false }">
+
+  <div x-show="sidebarOpen" x-cloak
+       class="fixed inset-0 z-40 lg:hidden"
+       @click="sidebarOpen = false"
+       @keydown.escape.window="sidebarOpen = false">
+    <div class="fixed inset-0 bg-gray-950/80" aria-hidden="true"></div>
+  </div>
+
+  {% include "dashboard/includes/_sidebar.html" %}
+
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden lg:pl-64">
+    {% block dashboard_header %}
+    {% include "dashboard/includes/_header.html" %}
+    {% endblock %}
+
+    {# Page body: secondary surface, gap from header/sidebar, rounded — only this scrolls #}
+    <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-2 sm:px-3 sm:pb-3 lg:pl-2">
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-canvas-muted">
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {% block page_heading %}
+          <div class="flex items-center justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-5">
+            <div class="min-w-0">
+              <h1 class="truncate font-display text-lg font-semibold tracking-tight text-white">
+                {% block page_title %}Dashboard{% endblock %}
+              </h1>
+              {% block page_subtitle %}{% endblock %}
+            </div>
+            <div class="flex flex-shrink-0 items-center gap-2">
+              {% block header_actions %}{% endblock %}
+            </div>
+          </div>
+          {% endblock %}
+
+          <main id="main-content" class="min-w-0 flex-1 p-4 sm:p-6" tabindex="-1">
+            {% if request.user.is_authenticated and request.user.profile.emergency_pause %}
+            <div class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-red-600 px-4 py-3 text-sm font-medium text-white shadow-sm dark:bg-red-700">
+              <div class="flex items-center gap-2">
+                <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                <span>Emergency pause is active — all autonomous actions are halted.</span>
+              </div>
+              <form method="post" action="{% url 'accounts:emergency_pause' %}" class="flex-shrink-0">
+                {% csrf_token %}
+                <button type="submit" class="rounded-md border border-white/30 bg-white/20 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/30">
+                  Resume
+                </button>
+              </form>
+            </div>
+            {% endif %}
+
+            {% include "components/_plan_limit_banner.html" %}
+
+            {% if messages %}
+              {% for message in messages %}
+                <div class="mb-4 rounded-lg px-4 py-3 text-sm font-medium
+                            {% if message.tags == 'success' %}border border-growth-800 bg-growth-950/40 text-growth-200
+                            {% elif message.tags == 'error' %}border border-red-800 bg-red-950/40 text-red-200
+                            {% elif message.tags == 'warning' %}border border-gold-800 bg-gold-950/40 text-gold-200
+                            {% else %}border border-blue-800 bg-blue-950/40 text-blue-200{% endif %}"
+                     x-data x-init="window.dispatchEvent(new CustomEvent('notify', {detail:{message:'{{ message|escapejs }}',type:'{% firstof message.tags 'info' %}'}}))">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+          </main>
+
+          <div class="lg:hidden" style="height: calc(3.5rem + env(safe-area-inset-bottom, 0px));"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include "components/_mobile_bottom_nav.html" %}
+</div>
+{% endblock %}

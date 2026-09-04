@@ -1,0 +1,171 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Results — KOVA{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div class="min-w-0 px-0.5">
+      <h1 class="font-serif text-2xl font-bold tracking-tight text-white sm:text-3xl">Results</h1>
+      <p class="mt-1 text-sm font-light text-white/50">What money your posts actually made.</p>
+    </div>
+    <div class="flex shrink-0 items-center gap-1.5">
+      <a href="?days=7" class="rounded-lg px-2.5 py-1.5 text-xs font-medium {% if days == 7 %}bg-kova-500 text-white{% else %}text-white/50 hover:bg-white/5 hover:text-white{% endif %}">7d</a>
+      <a href="?days=30" class="rounded-lg px-2.5 py-1.5 text-xs font-medium {% if days == 30 %}bg-kova-500 text-white{% else %}text-white/50 hover:bg-white/5 hover:text-white{% endif %}">30d</a>
+      <a href="?days=90" class="rounded-lg px-2.5 py-1.5 text-xs font-medium {% if days == 90 %}bg-kova-500 text-white{% else %}text-white/50 hover:bg-white/5 hover:text-white{% endif %}">90d</a>
+    </div>
+  </div>
+
+  {% if insight %}
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-4">
+    <p class="text-base font-semibold leading-snug text-white">{{ insight.headline }}</p>
+    {% if insight.subline %}
+    <p class="mt-1 text-sm text-white/50">{{ insight.subline }}</p>
+    {% endif %}
+    {% if insight.cta_url and insight.cta_text %}
+    <a href="{{ insight.cta_url }}" class="mt-2 inline-flex text-sm font-medium text-kova-300 hover:text-kova-200">{{ insight.cta_text }}</a>
+    {% elif insight.kind == 'top_campaign' and insight.campaign_id %}
+    <a href="{% url 'analytics:campaign_revenue' insight.campaign_id %}?days={{ days }}" class="mt-2 inline-flex text-sm font-medium text-kova-300 hover:text-kova-200">View campaign →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-3 gap-3">
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-4">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-white/40">Revenue</p>
+      <p class="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">KES {{ totals.total_revenue|floatformat:0 }}</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-4">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-white/40">ROI</p>
+      <p class="mt-1 text-xl font-bold tabular-nums text-growth-400 sm:text-2xl">{{ roi.roi_percentage }}%</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-4 py-4">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-white/40">Sales</p>
+      <p class="mt-1 text-xl font-bold tabular-nums text-white sm:text-2xl">{{ totals.total_sales }}</p>
+      <p class="mt-0.5 text-[11px] text-white/40">{{ totals.total_leads }} leads</p>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-4">
+    <p class="mb-4 text-[11px] font-medium uppercase tracking-wide text-white/40">Funnel</p>
+    <div class="flex items-center justify-between gap-2">
+      <div class="min-w-0 flex-1 text-center">
+        <p class="text-2xl font-bold tabular-nums text-white">{{ funnel.clicks }}</p>
+        <p class="mt-0.5 text-xs text-white/45">Clicks</p>
+      </div>
+      <div class="shrink-0 text-center text-white/25">
+        <svg class="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <p class="text-[10px] text-white/35">{{ funnel.click_to_lead }}%</p>
+      </div>
+      <div class="min-w-0 flex-1 text-center">
+        <p class="text-2xl font-bold tabular-nums text-white">{{ funnel.leads }}</p>
+        <p class="mt-0.5 text-xs text-white/45">Leads</p>
+      </div>
+      <div class="shrink-0 text-center text-white/25">
+        <svg class="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <p class="text-[10px] text-white/35">{{ funnel.lead_to_sale }}%</p>
+      </div>
+      <div class="min-w-0 flex-1 text-center">
+        <p class="text-2xl font-bold tabular-nums text-growth-400">{{ funnel.sales }}</p>
+        <p class="mt-0.5 text-xs text-white/45">Sales</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised">
+    <div class="border-b border-white/10 px-5 py-3.5">
+      <h2 class="text-sm font-semibold text-white">Top campaigns</h2>
+    </div>
+    {% if campaign_performance %}
+    <div class="divide-y divide-white/10">
+      {% for row in campaign_performance|slice:":8" %}
+      <a href="{% url 'analytics:campaign_revenue' row.campaign_id %}?days={{ days }}" class="flex items-center justify-between gap-3 px-5 py-3.5 transition hover:bg-white/[0.03]">
+        <div class="min-w-0">
+          <p class="truncate text-sm font-medium text-white">{{ row.title }}</p>
+          <p class="mt-0.5 text-xs text-white/40">{{ row.leads }} leads · {{ row.sales }} sales</p>
+        </div>
+        <p class="shrink-0 text-sm font-semibold tabular-nums text-growth-400">KES {{ row.revenue|floatformat:0 }}</p>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-5 py-10 text-center">
+      <p class="text-sm text-white/50">No attributed revenue yet.</p>
+      <a href="{% url 'content:studio' %}" class="mt-3 inline-flex text-sm font-medium text-kova-300 hover:text-kova-200">Create a post →</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised">
+    <div class="border-b border-white/10 px-5 py-3.5">
+      <h2 class="text-sm font-semibold text-white">Recent conversions</h2>
+    </div>
+    <div class="divide-y divide-white/10">
+      {% for c in conversions|slice:":12" %}
+      <div class="flex items-center justify-between gap-3 px-5 py-3">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded px-1.5 py-0.5 text-[10px] font-medium {% if c.conversion_type == 'sale' %}bg-growth-500/15 text-growth-300{% else %}bg-white/10 text-white/55{% endif %}">
+              {{ c.get_conversion_type_display }}
+            </span>
+            {% if c.product %}<span class="text-[11px] text-white/45">{{ c.product.name }}</span>{% endif %}
+            {% if c.marketing_campaign %}<span class="text-[11px] text-kova-300">{{ c.marketing_campaign.title|truncatechars:28 }}</span>{% endif %}
+          </div>
+          {% if c.post %}
+          <p class="mt-0.5 truncate text-xs text-white/40">{{ c.post.content_text|truncatechars:72 }}</p>
+          {% endif %}
+        </div>
+        <div class="shrink-0 text-right">
+          {% if c.revenue %}<p class="text-sm font-medium tabular-nums text-growth-400">KES {{ c.revenue|floatformat:0 }}</p>{% endif %}
+          <p class="text-[10px] text-white/35">{{ c.created_at|timesince }} ago</p>
+        </div>
+      </div>
+      {% empty %}
+      <div class="px-5 py-10 text-center">
+        <p class="text-sm text-white/50">No conversions yet.</p>
+        <p class="mt-1 text-xs text-white/35">Sales from M-Pesa, Shopify, or your API show up here.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if not shopify_stores %}
+  <details class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-4">
+    <summary class="cursor-pointer text-sm font-medium text-white/70 hover:text-white">Connect Shopify</summary>
+    <div class="mt-4 space-y-3 border-t border-white/10 pt-4">
+      {% if shopify_oauth_available %}
+      <form method="post" action="{% url 'analytics:shopify_connect' %}" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="use_oauth" value="1">
+        <label class="block text-xs text-white/50">Shop domain</label>
+        <input type="text" name="shop_domain" placeholder="myshop.myshopify.com" class="input w-full text-sm" required>
+        <button type="submit" class="btn-primary btn-sm">Connect with Shopify</button>
+      </form>
+      {% else %}
+      <p class="text-xs text-white/40">Shopify OAuth isn’t configured. Ask your admin, or use M-Pesa tracking.</p>
+      {% endif %}
+    </div>
+  </details>
+  {% else %}
+  <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-4 space-y-3">
+    <p class="text-sm font-medium text-white">Shopify</p>
+    {% for store in shopify_stores %}
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm text-white/85">{{ store.shop_domain }}</p>
+        <p class="text-xs text-white/40">{{ store.orders_tracked }} orders · KES {{ store.total_revenue|floatformat:0 }}</p>
+      </div>
+      <div class="flex gap-3">
+        <form method="post" action="{% url 'analytics:shopify_sync_products' store.pk %}">{% csrf_token %}<button type="submit" class="text-xs text-kova-300 hover:text-kova-200">Sync</button></form>
+        <form method="post" action="{% url 'analytics:shopify_disconnect' store.pk %}">{% csrf_token %}<button type="submit" class="text-xs text-red-400 hover:text-red-300">Disconnect</button></form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -30,7 +30,7 @@ def asset_campaign_proposals(request, asset_id):
     cache_proposals_for_asset(request, asset, proposals)
     usage = __import__("apps.core.billing.enforcement", fromlist=["get_seed_usage"]).get_seed_usage(request.user)
 
-    return render(request, "content/campaign_proposals.html", {
+    return render(request, "dashboard/content/campaign_proposals.html", {
         "page_title": "Marketing opportunities",
         "asset": asset,
         "proposals": proposals,

@@ -1,0 +1,186 @@
+{% extends "dashboard/base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Home — KOVA{% endblock %}
+
+{% block page_heading %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+
+  {# ── Home hero — one composition ── #}
+  <section class="relative overflow-hidden rounded-2xl border border-white/10" aria-labelledby="home-heading">
+    <div class="absolute inset-0">
+      <img
+        src="{% static 'img/hero.png' %}"
+        alt=""
+        width="1536"
+        height="1024"
+        decoding="async"
+        class="h-full w-full object-cover object-center opacity-40"
+      >
+      <div class="absolute inset-0 bg-gradient-to-b from-canvas/80 via-canvas/75 to-canvas" aria-hidden="true"></div>
+    </div>
+
+    <div class="relative z-10 flex flex-col items-start px-5 py-10 sm:px-8 sm:py-14">
+      <h1 id="home-heading" class="mt-2 max-w-xl text-balance font-serif text-[2rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-4xl sm:leading-[1.1]">
+        {% if greeting_name %}{{ greeting_name }},{% else %}Welcome back.{% endif %}
+        <span class="text-kova-400">
+          {% if best_next_action %}
+            here's your next move.
+          {% elif stream_critical_count > 0 %}
+            a few things need you.
+          {% elif not has_connected_platform %}
+            let's connect a channel.
+          {% elif not strategist_active %}
+            turn on your coach.
+          {% else %}
+            you're clear to grow.
+          {% endif %}
+        </span>
+      </h1>
+      <p class="mt-3 max-w-md font-sans text-[15px] font-light leading-relaxed text-white/70 sm:text-base">
+        {% if best_next_action %}
+          {{ best_next_action }}
+        {% elif brief_is_stale and brief %}
+          {% if brief_time_passed %}
+            Today's brief is still preparing — working from {{ brief.date|date:"M j" }}.
+          {% else %}
+            Today's brief lands at {{ request.user.daily_brief_time|time:"g:i A" }}.
+          {% endif %}
+        {% elif not strategist_active %}
+          Enable the Chief Strategist for a daily plan at {{ request.user.daily_brief_time|time:"g:i A" }}.
+        {% elif not has_connected_platform %}
+          Connect Instagram, Facebook, or WhatsApp so Kova can publish and reply for you.
+        {% elif stream_items %}
+          {{ stream_items|length }} item{{ stream_items|length|pluralize }} in your queue. Clear them, then keep creating.
+        {% else %}
+          Nothing blocking you. Create a campaign or check results when you're ready.
+        {% endif %}
+      </p>
+
+      <div class="mt-7 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        {% if not strategist_active %}
+          {% url 'agents:control' as home_cta_url %}
+          {% include "components/brand/_primary_cta.html" with href=home_cta_url label="Enable coach" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
+        {% elif not has_connected_platform %}
+          {% url 'platforms:list' as home_cta_url %}
+          {% include "components/brand/_primary_cta.html" with href=home_cta_url label="Connect a channel" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
+        {% elif stream_items.0.action_url %}
+          {% include "components/brand/_primary_cta.html" with href=stream_items.0.action_url label="Open next item" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
+          {% url 'content:studio' as studio_url %}
+          {% include "components/brand/_secondary_cta.html" with href=studio_url label="Open Studio" %}
+        {% else %}
+          {% url 'content:studio' as studio_url %}
+          {% include "components/brand/_primary_cta.html" with href=studio_url label="Open Studio" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
+          {% url 'analytics:revenue' as results_url %}
+          {% include "components/brand/_secondary_cta.html" with href=results_url label="See results" %}
+        {% endif %}
+      </div>
+
+      {% if brief_streak or brief.kova_score or revenue_stat and revenue_stat.has_data %}
+      <p class="mt-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/45">
+        {% if brief_streak > 0 %}
+        <span><span class="font-semibold tabular-nums text-white/70">{{ brief_streak }}</span>-day streak</span>
+        {% endif %}
+        {% if brief and brief.kova_score %}
+        {% if brief_streak > 0 %}<span class="text-white/25" aria-hidden="true">·</span>{% endif %}
+        <span>Score <span class="font-semibold tabular-nums text-white/70">{{ brief.kova_score }}</span></span>
+        {% endif %}
+        {% if revenue_stat and revenue_stat.has_data %}
+        {% if brief_streak or brief.kova_score %}<span class="text-white/25" aria-hidden="true">·</span>{% endif %}
+        <a href="{% url 'analytics:revenue' %}" class="transition hover:text-kova-300">
+          KES <span class="font-semibold tabular-nums text-white/70">{{ revenue_stat.current_kes|floatformat:0 }}</span>
+          {% if revenue_stat.direction == 'up' %}<span class="text-kova-300">↑{{ revenue_stat.delta_pct|floatformat:0 }}%</span>{% elif revenue_stat.direction == 'down' %}<span class="text-red-300">↓{{ revenue_stat.delta_pct|floatformat:0 }}%</span>{% endif %}
+          <span class="text-white/35">7d</span>
+        </a>
+        {% endif %}
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Queue ── #}
+  <section class="mt-10 sm:mt-12" aria-labelledby="queue-heading">
+    <div class="mb-4 flex items-end justify-between gap-3 px-0.5">
+      <div>
+        <h2 id="queue-heading" class="font-serif text-xl font-semibold tracking-tight text-white sm:text-2xl">Your queue</h2>
+        <p class="mt-1 text-sm font-light text-white/50">
+          {% if stream_critical_count %}{{ stream_critical_count }} urgent{% if stream_today_count %}, {% endif %}{% endif %}{% if stream_today_count %}{{ stream_today_count }} today{% elif not stream_items %}Nothing waiting{% endif %}
+        </p>
+      </div>
+    </div>
+    {% include "dashboard/includes/_brief_stream.html" %}
+  </section>
+
+  {% if brief and brief.summary %}
+  <section class="mt-10 sm:mt-12" aria-labelledby="brief-heading">
+    <details class="group overflow-hidden rounded-2xl border border-white/10 bg-canvas-raised">
+      <summary class="flex cursor-pointer list-none select-none items-center justify-between gap-4 px-5 py-5 transition hover:bg-white/[0.03] sm:px-6">
+        <div>
+          <h2 id="brief-heading" class="font-serif text-lg font-semibold text-white">Today’s brief</h2>
+          <p class="mt-0.5 text-sm font-light text-white/45">Strategy check-in from your coach</p>
+        </div>
+        <svg class="h-5 w-5 shrink-0 text-white/35 transition group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+      <div class="border-t border-white/10 px-5 pb-6 pt-5 text-[15px] font-light leading-relaxed text-white/70 sm:px-6 [&>p]:mb-3 [&>p:last-child]:mb-0">
+        {{ brief.summary|linebreaks }}
+      </div>
+    </details>
+  </section>
+  {% endif %}
+
+  {% if wedge_checklist %}
+  <section class="mt-10 sm:mt-12" aria-labelledby="setup-heading">
+    <div class="rounded-2xl border border-white/10 bg-canvas-raised px-5 py-6 sm:px-6">
+      <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 id="setup-heading" class="font-serif text-lg font-semibold text-white">Get set up</h2>
+          <p class="mt-0.5 text-sm font-light text-white/45">Finish the growth loop</p>
+        </div>
+        <span class="text-sm font-medium text-kova-400">{{ wedge_checklist.completed }}/{{ wedge_checklist.total }}</span>
+      </div>
+      <div class="mb-5 h-1 rounded-full bg-white/10">
+        <div class="h-1 rounded-full bg-kova-500 transition-all duration-500" style="width: {{ wedge_checklist.percent }}%"></div>
+      </div>
+      <ul class="space-y-3">
+        {% for item in wedge_checklist.items %}
+        <li class="flex items-center gap-3 text-sm">
+          {% if item.done %}
+          <span class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-kova-500/20 text-[10px] text-kova-400">✓</span>
+          <span class="text-white/35 line-through">{{ item.label }}</span>
+          {% else %}
+          <span class="h-5 w-5 flex-shrink-0 rounded-full border border-white/20"></span>
+          <a href="{% url item.url_name %}" class="text-white/85 transition hover:text-kova-400">{{ item.label }}</a>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% if wedge_checklist.next_step %}
+      <div class="mt-6">
+        {% url wedge_checklist.next_step.url_name as setup_next_url %}
+        {% include "components/brand/_primary_cta.html" with href=setup_next_url label=wedge_checklist.next_step.label extra_class="w-full justify-between sm:w-auto" %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% elif setup_checklist %}
+  <section class="mt-10 sm:mt-12">
+    <div class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-canvas-raised px-5 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6">
+      <span class="whitespace-nowrap text-sm font-medium text-white">Setup mission</span>
+      {% if setup_checklist.next_step %}
+      <a href="{% url setup_checklist.next_step.url_name %}" class="whitespace-nowrap text-sm text-kova-400 transition hover:text-kova-300">
+        Next: {{ setup_checklist.next_step.label }} →
+      </a>
+      {% endif %}
+      <div class="h-1.5 min-w-[80px] flex-1 rounded-full bg-white/10">
+        <div class="h-1.5 rounded-full bg-kova-500 transition-all duration-500" style="width: {{ setup_checklist.percent }}%"></div>
+      </div>
+      <span class="whitespace-nowrap text-xs font-medium text-kova-400">{{ setup_checklist.completed }}/{{ setup_checklist.total }}</span>
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+{% endblock %}

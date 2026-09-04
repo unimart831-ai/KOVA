@@ -12,6 +12,7 @@ Essential developer and operator docs. Business strategy, one-off audits, and sp
 | [KOVA_TESTING_GUIDE.md](KOVA_TESTING_GUIDE.md) | Test procedures |
 | [COMMAND_GUIDE.md](COMMAND_GUIDE.md) | Management commands |
 | [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | UI tokens and patterns |
+| [TEMPLATE_ARCHITECTURE.md](TEMPLATE_ARCHITECTURE.md) | Template families (`base.html` + `includes/`) |
 
 ## Setup guides
 

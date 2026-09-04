@@ -1,0 +1,119 @@
+<header class="sticky top-0 z-50 bg-canvas text-white">
+  <nav class="mx-auto max-w-7xl px-4 lg:px-10" aria-label="Primary">
+    <div class="grid h-14 grid-cols-[1fr_auto] items-center gap-3 lg:h-16 lg:grid-cols-[1fr_auto_1fr] lg:gap-4">
+      <a href="/" class="flex min-w-0 items-center gap-2.5 justify-self-start rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
+          <span class="font-display text-sm font-bold text-white">K</span>
+        </span>
+        <span class="font-display truncate text-base font-semibold tracking-tight">
+          KOVA <span class="font-medium text-white/80">Agent</span>
+        </span>
+      </a>
+
+      <div class="hidden items-center gap-7 lg:flex">
+        <a href="{% url 'landing' %}#how-it-works" class="text-[14px] font-light text-white/80 transition-colors hover:text-white">How it works</a>
+        <a href="{% url 'pricing' %}" class="text-[14px] font-light text-white/80 transition-colors hover:text-white">Pricing</a>
+
+        <div class="relative" @mouseenter="openMenu = 'resources'" @mouseleave="openMenu = ''">
+          <button type="button"
+                  class="inline-flex items-center gap-1 text-[14px] font-light text-white/80 transition-colors hover:text-white"
+                  @click="openMenu = openMenu === 'resources' ? '' : 'resources'"
+                  :aria-expanded="openMenu === 'resources'"
+                  aria-haspopup="true">
+            Resources
+            <svg class="h-3.5 w-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div x-show="openMenu === 'resources'" x-cloak
+               x-transition:enter="transition ease-out duration-150"
+               x-transition:enter-start="opacity-0 translate-y-1"
+               x-transition:enter-end="opacity-100 translate-y-0"
+               class="absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-3">
+            <div class="rounded-xl bg-white py-2 shadow-lg ring-1 ring-black/5">
+            <a href="{% url 'blog:index' %}" class="block px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-kova-50 hover:text-kova-700">Blog</a>
+            <a href="{% url 'learn:center' %}" class="block px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-kova-50 hover:text-kova-700">Learn</a>
+            <a href="{% url 'campus_rep' %}" class="block px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-kova-50 hover:text-kova-700">Campus program</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative" @mouseenter="openMenu = 'compare'" @mouseleave="openMenu = ''">
+          <button type="button"
+                  class="inline-flex items-center gap-1 text-[14px] font-light text-white/80 transition-colors hover:text-white"
+                  @click="openMenu = openMenu === 'compare' ? '' : 'compare'"
+                  :aria-expanded="openMenu === 'compare'"
+                  aria-haspopup="true">
+            Compare
+            <svg class="h-3.5 w-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div x-show="openMenu === 'compare'" x-cloak
+               x-transition:enter="transition ease-out duration-150"
+               x-transition:enter-start="opacity-0 translate-y-1"
+               x-transition:enter-end="opacity-100 translate-y-0"
+               class="absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-3">
+            <div class="rounded-xl bg-white py-2 shadow-lg ring-1 ring-black/5">
+            <a href="{% url 'compare' 'buffer' %}" class="block px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-kova-50 hover:text-kova-700">Kova vs Buffer</a>
+            <a href="{% url 'compare' 'manual' %}" class="block px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-kova-50 hover:text-kova-700">Kova vs doing it yourself</a>
+            <a href="{% url 'compare' 'nas' %}" class="block px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-kova-50 hover:text-kova-700">Kova vs Nas</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-self-end gap-2 lg:gap-5">
+        {% url 'account_signup' as signup_url %}
+        {% url 'brief:home' as app_home_url %}
+        {% if user.is_authenticated %}
+          {% include "components/brand/_primary_cta.html" with href=app_home_url label="Go to app" compact=True extra_class="max-sm:hidden" %}
+        {% else %}
+          {% url 'account_login' as login_url %}
+          {% include "components/brand/_secondary_cta.html" with href=login_url label="Log in" extra_class="max-sm:hidden" %}
+          {% include "components/brand/_primary_cta.html" with href=signup_url label="Join free" compact=True extra_class="max-sm:hidden" %}
+        {% endif %}
+        <button type="button" @click="mobileMenuOpen = !mobileMenuOpen; openMenu = ''" class="touch-target rounded-lg p-2 text-white/90 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:hidden" :aria-expanded="mobileMenuOpen" aria-controls="marketing-mobile-menu" aria-label="Open menu">
+          <svg x-show="!mobileMenuOpen" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg x-show="mobileMenuOpen" x-cloak class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="marketing-mobile-menu" x-show="mobileMenuOpen" x-cloak
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+       class="space-y-1 border-t border-white/10 bg-canvas px-4 py-4 lg:hidden">
+    <a href="{% url 'landing' %}#how-it-works" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10">How it works</a>
+    <a href="{% url 'landing' %}#pricing" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10">Pricing</a>
+
+    <button type="button" class="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-medium text-white transition-colors hover:bg-white/10" @click="openMenu = openMenu === 'resources' ? '' : 'resources'" :aria-expanded="openMenu === 'resources'">
+      Resources
+      <svg class="h-4 w-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="openMenu === 'resources'" x-cloak class="space-y-1 pb-1 pl-3">
+      <a href="{% url 'blog:index' %}" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white">Blog</a>
+      <a href="{% url 'learn:center' %}" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white">Learn</a>
+      <a href="{% url 'campus_rep' %}" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white">Campus program</a>
+    </div>
+
+    <button type="button" class="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-medium text-white transition-colors hover:bg-white/10" @click="openMenu = openMenu === 'compare' ? '' : 'compare'" :aria-expanded="openMenu === 'compare'">
+      Compare
+      <svg class="h-4 w-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div x-show="openMenu === 'compare'" x-cloak class="space-y-1 pb-1 pl-3">
+      <a href="{% url 'compare' 'buffer' %}" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white">Kova vs Buffer</a>
+      <a href="{% url 'compare' 'manual' %}" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white">Kova vs doing it yourself</a>
+      <a href="{% url 'compare' 'nas' %}" @click="mobileMenuOpen = false" class="block rounded-lg px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white">Kova vs Nas</a>
+    </div>
+
+    <div class="space-y-2 border-t border-white/10 pt-2">
+      {% url 'account_signup' as signup_url %}
+      {% url 'brief:home' as app_home_url %}
+      {% if user.is_authenticated %}
+      {% include "components/brand/_primary_cta.html" with href=app_home_url label="Go to app" compact=True extra_class="flex w-full justify-between" %}
+      {% else %}
+      {% url 'account_login' as login_url %}
+      {% include "components/brand/_secondary_cta.html" with href=login_url label="Log in" extra_class="inline-block px-3 py-3" %}
+      {% include "components/brand/_primary_cta.html" with href=signup_url label="Join free" compact=True extra_class="flex w-full justify-between" %}
+      {% endif %}
+    </div>
+  </div>
+</header>

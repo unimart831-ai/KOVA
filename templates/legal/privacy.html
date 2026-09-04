@@ -1,0 +1,150 @@
+{% extends "legal/base.html" %}
+
+{% block legal_body %}
+<!-- 1. Introduction -->
+    <section>
+      <h2>1. Introduction</h2>
+      <p>Kova Agent (&ldquo;Kova,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) is an autonomous social intelligence platform operated by Kova Technologies. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, applications, and services (collectively, the &ldquo;Service&rdquo;).</p>
+      <p>By accessing or using the Service you agree to this policy. If you do not agree, please discontinue use immediately.</p>
+    </section>
+
+    <!-- 2. Information We Collect -->
+    <section>
+      <h2>2. Information We Collect</h2>
+
+      <h3>2.1 Information You Provide</h3>
+      <ul>
+        <li><strong>Account data</strong> — name, email address, password, company/brand name, industry, and profile preferences when you register or update your account.</li>
+        <li><strong>Payment data</strong> — billing address, payment method details processed by our payment providers (Stripe, M-Pesa). We do not store full card numbers.</li>
+        <li><strong>Content</strong> — text, images, videos, brand voice settings, content pillars, and other material you create or upload through the Service.</li>
+        <li><strong>Communications</strong> — messages you send us via support channels or email.</li>
+      </ul>
+
+      <h3>2.2 Information Collected Automatically</h3>
+      <ul>
+        <li><strong>Usage data</strong> — pages visited, features used, timestamps, referring URLs, device type, browser, and IP address.</li>
+        <li><strong>Cookies &amp; similar technologies</strong> — see our <a href="{% url 'legal' 'cookies' %}">Cookie Policy</a> for details.</li>
+        <li><strong>Log data</strong> — server logs including requests, errors, and performance metrics.</li>
+      </ul>
+
+      <h3>2.3 Information from Third Parties</h3>
+      <ul>
+        <li><strong>Social platform data</strong> — when you connect social accounts (Facebook, Instagram, LinkedIn, X/Twitter, TikTok, YouTube, Pinterest, Threads, Bluesky), we receive profile information, page/account metadata, post metrics, comments, messages, and engagement data via each platform&rsquo;s API.</li>
+        <li><strong>OAuth tokens</strong> — access tokens and, where applicable, refresh tokens are stored encrypted and used solely to operate the Service on your behalf.</li>
+        <li><strong>Partner referrals</strong> — referral codes and partner identifiers if you sign up through our Growth Partners program.</li>
+      </ul>
+    </section>
+
+    <!-- 3. How We Use Your Information -->
+    <section>
+      <h2>3. How We Use Your Information</h2>
+      <p>We use the information we collect to:</p>
+      <ul>
+        <li>Provide, operate, and improve the Service, including our AI agents (Research, Create, Adapt, Engage, Analyst, and Chief Strategist).</li>
+        <li>Generate, schedule, and publish content on your connected social media accounts.</li>
+        <li>Analyze engagement, sentiment, and performance metrics to deliver insights and suggestions.</li>
+        <li>Process payments and manage your subscription.</li>
+        <li>Send transactional emails (e.g., daily briefs, weekly reports, payment receipts) and, with your consent, promotional communications.</li>
+        <li>Detect and prevent fraud, abuse, and security threats.</li>
+        <li>Comply with legal obligations.</li>
+      </ul>
+    </section>
+
+    <!-- 4. AI Processing -->
+    <section>
+      <h2>4. AI Processing &amp; Automated Decision-Making</h2>
+      <p>Kova uses artificial intelligence to generate content, analyze engagement, suggest replies, and optimize posting schedules. Specifically:</p>
+      <ul>
+        <li>Your brand voice, content pillars, and past content are processed by large language models (LLMs) to generate draft posts and reply suggestions.</li>
+        <li>Engagement data (comments, mentions) is analyzed for sentiment, priority, and spam detection.</li>
+        <li>AI outputs are suggestions — you retain full control to edit, approve, or reject any AI-generated content before it is published.</li>
+        <li>We process AI requests through third-party LLM providers (e.g., OpenRouter). Your prompts and content are sent to these providers for processing. We do not use your data to train third-party models.</li>
+      </ul>
+    </section>
+
+    <!-- 5. Data Sharing -->
+    <section>
+      <h2>5. How We Share Your Information</h2>
+      <p>We do not sell your personal data. We share information only in these circumstances:</p>
+      <ul>
+        <li><strong>Social media platforms</strong> — to publish content and fetch engagement data on your behalf, using the permissions you granted.</li>
+        <li><strong>AI/LLM providers</strong> — to process content generation and analysis requests. Data is transmitted securely and not retained by providers for training.</li>
+        <li><strong>Payment processors</strong> — Stripe and M-Pesa for subscription billing and transaction processing.</li>
+        <li><strong>Email service providers</strong> — for transactional and marketing email delivery.</li>
+        <li><strong>Cloud infrastructure</strong> — hosting, storage (including Cloudflare R2 for media), and database services.</li>
+        <li><strong>Team members</strong> — if you use Kova&rsquo;s team features, designated team members can access shared brand content and analytics.</li>
+        <li><strong>Legal compliance</strong> — when required by law, legal process, or to protect our rights and safety.</li>
+      </ul>
+    </section>
+
+    <!-- 6. Data Security -->
+    <section>
+      <h2>6. Data Security</h2>
+      <p>We implement appropriate technical and organizational measures to protect your data, including:</p>
+      <ul>
+        <li>Encryption of OAuth tokens at rest using field-level encryption.</li>
+        <li>HTTPS/TLS for all data in transit.</li>
+        <li>CSRF protection, secure session handling, and rate limiting.</li>
+        <li>Access controls and audit logging for administrative functions.</li>
+      </ul>
+      <p>No system is 100% secure. If we become aware of a security breach affecting your personal data, we will notify you in accordance with applicable law.</p>
+    </section>
+
+    <!-- 7. Data Retention -->
+    <section>
+      <h2>7. Data Retention</h2>
+      <ul>
+        <li><strong>Account data</strong> — retained while your account is active and for 30 days after deletion request.</li>
+        <li><strong>Content &amp; analytics</strong> — retained while your account is active. Published posts remain on social platforms independently of Kova.</li>
+        <li><strong>Payment records</strong> — retained as required by tax and financial regulations.</li>
+        <li><strong>OAuth tokens</strong> — cleared immediately when you disconnect a platform.</li>
+        <li><strong>Server logs</strong> — retained for up to 90 days for debugging and security purposes.</li>
+      </ul>
+    </section>
+
+    <!-- 8. Your Rights -->
+    <section>
+      <h2>8. Your Rights</h2>
+      <p>Depending on your jurisdiction (including under the GDPR, UK GDPR, and Kenya Data Protection Act), you may have the right to:</p>
+      <ul>
+        <li><strong>Access</strong> — request a copy of the personal data we hold about you.</li>
+        <li><strong>Rectification</strong> — correct inaccurate or incomplete personal data.</li>
+        <li><strong>Erasure (&ldquo;right to be forgotten&rdquo;)</strong> — request deletion of your account and associated data.</li>
+        <li><strong>Restriction</strong> — request that we limit how we process your data while a dispute is resolved.</li>
+        <li><strong>Portability</strong> — receive your data in a structured, machine-readable format (JSON or CSV).</li>
+        <li><strong>Objection</strong> — object to processing based on legitimate interests, including profiling and automated decision-making.</li>
+        <li><strong>Withdraw consent</strong> — where processing is based on consent, you may withdraw it at any time without affecting prior processing.</li>
+        <li><strong>Unsubscribe</strong> — opt out of marketing emails via the one-click unsubscribe link included in every email we send.</li>
+      </ul>
+      <p>We will respond to valid requests within <strong>30 days</strong>. If more time is needed, we will notify you within that period. All requests are free of charge unless manifestly unfounded or excessive.</p>
+      <p>To exercise these rights, contact us at <a href="mailto:privacy@kovaagent.com">privacy@kovaagent.com</a>. If you believe your rights have not been adequately addressed, you have the right to lodge a complaint with your local data protection supervisory authority.</p>
+    </section>
+
+    <!-- 9. International Transfers -->
+    <section>
+      <h2>9. International Data Transfers</h2>
+      <p>Your data may be processed in countries outside your own, including the United States, where our infrastructure providers operate. We ensure appropriate safeguards are in place, including contractual protections with service providers.</p>
+    </section>
+
+    <!-- 10. Children -->
+    <section>
+      <h2>10. Children&rsquo;s Privacy</h2>
+      <p>The Service is not directed to individuals under 18. We do not knowingly collect personal data from children. If you believe a child has provided us with personal data, please contact us and we will delete it.</p>
+    </section>
+
+    <!-- 11. Changes -->
+    <section>
+      <h2>11. Changes to This Policy</h2>
+      <p>We may update this policy from time to time. We will notify you of material changes via email or an in-app notification. The &ldquo;Last updated&rdquo; date at the top reflects the most recent revision.</p>
+    </section>
+
+    <!-- 12. Contact -->
+    <section>
+      <h2>12. Contact Us</h2>
+      <p>If you have questions about this Privacy Policy or our data practices:</p>
+      <ul class="list-none space-y-1">
+        <li><strong>Email:</strong> <a href="mailto:privacy@kovaagent.com">privacy@kovaagent.com</a></li>
+        <li><strong>Company:</strong> Kova Technologies</li>
+      </ul>
+    </section>
+{% endblock %}

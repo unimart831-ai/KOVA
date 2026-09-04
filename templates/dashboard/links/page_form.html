@@ -1,0 +1,106 @@
+{% extends "dashboard/base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="card">
+    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ page_title }}</h2>
+      {% if is_edit %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Edit your page settings and appearance</p>
+      {% else %}
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Set up your link-in-bio page</p>
+      {% endif %}
+    </div>
+    <form method="post" class="px-6 py-5 space-y-5">
+      {% csrf_token %}
+
+      {# Basic info #}
+      <div>
+        <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Page Title</label>
+        {{ form.title }}
+        {% if form.title.errors %}<p class="text-red-500 text-xs mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="id_slug" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL Slug</label>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">/k/</span>
+          {{ form.slug }}
+          <span class="text-sm text-gray-500 dark:text-gray-400">/</span>
+        </div>
+        {% if form.slug.errors %}<p class="text-red-500 text-xs mt-1">{{ form.slug.errors.0 }}</p>{% endif %}
+        <p class="text-xs text-gray-400 mt-1">Leave blank to auto-generate from title</p>
+      </div>
+
+      <div>
+        <label for="id_bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bio</label>
+        {{ form.bio }}
+        {% if form.bio.errors %}<p class="text-red-500 text-xs mt-1">{{ form.bio.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="id_avatar_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Avatar URL</label>
+        {{ form.avatar_url }}
+      </div>
+
+      {# Appearance #}
+      <hr class="border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Appearance</h3>
+
+      <div>
+        <label for="id_theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Theme</label>
+        {{ form.theme }}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Background</label>
+          {{ form.background_color }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Text</label>
+          {{ form.text_color }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Accent</label>
+          {{ form.accent_color }}
+        </div>
+      </div>
+
+      {# SEO #}
+      <hr class="border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">SEO & Social Sharing</h3>
+
+      <div>
+        <label for="id_seo_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SEO Title</label>
+        {{ form.seo_title }}
+      </div>
+      <div>
+        <label for="id_seo_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SEO Description</label>
+        {{ form.seo_description }}
+      </div>
+      <div>
+        <label for="id_og_image_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Social Share Image</label>
+        {{ form.og_image_url }}
+      </div>
+
+      {# Published toggle #}
+      <hr class="border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        {{ form.is_published }}
+        <label for="id_is_published" class="text-sm font-medium text-gray-700 dark:text-gray-300">Published (visible to public)</label>
+      </div>
+
+      {# Actions #}
+      <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+        <a href="{% if is_edit %}{% url 'links:page_detail' page_id=page.pk %}{% else %}{% url 'links:list' %}{% endif %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</a>
+        <button type="submit" class="btn-primary text-sm px-6 py-2">
+          {% if is_edit %}Save Changes{% else %}Create Page{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

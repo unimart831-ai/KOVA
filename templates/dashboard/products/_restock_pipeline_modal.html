@@ -1,0 +1,200 @@
+{# Live Receipt to Restock pipeline modal — opens when ?restock=<uuid> #}
+{% if restock_scan_id %}
+<div x-data="restockPipelineModal('{{ restock_scan_id }}')"
+     x-init="init()"
+     x-cloak>
+  <div x-show="open"
+       class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="restock-pipeline-title">
+    <div class="absolute inset-0 bg-gray-950/70 backdrop-blur-sm" @click="close()"></div>
+
+    <div class="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-orange-600 to-gold-600 dark:from-orange-700 dark:to-gold-700">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Receipt to Restock</p>
+            <h2 id="restock-pipeline-title" class="text-lg font-bold text-white mt-0.5" x-text="headerTitle"></h2>
+            <p class="text-xs text-white/80 mt-1" x-text="headerSubtitle"></p>
+          </div>
+          <button type="button" @click="close()" class="text-white/70 hover:text-white p-1 shrink-0" aria-label="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+        <template x-if="processing">
+          <div>
+            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-orange-500 to-gold-500 rounded-full transition-all duration-700"
+                   :style="'width:' + progressPercent + '%'"></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1.5 text-center">Reading receipt → matching catalog → updating stock</p>
+          </div>
+        </template>
+
+        <div>
+          <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Pipeline</h3>
+          <ul class="space-y-2">
+            <template x-for="step in steps" :key="step.id">
+              <li class="flex gap-3 text-sm rounded-lg p-2.5 border"
+                  :class="{
+                    'border-gray-100 dark:border-gray-800': step.status === 'pending' || step.status === 'skipped',
+                    'border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20': step.status === 'running',
+                    'border-growth-100 dark:border-growth-900 bg-growth-50/30': step.status === 'completed',
+                    'border-red-200 dark:border-red-900 bg-red-50/30': step.status === 'failed',
+                  }">
+                <span class="flex-shrink-0 mt-0.5">
+                  <template x-if="step.status === 'completed'">
+                    <svg class="w-4 h-4 text-growth-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  </template>
+                  <template x-if="step.status === 'running'">
+                    <span class="block w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
+                  </template>
+                  <template x-if="step.status === 'failed'">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </template>
+                  <template x-if="step.status === 'pending' || step.status === 'skipped'">
+                    <span class="block w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></span>
+                  </template>
+                </span>
+                <div class="min-w-0">
+                  <p class="font-medium text-gray-900 dark:text-white" x-text="step.message"></p>
+                  <p x-show="step.detail" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="step.detail"></p>
+                </div>
+              </li>
+            </template>
+          </ul>
+        </div>
+
+        <template x-if="extractedItems.length">
+          <div>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Extracted items (<span x-text="extractedItems.length"></span>)
+            </p>
+            <ul class="space-y-1 max-h-32 overflow-y-auto text-xs">
+              <template x-for="(item, i) in extractedItems.slice(0, 8)" :key="i">
+                <li class="flex justify-between gap-2 text-gray-600 dark:text-gray-400 py-1 border-b border-gray-50 dark:border-gray-800">
+                  <span class="truncate" x-text="item.name"></span>
+                  <span class="shrink-0" x-text="'×' + (item.quantity || '?')"></span>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <template x-if="posts.length">
+          <div>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Back-in-stock posts</p>
+            <ul class="space-y-2 max-h-32 overflow-y-auto">
+              <template x-for="post in posts" :key="post.id">
+                <li class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800/80 text-sm">
+                  <span class="text-xs text-gray-500" x-text="post.platform"></span>
+                  <p class="line-clamp-2 text-gray-800 dark:text-gray-200" x-text="post.preview"></p>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <template x-if="status === 'failed'">
+          <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <p class="text-sm font-medium text-red-800 dark:text-red-200">Scan failed</p>
+            <p class="text-xs text-red-700 dark:text-red-300 mt-1" x-text="errorMessage"></p>
+          </div>
+        </template>
+      </div>
+
+      <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
+        <template x-if="status === 'completed'">
+          <button type="button" @click="refreshPage()"
+                  class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-orange-600 text-white hover:bg-orange-700">
+            View results below
+          </button>
+          <a :href="studioUrl" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-center">Open Studio</a>
+          <button type="button" @click="close()" class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">Close</button>
+        </template>
+        <template x-if="processing">
+          <button type="button" @click="close()" class="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            Run in background — results appear in Recent Scans
+          </button>
+        </template>
+        <template x-if="status === 'failed'">
+          <button type="button" @click="close()" class="w-full px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">Close</button>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function restockPipelineModal(scanId) {
+  return {
+    open: true,
+    scanId: scanId,
+    status: 'processing',
+    steps: [],
+    log: [],
+    posts: [],
+    extractedItems: [],
+    errorMessage: '',
+    progressPercent: 5,
+    studioUrl: '/content/studio/',
+    pollTimer: null,
+    get processing() { return this.status === 'processing'; },
+    get headerTitle() {
+      if (this.status === 'completed') return 'Stock updated';
+      if (this.status === 'failed') return 'Scan interrupted';
+      return 'Processing your receipt';
+    },
+    get headerSubtitle() {
+      if (this.status === 'completed') return 'Quantities updated and back-in-stock content queued.';
+      if (this.status === 'failed') return 'Try a clearer photo or upload again.';
+      return 'AI reads line items, matches your catalog, and updates inventory.';
+    },
+    init() {
+      this.poll();
+      this.pollTimer = setInterval(() => this.poll(), 2000);
+    },
+    close() {
+      this.open = false;
+      if (this.pollTimer) clearInterval(this.pollTimer);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('restock');
+      window.history.replaceState({}, '', url);
+    },
+    refreshPage() {
+      this.close();
+      window.location.reload();
+    },
+    async poll() {
+      if (!this.scanId) return;
+      try {
+        const resp = await fetch(`/products/restock/${this.scanId}/status/`, {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        this.status = data.status;
+        this.steps = data.steps || [];
+        this.log = data.log || [];
+        this.posts = data.posts || [];
+        this.extractedItems = data.extracted_items || [];
+        this.errorMessage = data.error_message || '';
+        this.progressPercent = data.progress_percent || 10;
+        this.studioUrl = data.studio_url || '/content/studio/';
+        if (data.terminal && this.pollTimer) {
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
+      } catch (e) {
+        console.warn('Restock pipeline poll failed', e);
+      }
+    },
+  };
+}
+</script>
+{% endif %}

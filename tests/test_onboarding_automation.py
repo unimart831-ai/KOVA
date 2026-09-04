@@ -1,7 +1,7 @@
 """Tests for the onboarding automation layer:
 
 - industry_packs.apply_pack — fills empty profile fields based on industry
-- KovaSignupForm.signup — saves phone at signup (required field)
+- KovaSignupForm — email signup no longer collects phone (phone is step 2)
 - SSRF protection — blocks private/reserved IP URLs in URL inference
 
 These are the load-bearing pieces of the Tier-1/Tier-2 onboarding rework. If
@@ -596,29 +596,19 @@ class TestExpressOnboardingViews:
 
 
 @pytest.mark.django_db
-class TestSignupPhoneRequired:
-    def test_kova_signup_form_requires_phone(self):
-        form = KovaSignupForm(data={
-            "email": "new@b.com",
-            "password1": "Str0ngPass!",
-            "password2": "Str0ngPass!",
-            "phone_number": "",
-        })
-        assert not form.is_valid()
-        assert "phone_number" in form.errors
+class TestSignupPhoneDeferred:
+    def test_kova_signup_form_has_no_phone_field(self):
+        form = KovaSignupForm(data={})
+        assert "phone_number" not in form.fields
+        assert form.is_valid()
 
-    def test_kova_signup_form_saves_phone(self):
+    def test_kova_signup_form_signup_noop(self):
         u = User.objects.create_user(username="sig", email="sig@b.com", password="P1!")
-        form = KovaSignupForm(data={
-            "email": "sig@b.com",
-            "password1": "Str0ngPass!",
-            "password2": "Str0ngPass!",
-            "phone_number": "0712345678",
-        })
-        assert form.is_valid(), form.errors
+        form = KovaSignupForm(data={})
+        assert form.is_valid()
         form.signup(None, u)
         u.refresh_from_db()
-        assert u.phone_number == "0712345678"
+        assert u.phone_number == ""
 
     def test_collect_phone_view(self, client):
         u = User.objects.create_user(username="oauth", email="oauth@b.com", password="P1!")

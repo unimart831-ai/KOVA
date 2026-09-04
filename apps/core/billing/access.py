@@ -69,23 +69,27 @@ def is_subscription_exempt_url(full_name: str) -> bool:
     """URLs that remain reachable when subscription access is blocked."""
     if not full_name:
         return False
-    exempt = (
+    # django-allauth auth routes (no `accounts:` namespace)
+    allauth_exact = {
+        "account_logout",
+        "account_login",
+        "account_signup",
+        "account_email",
+        "account_confirm_email",
+        "account_reset_password",
+        "account_reset_password_done",
+        "account_reset_password_from_key",
+        "account_reset_password_from_key_done",
+        "account_change_password",
+        "account_set_password",
+        "account_inactive",
+        "account_reauthenticate",
+    }
+    if full_name in allauth_exact:
+        return True
+    exempt_prefixes = (
         "billing:",
-        "accounts:settings",
-        "accounts:delete_account",
-        "accounts:logout",
-        "accounts:login",
-        "accounts:signup",
-        "accounts:password_reset",
-        "accounts:password_reset_confirm",
-        "accounts:collect_phone",
-        "accounts:onboarding",
-        "accounts:onboarding_choose_path",
-        "accounts:onboarding_complete",
-        "accounts:onboarding_magic_connect",
-        "accounts:onboarding_progress",
-        "accounts:onboarding_retry",
-        "accounts:emergency_pause",
+        "accounts:",  # app settings, onboarding, phone capture, etc.
         "help:",
     )
-    return full_name.startswith(exempt) or full_name in exempt
+    return full_name.startswith(exempt_prefixes)

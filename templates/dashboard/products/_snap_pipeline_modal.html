@@ -1,0 +1,272 @@
+{# Live Snap to Sell pipeline modal — opens when ?snap=1 after launch #}
+{% if snap_building %}
+<div x-data="snapPipelineModal('{{ product.pk }}')"
+     x-init="init()"
+     x-cloak>
+  <div x-show="open"
+       class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="snap-pipeline-title">
+    <div class="absolute inset-0 bg-gray-950/70 backdrop-blur-sm" @click="close()"></div>
+
+    <div class="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-kova-600 to-kova-600 dark:from-kova-700 dark:to-kova-700">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Snap to Sell</p>
+            <h2 id="snap-pipeline-title" class="text-lg font-bold text-white mt-0.5" x-text="headerTitle"></h2>
+            <p class="text-xs text-white/80 mt-1" x-text="headerSubtitle"></p>
+          </div>
+          <button type="button" @click="close()" class="text-white/70 hover:text-white p-1 shrink-0" aria-label="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+        <template x-if="processing">
+          <div>
+            <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-kova-500 to-kova-500 rounded-full transition-all duration-700"
+                   :style="'width:' + progressPercent + '%'"></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1.5 text-center">Full pipeline — usually 1–3 minutes with 2+ photos</p>
+          </div>
+        </template>
+
+        <div class="p-3 rounded-lg bg-kova-50 dark:bg-kova-950/30 border border-kova-100 dark:border-kova-900">
+          <p class="text-[10px] font-semibold text-kova-600 dark:text-kova-400 uppercase tracking-wider">Product</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white mt-1" x-text="productName"></p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="photoSummary"></p>
+        </div>
+
+        <template x-if="studioPolishNotice">
+          <p class="text-[11px] leading-snug text-gold-800 dark:text-gold-200 bg-gold-50 dark:bg-gold-950/40 border border-gold-200/80 dark:border-gold-800/60 rounded-lg px-2.5 py-2"
+             x-text="studioPolishNotice"></p>
+        </template>
+
+        <template x-if="polishCreditSummary && status === 'completed'">
+          <div class="rounded-lg border border-kova-100 dark:border-kova-900/50 bg-kova-50/60 dark:bg-kova-950/30 px-3 py-2.5">
+            <p class="text-[10px] font-semibold text-kova-600 dark:text-kova-400 uppercase tracking-wider">Studio pack</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white mt-1" x-text="polishCreditSummary"></p>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Balanced mix — hero, AI backgrounds, category polish</p>
+            <ul x-show="sceneBreakdown.length" class="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
+              <template x-for="(scene, i) in sceneBreakdown" :key="scene.variant + i">
+                <li class="flex items-center justify-between gap-2">
+                  <span x-text="scene.label"></span>
+                  <span x-show="scene.needs_review" class="text-[9px] uppercase tracking-wide text-gold-600 dark:text-gold-400 shrink-0">Review</span>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <div>
+          <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Pipeline</h3>
+          <ul class="space-y-2">
+            <template x-for="(step, idx) in steps" :key="step.id">
+              <li class="flex gap-3 text-sm rounded-lg p-2.5 border"
+                  :class="{
+                    'border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30': step.status === 'pending' || step.status === 'skipped',
+                    'border-kova-200 dark:border-kova-800 bg-kova-50/50 dark:bg-kova-950/20': step.status === 'running',
+                    'border-growth-100 dark:border-growth-900 bg-growth-50/30 dark:bg-growth-950/20': step.status === 'completed',
+                    'border-red-200 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20': step.status === 'failed',
+                  }">
+                <span class="flex-shrink-0 mt-0.5">
+                  <template x-if="step.status === 'completed'">
+                    <svg class="w-4 h-4 text-growth-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  </template>
+                  <template x-if="step.status === 'running'">
+                    <span class="block w-4 h-4 border-2 border-kova-500 border-t-transparent rounded-full animate-spin"></span>
+                  </template>
+                  <template x-if="step.status === 'failed'">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </template>
+                  <template x-if="step.status === 'skipped'">
+                    <svg class="w-4 h-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                  </template>
+                  <template x-if="step.status === 'pending'">
+                    <span class="block w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"></span>
+                  </template>
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium text-gray-900 dark:text-white" x-text="step.message"></p>
+                  <p x-show="step.detail" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="step.detail"></p>
+                  <p x-show="step.status === 'skipped'" class="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">Skipped</p>
+                </div>
+              </li>
+            </template>
+          </ul>
+        </div>
+
+        <template x-if="log.length">
+          <div>
+            <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Live log</h3>
+            <ul class="space-y-1.5 max-h-32 overflow-y-auto text-xs text-gray-600 dark:text-gray-400">
+              <template x-for="(entry, idx) in log.slice(-8)" :key="idx">
+                <li class="flex gap-2">
+                  <span class="text-gray-300 dark:text-gray-600 shrink-0">•</span>
+                  <span>
+                    <span class="font-medium text-gray-700 dark:text-gray-300" x-text="entry.message"></span>
+                    <span x-show="entry.detail" class="text-gray-500"> — <span x-text="entry.detail"></span></span>
+                  </span>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <template x-if="posts.length">
+          <div>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              <span x-text="posts.length"></span> posts so far
+            </p>
+            <ul class="space-y-2 max-h-40 overflow-y-auto">
+              <template x-for="(post, i) in posts" :key="post.id || i">
+                <li class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700">
+                  <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <p class="text-xs font-medium text-gray-500" x-text="post.platform"></p>
+                    <span x-show="post.post_format === 'reel'" class="text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">Reel</span>
+                    <span x-show="post.visual_strategy === 'carousel' && post.post_format !== 'reel'" class="text-[9px] px-1.5 py-0.5 rounded bg-kova-100 text-kova-700 dark:bg-kova-950 dark:text-kova-300">Carousel</span>
+                    <span x-show="post.post_format === 'reel' && post.reel_compose_pending" class="text-[9px] text-orange-600 dark:text-orange-400 animate-pulse">Composing video…</span>
+                    <span x-show="post.post_format === 'reel' && post.reel_has_video" class="text-[9px] text-growth-600 dark:text-growth-400">Motion reel ready</span>
+                    <span x-show="post.post_format !== 'reel' && post.media_status === 'pending'" class="text-[9px] text-gold-600 dark:text-gold-400">Image generating</span>
+                    <span x-show="post.post_format !== 'reel' && post.media_status === 'generated'" class="text-[9px] text-growth-600 dark:text-growth-400">Ready</span>
+                  </div>
+                  <p class="text-sm text-gray-900 dark:text-white mt-1 line-clamp-2" x-text="post.preview"></p>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <template x-if="status === 'failed'">
+          <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <p class="text-sm font-medium text-red-800 dark:text-red-200">Pipeline interrupted</p>
+            <p class="text-xs text-red-700 dark:text-red-300 mt-1" x-text="errorMessage || 'Something went wrong. Check Content Studio or try Snap to Sell again.'"></p>
+          </div>
+        </template>
+      </div>
+
+      <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
+        <template x-if="status === 'completed'">
+          <button type="button" @click="scrollToPosts()"
+                  class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-kova-600 text-white hover:bg-kova-700">
+            Review content below
+          </button>
+          <a :href="studioUrl"
+             class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-center">
+            Open Studio
+          </a>
+          <button type="button" @click="close()"
+                  class="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">
+            Close
+          </button>
+        </template>
+        <template x-if="processing">
+          <button type="button" @click="close()"
+                  class="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            Run in background — content appears below when ready
+          </button>
+        </template>
+        <template x-if="status === 'failed'">
+          <button type="button" @click="close()"
+                  class="w-full px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600">
+            Close
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function snapPipelineModal(productId) {
+  return {
+    open: true,
+    productId: productId,
+    status: 'processing',
+    steps: [],
+    log: [],
+    posts: [],
+    productName: '{{ product.name|escapejs }}',
+    photoCount: 0,
+    errorMessage: '',
+    studioPolishNotice: '',
+    polishCreditSummary: '',
+    sceneBreakdown: [],
+    progressPercent: 5,
+    studioUrl: '/content/studio/',
+    queueUrl: '/content/queue/',
+    pollTimer: null,
+    get processing() {
+      return this.status === 'processing';
+    },
+    get headerTitle() {
+      if (this.status === 'completed') return 'Your content is ready';
+      if (this.status === 'failed') return 'Something went wrong';
+      return 'Building your campaign';
+    },
+    get headerSubtitle() {
+      if (this.status === 'completed') return 'Balanced studio pack → IG/FB carousels, stories, reels & WhatsApp offer. Review before publishing.';
+      if (this.status === 'failed') return 'Fix the issue or try Snap to Sell again.';
+      return 'Studio polish + campaign drafts. Nothing publishes until you approve.';
+    },
+    get photoSummary() {
+      const n = this.photoCount || 0;
+      if (!n) return '';
+      return n + ' photo' + (n !== 1 ? 's' : '') + (n >= 1 ? ' — balanced polish pack · 4:5 feed + carousel + 9:16 reel (IG/FB when connected)' : '');
+    },
+    init() {
+      this.poll();
+      this.pollTimer = setInterval(() => this.poll(), 2000);
+    },
+    close() {
+      this.open = false;
+      if (this.pollTimer) clearInterval(this.pollTimer);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('snap');
+      window.history.replaceState({}, '', url);
+    },
+    scrollToPosts() {
+      this.close();
+      window.location.href = window.location.pathname + '#product-posts-section';
+      window.location.reload();
+    },
+    async poll() {
+      if (!this.productId) return;
+      try {
+        const resp = await fetch(`/products/${this.productId}/snap-status/`, {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        this.status = data.status;
+        this.steps = data.steps || [];
+        this.log = data.log || [];
+        this.posts = data.posts || [];
+        this.productName = data.product_name || this.productName;
+        this.photoCount = data.photo_count || 0;
+        this.errorMessage = data.error_message || '';
+        this.studioPolishNotice = data.studio_polish_notice || '';
+        this.polishCreditSummary = data.polish_credit_summary || '';
+        this.sceneBreakdown = data.scene_breakdown || [];
+        this.progressPercent = data.progress_percent || 10;
+        this.studioUrl = data.studio_url || '/content/studio/';
+        this.queueUrl = data.queue_url || '/content/queue/';
+        if (data.terminal) {
+          if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+          }
+        }
+      } catch (e) {
+        console.warn('Snap pipeline poll failed', e);
+      }
+    },
+  };
+}
+</script>
+{% endif %}

@@ -87,7 +87,7 @@ def content_archive(request):
     )
     ctx["active_tab"] = "archive"
     ctx["page_title"] = "Archive"
-    return render(request, "content/archive.html", ctx)
+    return render(request, "dashboard/content/archive.html", ctx)
 
 
 @login_required
@@ -99,7 +99,7 @@ def archive_sections(request):
         format_filter=request.GET.get("post_format"),
         search_query=request.GET.get("q"),
     )
-    return render(request, "content/_archive_content.html", ctx)
+    return render(request, "dashboard/content/_archive_content.html", ctx)
 
 
 @login_required
@@ -131,7 +131,7 @@ def archive_clear_failed(request):
             format_filter=request.GET.get("post_format"),
             search_query=request.GET.get("q"),
         )
-        return render(request, "content/_archive_content.html", ctx)
+        return render(request, "dashboard/content/_archive_content.html", ctx)
 
     if cleared:
         messages.success(request, f"Cleared {cleared} failed post{'s' if cleared != 1 else ''}.")

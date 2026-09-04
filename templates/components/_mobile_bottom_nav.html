@@ -1,7 +1,6 @@
-{# Mobile bottom nav — V1: Coach · Campaigns · Publishing · Growth/More #}
+{# Mobile bottom nav — Coach · Studio · More #}
 {% load nav_tags %}
-{% nav_active request.path '/content/studio' '/content/edit/' '/content/archive' as campaigns_active %}
-{% nav_active request.path '/content/queue' '/content/calendar' as publishing_active %}
+{% nav_active request.path '/content/studio' '/content/edit/' '/content/archive' '/content/queue' '/content/calendar' as studio_active %}
 {% nav_active request.path '/analytics/' '/leads/' '/platforms/' '/accounts/settings' '/billing/' '/accounts/business-brain' '/whatsapp/' as more_active %}
 
 <div x-data="{ moreOpen: false }" class="lg:hidden">
@@ -103,29 +102,17 @@
 
       <a href="{% url 'content:studio' %}"
          class="relative flex flex-1 flex-col items-center justify-center gap-0.5 min-w-0 py-1
-                {% if campaigns_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}"
-         {% if campaigns_active %}aria-current="page"{% endif %}
-         aria-label="Campaigns">
-        {% if campaigns_active %}
-        <span class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-kova-500"></span>
-        {% endif %}
-        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-        <span class="text-[10px] font-semibold truncate">Campaigns</span>
-      </a>
-
-      <a href="{% url 'content:queue' %}"
-         class="relative flex flex-1 flex-col items-center justify-center gap-0.5 min-w-0 py-1
-                {% if publishing_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}"
-         {% if publishing_active %}aria-current="page"{% endif %}
-         aria-label="Publishing">
-        {% if publishing_active %}
+                {% if studio_active %}text-kova-600 dark:text-kova-400{% else %}text-gray-500 dark:text-gray-400{% endif %}"
+         {% if studio_active %}aria-current="page"{% endif %}
+         aria-label="Studio">
+        {% if studio_active %}
         <span class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-kova-500"></span>
         {% endif %}
         <span class="relative">
-          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           {% if nav_badge_queue %}<span class="absolute -top-1 -right-2 min-w-[1rem] h-4 px-0.5 text-[9px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center">{{ nav_badge_queue }}</span>{% endif %}
         </span>
-        <span class="text-[10px] font-semibold truncate">Publish</span>
+        <span class="text-[10px] font-semibold truncate">Studio</span>
       </a>
 
       <button type="button" @click="moreOpen = !moreOpen"
