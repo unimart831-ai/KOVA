@@ -50,7 +50,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 | `AWS_S3_ENDPOINT_URL` | R2 endpoint |
 | `AWS_S3_ACCESS_KEY_ID` / `AWS_S3_SECRET_ACCESS_KEY` | R2 credentials |
 | `SENTRY_DSN` | Error monitoring |
-| `RESEND_API_KEY` | Transactional email |
+| `RESEND_API_KEY` | Transactional email (optional to boot; console fallback until set) |
 | `DEFAULT_FROM_EMAIL` | e.g. `Kova Agent <noreply@yourdomain.com>` |
 | `OPENROUTER_API_KEY` (or OpenAI/Anthropic) | LLM |
 | Meta / WhatsApp / M-Pesa keys | See `.env.example` and platform setup docs |

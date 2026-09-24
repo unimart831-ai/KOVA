@@ -143,26 +143,30 @@ DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 # Optional overrides: CHANNEL_REDIS_CONNECT_TIMEOUT, CHANNEL_REDIS_SOCKET_TIMEOUT
 
 # ─── EMAIL (Resend HTTP API via django-anymail) ──────────────────────────────
-# Resend is the source of truth for transactional email in production. The
-# previous filebased fallback to /tmp on Railway silently lost every email
-# (ephemeral filesystem) including trial-expiry warnings and password resets.
-# Refuse to boot without it so the failure is visible at deploy time.
+# Prefer Resend in production. Allow boot without it so Railway can come up
+# before the API key is provisioned — emails fall back to console logging.
 RESEND_API_KEY = env("RESEND_API_KEY", default="")  # noqa: F405
-if not RESEND_API_KEY:
-    raise ImproperlyConfigured(
-        "RESEND_API_KEY must be set in production. "
-        "Without it, password resets and trial emails would be silently dropped."
-    )
+INSTALLED_APPS += ["anymail"]  # noqa: F405
 
 # Webhook signature secrets — unsigned callbacks rejected at the view layer when unset.
 RESEND_WEBHOOK_SECRET = env("RESEND_WEBHOOK_SECRET", default="")  # noqa: F405
 WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")  # noqa: F405
 MPESA_WEBHOOK_SECRET = env("MPESA_WEBHOOK_SECRET", default="")  # noqa: F405
-INSTALLED_APPS += ["anymail"]  # noqa: F405
-EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
-ANYMAIL = {
-    "RESEND_API_KEY": RESEND_API_KEY,
-}
+
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+    ANYMAIL = {
+        "RESEND_API_KEY": RESEND_API_KEY,
+    }
+else:
+    import logging as _email_boot_log
+
+    _email_boot_log.getLogger(__name__).warning(
+        "RESEND_API_KEY is not set — transactional email uses the console backend. "
+        "Password resets and trial emails will not be delivered until Resend is configured."
+    )
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    ANYMAIL = {}
 
 # Email verification disabled until Resend domain is verified — users go straight
 # to onboarding after signup. Re-enable with ACCOUNT_EMAIL_VERIFICATION = "mandatory"
