@@ -45,7 +45,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 | Variable | Purpose |
 |----------|---------|
-| `SKIP_STARTUP_MIGRATE=true` | Migrations already run in `release.sh`; skips duplicate migrate in `start.sh` |
+| `SKIP_STARTUP_MIGRATE` | **Do not set.** Web `start.sh` always migrates so login works even if release skipped. |
 | `AWS_STORAGE_BUCKET_NAME` | Cloudflare R2 bucket |
 | `AWS_S3_ENDPOINT_URL` | R2 endpoint |
 | `AWS_S3_ACCESS_KEY_ID` / `AWS_S3_SECRET_ACCESS_KEY` | R2 credentials |

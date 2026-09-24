@@ -25,26 +25,26 @@ fi
 echo "==> Running migrations..."
 echo "    DATABASE_URL is set: $(if [ -n \"$DATABASE_URL\" ]; then echo 'YES'; else echo 'NO - THIS IS THE PROBLEM'; fi)"
 echo "    DB host: $(echo $DATABASE_URL | sed 's/.*@\(.*\):.*/\1/' 2>/dev/null || echo 'could not parse')"
-if [ "${SKIP_STARTUP_MIGRATE:-}" = "true" ]; then
-    echo "    Skipped (SKIP_STARTUP_MIGRATE=true; release phase should have run migrate)"
-else
-    python manage.py migrate --noinput
-fi
+# Always migrate on web start. Login/signup need django_site and auth tables;
+# Railway releaseCommand is not always wired on every service replica.
+python manage.py migrate --noinput
+echo "    Migrations complete."
 
 echo "==> Seeding reel music beds (FFmpeg placeholders if missing)..."
 python manage.py seed_reel_music_beds 2>&1 || echo "WARNING: reel music seed failed"
 
 echo "==> Creating superuser (if not exists)..."
-python manage.py create_superuser 2>&1
+python manage.py create_superuser 2>&1 || echo "WARNING: create_superuser failed"
 
 echo "==> Setting Site domain..."
 python -c "
-import django; django.setup()
+import django
+django.setup()
 from django.contrib.sites.models import Site
 import os
 domain = os.environ.get('SITE_DOMAIN', 'kovaagents-production.up.railway.app')
 name = os.environ.get('SITE_NAME', 'Kova Agent')
-site = Site.objects.get_or_create(id=1)[0]
+site = Site.objects.get_or_create(id=1, defaults={'domain': domain, 'name': name})[0]
 if site.domain != domain or site.name != name:
     site.domain = domain
     site.name = name
@@ -52,7 +52,7 @@ if site.domain != domain or site.name != name:
     print(f'    Site updated: {name} ({domain})')
 else:
     print(f'    Site OK: {name} ({domain})')
-" 2>&1
+" 2>&1 || echo "WARNING: Site domain setup failed"
 
 echo "==> Checking storage backend..."
 python -c "
