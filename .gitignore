@@ -27,6 +27,10 @@ db.sqlite3-journal
 /media/
 staticfiles/
 
+# Local image backups (do not ship)
+static/img/*-old.png
+static/img/*-backup.*
+
 # Environment
 .env
 tmp/

@@ -58,10 +58,6 @@ def admin_global_search(query: str, limit_per_group: int = PER_GROUP) -> list[Se
     groups.append(_search_products(q, uuid_filter, limit_per_group))
     groups.append(_search_sales_inquiries(q, uuid_filter, limit_per_group))
     groups.append(_search_content_safety(q, uuid_filter, limit_per_group))
-    groups.append(_search_marketplaces(q, limit_per_group))
-    groups.append(_search_marketplace_sellers(q, limit_per_group))
-    groups.append(_search_partners(q, limit_per_group))
-    groups.append(_search_partner_applications(q, limit_per_group))
 
     return [g for g in groups if g.hits]
 
@@ -205,87 +201,23 @@ def _search_content_safety(q: str, uid: uuid.UUID | None, limit: int = PER_GROUP
 
 
 def _search_marketplaces(q: str, limit: int = PER_GROUP) -> SearchGroup:
-    from apps.core.partners.models import MarketplacePartner
+    return SearchGroup(label="Marketplaces", hits=[])
 
-    qs = MarketplacePartner.objects.filter(
-        Q(name__icontains=q) | Q(slug__icontains=q) | Q(contact_email__icontains=q),
-    ).order_by("name")[:limit]
-    hits = [
-        SearchHit(
-            title=mp.name,
-            subtitle=_safe_subtitle(mp.slug, mp.contact_email),
-            url=reverse("admin_dashboard:marketplace_detail", kwargs={"pk": mp.pk}),
-        )
-        for mp in qs
-    ]
-    return SearchGroup(label="Marketplaces", hits=hits)
 
 
 def _search_marketplace_sellers(q: str, limit: int = PER_GROUP) -> SearchGroup:
-    from apps.core.partners.models import MarketplaceSellerAccount
+    return SearchGroup(label="Marketplace Sellers", hits=[])
 
-    qs = (
-        MarketplaceSellerAccount.objects.select_related("user", "marketplace")
-        .filter(
-            Q(external_seller_id__icontains=q)
-            | Q(business_name__icontains=q)
-            | Q(user__email__icontains=q)
-            | Q(user__full_name__icontains=q)
-            | Q(marketplace__name__icontains=q),
-        )
-        .order_by("-last_product_sync")[:limit]
-    )
-    hits = [
-        SearchHit(
-            title=s.business_name or s.user.email,
-            subtitle=_safe_subtitle(s.marketplace.name, s.external_seller_id, s.status),
-            url=reverse("admin_dashboard:marketplace_detail", kwargs={"pk": s.marketplace_id}),
-        )
-        for s in qs
-    ]
-    return SearchGroup(label="Marketplace Sellers", hits=hits)
 
 
 def _search_partners(q: str, limit: int = PER_GROUP) -> SearchGroup:
-    from apps.core.partners.models import Partner
+    return SearchGroup(label="Partners", hits=[])
 
-    qs = (
-        Partner.objects.select_related("user")
-        .filter(
-            Q(referral_code__icontains=q)
-            | Q(user__email__icontains=q)
-            | Q(user__full_name__icontains=q),
-        )
-        .order_by("-id")[:limit]
-    )
-    hits = [
-        SearchHit(
-            title=p.referral_code,
-            subtitle=_safe_subtitle(p.user.email, p.tier),
-            url=reverse("admin_dashboard:partner_detail", kwargs={"pk": p.pk}),
-        )
-        for p in qs
-    ]
-    return SearchGroup(label="Partners", hits=hits)
 
 
 def _search_partner_applications(q: str, limit: int = PER_GROUP) -> SearchGroup:
-    from apps.core.partners.models import PartnerApplication
+    return SearchGroup(label="Partner Applications", hits=[])
 
-    qs = PartnerApplication.objects.filter(
-        Q(full_name__icontains=q)
-        | Q(email__icontains=q)
-        | Q(company__icontains=q),
-    ).order_by("-created_at")[:limit]
-    hits = [
-        SearchHit(
-            title=app.full_name,
-            subtitle=_safe_subtitle(app.email, app.company, app.status),
-            url=reverse("admin_dashboard:partner_applications") + f"?q={app.email}",
-        )
-        for app in qs
-    ]
-    return SearchGroup(label="Partner Applications", hits=hits)
 
 
 def maybe_interpret_query(query: str, groups: list[SearchGroup]) -> str:

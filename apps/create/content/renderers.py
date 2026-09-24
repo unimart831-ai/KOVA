@@ -23,21 +23,13 @@ def _platform_spec(blueprint: dict, platform: str) -> dict | None:
 
 
 def _booking_url_for_user(user) -> str:
-    try:
-        from apps.commerce.bookings.models import BookingLink
-        from apps.commerce.bookings.service_setup import booking_public_url
-
-        link = BookingLink.objects.filter(user=user, is_active=True).order_by("created_at").first()
-        if link:
-            return booking_public_url(link)
-    except Exception:
-        pass
+    """Best public URL for booking/service CTAs — fulfillment/product pages only (no BookingLink)."""
     profile = getattr(user, "profile", None)
     if profile and profile.page_slug:
         from django.conf import settings
 
         site = getattr(settings, "SITE_URL", "").rstrip("/")
-        return f"{site}/book/{profile.page_slug}/"
+        return f"{site}/s/{profile.page_slug}/" if site else ""
     return ""
 
 

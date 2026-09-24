@@ -77,37 +77,7 @@ def _mpesa_candidates(user, since) -> list[dict]:
 
 
 def _booking_candidates(user, since) -> list[dict]:
-    from apps.commerce.bookings.models import Booking
-    from apps.commerce.products.models import BusinessAsset
-
-    rows = (
-        Booking.objects.filter(
-            booking_link__user=user,
-            status__in=(Booking.Status.CONFIRMED, Booking.Status.COMPLETED),
-            created_at__gte=since,
-        )
-        .values("service_name")
-        .annotate(revenue=Sum("price_kes"), sales=Count("id"))
-        .order_by("-revenue")
-    )
-    out = []
-    for row in rows:
-        service = (row["service_name"] or "").strip()
-        asset = (
-            BusinessAsset.objects.filter(user=user, title__iexact=service).first()
-            if service
-            else None
-        )
-        asset_type = asset.asset_type if asset else "service"
-        out.append({
-            "title": asset.title if asset else (service or "Bookings"),
-            "revenue": float(row["revenue"] or 0),
-            "sales": row["sales"] or 0,
-            "asset_type": asset_type,
-            "source": "booking",
-            "signals": row["sales"] or 0,
-        })
-    return out
+    return []
 
 
 def _professional_showcase_candidates(user, since) -> list[dict]:

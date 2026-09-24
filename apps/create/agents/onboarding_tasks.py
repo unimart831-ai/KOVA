@@ -133,69 +133,123 @@ def run_onboarding_intelligence(user_id):
     result = {}
 
     progress = get_onboarding_progress(user)
-    if progress["all_done"]:
+    # Skip only when content enrichment already finished for real (not instant preview).
+    content_action = AgentAction.objects.filter(
+        user=user, action_type=ONBOARDING_STEPS["content"]
+    ).order_by("-created_at").first()
+    content_done_for_real = (
+        content_action
+        and content_action.status == AgentAction.ActionStatus.COMPLETED
+        and not (content_action.output_data or {}).get("instant")
+        and not (content_action.output_data or {}).get("instant_preview")
+    )
+    if content_done_for_real and progress["all_done"]:
         logger.info("Onboarding intelligence already complete for %s — skipping Celery run", user.email)
         return {"skipped": True, "reason": "already_complete"}
 
+    def _step_already_done(step_key: str):
+        action = (
+            AgentAction.objects.filter(user=user, action_type=ONBOARDING_STEPS[step_key])
+            .order_by("-created_at")
+            .first()
+        )
+        if (
+            action
+            and action.status == AgentAction.ActionStatus.COMPLETED
+            and not (action.output_data or {}).get("instant")
+        ):
+            return action
+        return None
+
     # ── Step 1: Research Agent — discover industry trends ────────────
-    research_action = AgentAction.objects.create(
-        user=user,
-        agent_type="research",
-        action_type=ONBOARDING_STEPS["research"],
-        description="Analyzing your industry and discovering trends",
-    )
-    try:
-        from apps.create.agents.research_agent import discover_trends
-        research = discover_trends(user)
-        research = _enrich_research_with_competitor_hints(user, research)
-        research_action.status = AgentAction.ActionStatus.COMPLETED
-        research_action.output_data = research
-        research_action.save(update_fields=["status", "output_data", "updated_at"])
+    existing_research = _step_already_done("research")
+    if existing_research:
+        research = existing_research.output_data or {"trending_topics": [], "opportunity_briefs": []}
         result["research"] = research
-        logger.info("Onboarding research complete for %s: %d topics",
-                     user.email, len(research.get("trending_topics", [])))
-    except Exception as e:
-        research_action.status = AgentAction.ActionStatus.FAILED
-        research_action.error_message = str(e)
-        research_action.save(update_fields=["status", "error_message", "updated_at"])
-        logger.error("Onboarding research failed for %s: %s", user.email, e)
-        research = {"trending_topics": [], "opportunity_briefs": []}
-        result["research"] = research
+        research_action = existing_research
+    else:
+        research_action = AgentAction.objects.create(
+            user=user,
+            agent_type="research",
+            action_type=ONBOARDING_STEPS["research"],
+            description="Analyzing your industry and discovering trends",
+        )
+        try:
+            from apps.create.agents.research_agent import discover_trends
+            research = discover_trends(user)
+            research = _enrich_research_with_competitor_hints(user, research)
+            research_action.status = AgentAction.ActionStatus.COMPLETED
+            research_action.output_data = research
+            research_action.completed_at = timezone.now()
+            research_action.save(update_fields=["status", "output_data", "completed_at"])
+            result["research"] = research
+            logger.info("Onboarding research complete for %s: %d topics",
+                         user.email, len(research.get("trending_topics", [])))
+        except Exception as e:
+            research_action.status = AgentAction.ActionStatus.FAILED
+            research_action.error_message = str(e)
+            research_action.save(update_fields=["status", "error_message"])
+            logger.error("Onboarding research failed for %s: %s", user.email, e)
+            research = {"trending_topics": [], "opportunity_briefs": []}
+            result["research"] = research
 
     # ── Step 2: Create starter seeds from opportunity briefs ─────────
-    seeds_action = AgentAction.objects.create(
-        user=user,
-        agent_type="strategist",
-        action_type=ONBOARDING_STEPS["seeds"],
-        description="Planning onboarding campaign proposals from research",
-    )
-    try:
-        seeds = _create_starter_seeds(user, research)
-        seeds_action.status = AgentAction.ActionStatus.COMPLETED
-        seeds_action.output_data = {"seed_count": len(seeds), "seed_ids": [str(s.id) for s in seeds]}
-        seeds_action.save(update_fields=["status", "output_data", "updated_at"])
+    existing_seeds = _step_already_done("seeds")
+    if existing_seeds and existing_seeds.output_data.get("seed_ids"):
+        from apps.create.content.models import ContentSeed
+        seed_ids = existing_seeds.output_data.get("seed_ids") or []
+        seeds = list(ContentSeed.objects.filter(user=user, id__in=seed_ids))
+        if not seeds:
+            seeds = _create_starter_seeds(user, research)
         result["seeds"] = len(seeds)
-    except Exception as e:
-        seeds_action.status = AgentAction.ActionStatus.FAILED
-        seeds_action.error_message = str(e)
-        seeds_action.save(update_fields=["status", "error_message", "updated_at"])
-        logger.error("Onboarding seed creation failed for %s: %s", user.email, e)
-        seeds = []
-        result["seeds"] = 0
+        seeds_action = existing_seeds
+    else:
+        seeds_action = AgentAction.objects.update_or_create(
+            user=user,
+            action_type=ONBOARDING_STEPS["seeds"],
+            defaults={
+                "agent_type": "strategist",
+                "description": "Planning onboarding campaign proposals from research",
+                "status": AgentAction.ActionStatus.STARTED,
+                "error_message": "",
+            },
+        )[0]
+        try:
+            seeds = _create_starter_seeds(user, research)
+            seeds_action.status = AgentAction.ActionStatus.COMPLETED
+            seeds_action.output_data = {"seed_count": len(seeds), "seed_ids": [str(s.id) for s in seeds]}
+            seeds_action.completed_at = timezone.now()
+            seeds_action.save(update_fields=["status", "output_data", "completed_at"])
+            result["seeds"] = len(seeds)
+        except Exception as e:
+            seeds_action.status = AgentAction.ActionStatus.FAILED
+            seeds_action.error_message = str(e)
+            seeds_action.save(update_fields=["status", "error_message"])
+            logger.error("Onboarding seed creation failed for %s: %s", user.email, e)
+            seeds = []
+            result["seeds"] = 0
 
     # ── Step 3: Generate posts from seeds via Create Agent ───────────
-    content_action = AgentAction.objects.create(
+    content_action = AgentAction.objects.update_or_create(
         user=user,
-        agent_type="create",
         action_type=ONBOARDING_STEPS["content"],
-        description="Building draft posts for your first campaign",
-    )
+        defaults={
+            "agent_type": "create",
+            "description": "Building draft posts for your first campaign",
+            "status": AgentAction.ActionStatus.STARTED,
+            "error_message": "",
+        },
+    )[0]
     try:
         from apps.core.platforms.models import SocialAccount
+        from apps.create.content.models import Post
+
         has_platforms = SocialAccount.objects.filter(user=user, is_active=True).exists()
 
+        # Replace instant stub captions with enriched drafts.
+        Post.objects.filter(user=user, generated_by_agent="onboarding_seed").delete()
+
         if has_platforms:
-            # Normal path: Create Agent generates per-platform posts
             total_posts = 0
             from apps.create.agents.create_agent import run_create_agent
             for seed in seeds:
@@ -208,40 +262,48 @@ def run_onboarding_intelligence(user_id):
                     seed.error_message = str(e)
                     seed.save(update_fields=["status", "error_message", "updated_at"])
         else:
-            # No platforms connected yet: generate platform-agnostic drafts
-            # User can assign to platforms later when they connect
             total_posts = _generate_draft_posts_without_platforms(user, seeds)
 
         content_action.status = AgentAction.ActionStatus.COMPLETED
-        content_action.output_data = {"posts_created": total_posts, "has_platforms": has_platforms}
-        content_action.save(update_fields=["status", "output_data", "updated_at"])
+        content_action.output_data = {
+            "posts_created": total_posts,
+            "has_platforms": has_platforms,
+            "enriched": True,
+        }
+        content_action.completed_at = timezone.now()
+        content_action.save(update_fields=["status", "output_data", "completed_at"])
         result["posts"] = total_posts
         logger.info("Onboarding content complete for %s: %d posts (platforms=%s)",
                      user.email, total_posts, has_platforms)
     except Exception as e:
         content_action.status = AgentAction.ActionStatus.FAILED
         content_action.error_message = str(e)
-        content_action.save(update_fields=["status", "error_message", "updated_at"])
+        content_action.save(update_fields=["status", "error_message"])
         logger.error("Onboarding content generation failed for %s: %s", user.email, e)
         result["posts"] = 0
 
     # ── Step 4: Generate Welcome Brief ───────────────────────────────
-    brief_action = AgentAction.objects.create(
+    brief_action = AgentAction.objects.update_or_create(
         user=user,
-        agent_type="strategist",
         action_type=ONBOARDING_STEPS["brief"],
-        description="Preparing your personalized welcome brief",
-    )
+        defaults={
+            "agent_type": "strategist",
+            "description": "Preparing your personalized welcome brief",
+            "status": AgentAction.ActionStatus.STARTED,
+            "error_message": "",
+        },
+    )[0]
     try:
         brief = _generate_welcome_brief(user, research, result)
         brief_action.status = AgentAction.ActionStatus.COMPLETED
-        brief_action.output_data = {"brief_id": str(brief.id)}
-        brief_action.save(update_fields=["status", "output_data", "updated_at"])
+        brief_action.output_data = {"brief_id": str(brief.id), "enriched": True}
+        brief_action.completed_at = timezone.now()
+        brief_action.save(update_fields=["status", "output_data", "completed_at"])
         result["brief_id"] = str(brief.id)
     except Exception as e:
         brief_action.status = AgentAction.ActionStatus.FAILED
         brief_action.error_message = str(e)
-        brief_action.save(update_fields=["status", "error_message", "updated_at"])
+        brief_action.save(update_fields=["status", "error_message"])
         logger.error("Onboarding welcome brief failed for %s: %s", user.email, e)
 
     try:
@@ -497,14 +559,12 @@ def _generate_welcome_brief(user, research, onboarding_result):
     industry = getattr(profile, "industry", "") or "your industry"
     today = timezone.now().date()
 
-    # Don't overwrite if a brief already exists for today
-    existing = DailyBrief.objects.filter(user=user, date=today).first()
-    if existing:
-        return existing
-
     topics_count = len(research.get("trending_topics", []))
     posts_created = onboarding_result.get("posts", 0)
     seeds_created = onboarding_result.get("seeds", 0)
+
+    existing = DailyBrief.objects.filter(user=user, date=today).first()
+    # Enrich (don't early-return) when this is the Celery pass after instant WOW.
 
     system_prompt = (
         "You are the Chief Strategist Agent for Kova, an AI business intelligence platform. "
@@ -564,21 +624,45 @@ def _generate_welcome_brief(user, research, onboarding_result):
             "agent_summary": "All 6 agents are active and learning your brand.",
         }
 
-    brief = DailyBrief.objects.create(
-        user=user,
-        date=today,
-        summary=llm_result.get("summary", "Welcome to Kova! Your AI agency is ready."),
-        trending_topics=llm_result.get("trending_topics", []),
-        suggested_posts=llm_result.get("suggested_posts", []),
-        performance_summary={
-            "highlight": llm_result.get("performance_highlight", ""),
-            "agent_summary": llm_result.get("agent_summary", ""),
-            "engagement_summary": llm_result.get("engagement_summary", ""),
-            "competitor_update": llm_result.get("competitor_update", ""),
-        },
-        agent_activity=[],
-        posts_pending=posts_created,
-    )
+    summary = llm_result.get("summary", "Welcome to Kova! Your AI agency is ready.")
+    trending = llm_result.get("trending_topics", [])
+    suggested = llm_result.get("suggested_posts", [])
+    performance = {
+        "highlight": llm_result.get("performance_highlight", ""),
+        "agent_summary": llm_result.get("agent_summary", ""),
+        "engagement_summary": llm_result.get("engagement_summary", ""),
+        "competitor_update": llm_result.get("competitor_update", ""),
+    }
+
+    if existing:
+        existing.summary = summary
+        existing.trending_topics = trending
+        existing.suggested_posts = suggested
+        existing.performance_summary = performance
+        existing.posts_pending = posts_created
+        existing.save(
+            update_fields=[
+                "summary",
+                "trending_topics",
+                "suggested_posts",
+                "performance_summary",
+                "posts_pending",
+            ]
+        )
+        brief = existing
+        logger.info("Welcome brief enriched for %s", user.email)
+    else:
+        brief = DailyBrief.objects.create(
+            user=user,
+            date=today,
+            summary=summary,
+            trending_topics=trending,
+            suggested_posts=suggested,
+            performance_summary=performance,
+            agent_activity=[],
+            posts_pending=posts_created,
+        )
+        logger.info("Welcome brief created for %s", user.email)
 
     # Create notification
     from apps.messaging.notifications.models import Notification
@@ -588,5 +672,4 @@ def _generate_welcome_brief(user, research, onboarding_result):
         message="Your welcome brief is ready — your AI agency has already started working!",
     )
 
-    logger.info("Welcome brief created for %s", user.email)
     return brief

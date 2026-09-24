@@ -48,7 +48,7 @@ def _category_defs():
         "reviews": {
             "label": "Reviews",
             "description": "Review requests and testimonial content",
-            "url_name": "reviews:list",
+            "url_name": "leads:list",
         },
         "leads": {
             "label": "Leads & Bookings",
@@ -590,51 +590,6 @@ def build_platform_operations_report(hours=24):
             "detail": "Fresh pipeline opportunities",
         })
         categories["leads"]["count"] += new_leads
-
-    try:
-        from apps.commerce.bookings.models import Booking
-
-        bookings_done = Booking.objects.filter(
-            completed_at__gte=cutoff,
-            status=Booking.Status.COMPLETED,
-        ).count()
-        if bookings_done:
-            categories["leads"]["items"].append({
-                "label": "Bookings completed",
-                "count": bookings_done,
-                "detail": "Appointments marked done",
-            })
-            categories["leads"]["count"] += bookings_done
-    except Exception:
-        pass
-
-    try:
-        from apps.commerce.reviews.models import ReviewRequest
-
-        review_sent = ReviewRequest.objects.filter(sent_at__gte=cutoff).count()
-        if review_sent:
-            categories["reviews"]["items"].append({
-                "label": "Review requests sent",
-                "count": review_sent,
-                "detail": "Outreach via WhatsApp or email",
-            })
-            categories["reviews"]["count"] += review_sent
-    except Exception:
-        pass
-
-    try:
-        from apps.commerce.qr_attribution.models import WalkInEvent
-
-        walk_ins = WalkInEvent.objects.filter(recorded_at__gte=cutoff).count()
-        if walk_ins:
-            categories["leads"]["items"].append({
-                "label": "Walk-ins recorded",
-                "count": walk_ins,
-                "detail": "In-store visits attributed",
-            })
-            categories["leads"]["count"] += walk_ins
-    except Exception:
-        pass
 
     recent_tasks = []
     for action in AgentAction.objects.select_related("user").filter(

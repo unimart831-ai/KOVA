@@ -18,14 +18,6 @@ logger = logging.getLogger(__name__)
 
 # URL names checked for plan limits (must match apps/*/urls.py name= values)
 PLATFORM_CONNECT_URLS = ["platforms:connect", "platforms:oauth_callback"]
-ENGAGE_URLS = [
-    "engage:inbox",
-    "engage:unified_inbox",
-    "engage:dm_inbox",
-    "engage:auto_sent_list",
-    "engage:send_reply",
-    "engage:trigger",
-]
 WHATSAPP_INBOX_URLS = [
     "whatsapp:inbox", "whatsapp:conversation", "whatsapp:send_message",
     "whatsapp:toggle_ai",
@@ -35,16 +27,8 @@ WHATSAPP_PRO_URLS = [
     # Sprint 5C — Status Studio
     "whatsapp:status_studio", "whatsapp:status_create", "whatsapp:status_share",
     "whatsapp:status_skip", "whatsapp:status_repurpose", "whatsapp:status_calendar",
-    # Sprint 5D — Broadcasts + Analytics
-    "whatsapp:broadcast_list", "whatsapp:broadcast_create", "whatsapp:broadcast_detail",
-    "whatsapp:broadcast_launch", "whatsapp:broadcast_pause",
-    "whatsapp:sequence_create", "whatsapp:sequence_detail",
-    "whatsapp:sequence_add_step", "whatsapp:sequence_toggle",
+    # Analytics (lightweight)
     "whatsapp:wa_analytics", "whatsapp:wa_digest_detail",
-    # Sprint 5E — Channels
-    "whatsapp:channel_dashboard", "whatsapp:channel_create", "whatsapp:channel_detail",
-    "whatsapp:channel_post_create", "whatsapp:channel_post_publish",
-    "whatsapp:channel_toggle_curate",
 ]
 WHATSAPP_URLS = WHATSAPP_INBOX_URLS + WHATSAPP_PRO_URLS
 SEED_CREATE_URLS = ["content:submit_seed", "content:voice_to_seed"]
@@ -99,20 +83,6 @@ class PlanEnforcementMiddleware:
             return seed_limit_block_response(request, message)
         return None
 
-    def _check_engage_access(self, request):
-        """Check if user's plan includes the engagement inbox."""
-        from apps.core.billing.engage_trial import engage_inbox_allowed
-
-        limits = get_user_plan_limits(request.user)
-
-        if not engage_inbox_allowed(request.user):
-            return plan_limit_redirect(
-                request,
-                "Engagement inbox is included on Kova. Subscribe to unlock.",
-                "billing:pricing",
-            )
-        return None
-
     def _check_whatsapp_inbox_access(self, request):
         """Growth wedge: inbox + utility replies."""
         from apps.core.billing.whatsapp_access import whatsapp_inbox_allowed
@@ -136,7 +106,7 @@ class PlanEnforcementMiddleware:
         if limits.get("whatsapp_inbox_enabled"):
             return plan_limit_redirect(
                 request,
-                "WhatsApp broadcasts, Status Studio, and channels require Agency (Wakala). "
+                "WhatsApp Status Studio and templates require Agency (Wakala). "
                 "Kova includes WhatsApp inbox + lead capture.",
                 "whatsapp:inbox",
             )
@@ -168,9 +138,6 @@ class PlanEnforcementMiddleware:
                 return plan_limit_redirect(request, msg, "billing:pricing")
 
         # ── Feature gates (block on ANY request method, not just POST) ──
-        if full_name in ENGAGE_URLS:
-            return self._check_engage_access(request)
-
         if full_name in WHATSAPP_PRO_URLS:
             return self._check_whatsapp_pro_access(request)
 

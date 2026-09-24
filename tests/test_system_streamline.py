@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from apps.core.accounts.models import User, UserProfile
 from apps.commerce.products.models import CommercePayment, Product
@@ -82,21 +82,16 @@ class TestAnalyticsTabPages:
         UserProfile.objects.filter(user=u).update(plan="kova", subscription_status="active")
         return u
 
-    def test_competitors_dashboard(self, client):
+    def test_competitors_routes_removed_in_v1(self, client):
         client.force_login(self._user())
-        assert client.get(reverse("analytics:competitors")).status_code == 200
-
-    def test_screenshot_compete(self, client):
-        client.force_login(self._user())
-        assert client.get(reverse("analytics:screenshot_compete")).status_code == 200
-
-    def test_competitor_add(self, client):
-        client.force_login(self._user())
-        assert client.get(reverse("analytics:competitor_add")).status_code == 200
-
-    def test_competitor_landscape(self, client):
-        client.force_login(self._user())
-        assert client.get(reverse("analytics:competitor_landscape")).status_code == 200
+        for name in (
+            "analytics:competitors",
+            "analytics:competitor_add",
+            "analytics:competitor_landscape",
+            "analytics:screenshot_compete",
+        ):
+            with pytest.raises(NoReverseMatch):
+                reverse(name)
 
     def test_results_subpages(self, client):
         client.force_login(self._user())

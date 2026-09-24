@@ -120,7 +120,9 @@
 
       <li class="flex gap-2"><span class="text-growth-500">✓</span> WhatsApp inbox + lead capture</li>
 
-      <li class="flex gap-2 text-gray-500 dark:text-gray-500"><span>—</span> WhatsApp broadcasts, Status Studio &amp; channels — <a href="{% url 'billing:pricing' %}#agency" class="text-kova-600 dark:text-kova-400 underline">Agency (Wakala)</a></li>
+      {% if kova_features.whatsapp_status %}
+      <li class="flex gap-2"><span class="text-growth-500">✓</span> WhatsApp Status Studio</li>
+      {% endif %}
 
       <li class="flex gap-2"><span class="text-growth-500">✓</span> Revenue attribution dashboard</li>
 

@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.create.content.models import ContentSeed, Post
-from apps.core.teams.permissions import can_approve_post, get_teammate_ids
+from apps.core.accounts.access import can_approve_post, get_teammate_ids
 from apps.core.utils import fire_task
 
 QUEUE_SECTION_CAP = 50
@@ -341,7 +341,7 @@ def content_calendar_grid(request):
 
 def _has_team_access(user, post):
     try:
-        from apps.core.teams.models import get_teammate_ids
+        from apps.core.accounts.access import get_teammate_ids
         return post.user_id in get_teammate_ids(user)
     except Exception:
         return False
@@ -677,7 +677,7 @@ def rate_post(request, post_id):
 def campaign_request_client_approval(request, campaign_id):
     """Agency: send campaign to client for sign-off before publish."""
     from apps.create.content.models import MarketingCampaign
-    from apps.core.teams.client_approval import request_client_approval
+    from apps.core.accounts.access import request_client_approval
 
     visible_user_ids = get_teammate_ids(request.user)
     campaign = get_object_or_404(
@@ -695,7 +695,7 @@ def campaign_request_client_approval(request, campaign_id):
 def campaign_client_approve(request, campaign_id):
     """Client role: approve campaign for agency to publish."""
     from apps.create.content.models import MarketingCampaign
-    from apps.core.teams.client_approval import client_approve_campaign
+    from apps.core.accounts.access import client_approve_campaign
 
     campaign = get_object_or_404(MarketingCampaign, id=campaign_id)
     if client_approve_campaign(campaign, request.user):

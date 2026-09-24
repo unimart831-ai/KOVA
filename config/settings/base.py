@@ -83,26 +83,28 @@ LOCAL_APPS = [
     "apps.insight.analytics",
     "apps.create.briefs",
     "apps.create.media",
-    "apps.messaging.engage",
     "apps.core.billing",
     "apps.messaging.notifications",
     "apps.messaging.emails",
     "apps.core.admin_dashboard",
     "apps.insight.help",
-    "apps.core.teams",
-    "apps.core.partners",
     "apps.commerce.links",
     "apps.commerce.leads",
     "apps.commerce.products",
     # Legacy app — models removed, kept installed ONLY so its migration
-    # history stays loadable (bookings/qr_attribution/content migrations
-    # depend on campaigns.0002). Safe to drop after squashing migrations.
+    # history stays loadable (content migrations depend on campaigns.0002).
+    # Safe to drop after squashing migrations.
     "apps.core.campaigns",
     "apps.messaging.whatsapp",
-    "apps.commerce.qr_attribution",
-    "apps.commerce.bookings",
-    "apps.commerce.reviews",
     "apps.insight.api",
+    # V1: product surfaces deleted. Migration shells only (models + migrations).
+    # No URLs/views/tasks. Drop after migration squash.
+    "apps.core.teams",
+    "apps.core.partners",
+    "apps.commerce.bookings",
+    "apps.commerce.qr_attribution",
+    "apps.commerce.reviews",
+    "apps.messaging.engage",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -123,7 +125,6 @@ MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
     "apps.core.accounts.middleware.OnboardingMiddleware",
     "apps.core.billing.middleware.PlanEnforcementMiddleware",
-    "apps.core.partners.middleware.ReferralMiddleware",
     "apps.insight.analytics.middleware.FeatureUsageMiddleware",
 ]
 
@@ -150,7 +151,6 @@ TEMPLATES = [
                 "apps.core.accounts.context_processors.nav_badges",
                 "apps.core.accounts.context_processors.platforms_summary",
                 "apps.core.accounts.context_processors.kova_voice",
-                "apps.core.teams.context_processors.agency_theme",
                 "apps.core.admin_dashboard.context_processors.admin_nav",
                 "apps.create.media.context_processors.media_capabilities",
                 "apps.core.features.kova_features_context",
@@ -285,10 +285,6 @@ CELERY_BEAT_SCHEDULE = {
     "expire-stale-commerce-payments": {
         "task": "products.expire_stale_commerce_payments",
         "schedule": 300.0,  # every 5 minutes — expire pending payments >10 min old
-    },
-    "poll-tiktok-publish-status": {
-        "task": "platforms.poll_tiktok_publish_status",
-        "schedule": 300.0,  # every 5 minutes — backfill TikTok post URLs
     },
     "check-stock-alerts": {
         "task": "check-stock-alerts",
@@ -747,22 +743,11 @@ EDIT_WITH_AI_SEED_DEFAULT = 2016886668
 ENGAGE_DM_INBOX_ENABLED = env.bool("ENGAGE_DM_INBOX_ENABLED", default=True)
 TIKTOK_RESEARCH_API_ENABLED = env.bool("TIKTOK_RESEARCH_API_ENABLED", default=False)
 
-# Optional product surfaces (apps stay installed; URLs/nav/beat gated).
-# V1 growth-loop defaults: only the five core capabilities are ON.
-# Re-enable postponed surfaces with FEATURE_* env vars.
+# Optional product surfaces gated via FEATURE_* env vars.
 KOVA_FEATURES = {
-    # Postponed / archived for V1 (default OFF)
-    "bookings": env.bool("FEATURE_BOOKINGS", default=False),
-    "qr_attribution": env.bool("FEATURE_QR_ATTRIBUTION", default=False),
-    "reviews": env.bool("FEATURE_REVIEWS", default=False),
-    "partners": env.bool("FEATURE_PARTNERS", default=False),
     "commerce_nav": env.bool("FEATURE_COMMERCE_NAV", default=False),
-    "engage_inbox": env.bool("FEATURE_ENGAGE_INBOX", default=False),
     "email_marketing": env.bool("FEATURE_EMAIL_MARKETING", default=False),
     "competitors": env.bool("FEATURE_COMPETITORS", default=False),
-    "teams": env.bool("FEATURE_TEAMS", default=False),
-    "tiktok": env.bool("FEATURE_TIKTOK", default=False),
-    "linkedin": env.bool("FEATURE_LINKEDIN", default=False),
     "whatsapp_broadcasts": env.bool("FEATURE_WHATSAPP_BROADCASTS", default=False),
     "whatsapp_channels": env.bool("FEATURE_WHATSAPP_CHANNELS", default=False),
     "nurture": env.bool("FEATURE_NURTURE", default=False),
@@ -771,21 +756,6 @@ KOVA_FEATURES = {
     "whatsapp_status": env.bool("FEATURE_WHATSAPP_STATUS", default=True),
     "leads_nav": env.bool("FEATURE_LEADS_NAV", default=True),
 }
-
-if KOVA_FEATURES.get("partners", True):
-    CELERY_BEAT_SCHEDULE["calculate-partner-commissions"] = {
-        "task": "partners.calculate_monthly_commissions",
-        "schedule": 24 * 3600.0,
-    }
-    CELERY_BEAT_SCHEDULE["check-partner-milestones"] = {
-        "task": "partners.check_partner_milestones",
-        "schedule": 24 * 3600.0,
-    }
-else:
-    MIDDLEWARE = [
-        m for m in MIDDLEWARE
-        if "partners.middleware.ReferralMiddleware" not in m
-    ]
 
 
 # Legacy — also used by media orchestration (Fal.ai Flux + Kling)

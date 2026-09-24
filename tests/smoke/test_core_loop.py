@@ -13,7 +13,6 @@ class TestCriticalRoutes:
         names = [
             "brief:home",
             "products:snap",
-            "bookings:list",
             "api:asset-list",
             "whatsapp:webhook",
         ]
@@ -50,32 +49,3 @@ class TestBlueprintPipeline:
         seed.refresh_from_db()
         assert seed.blueprint["asset_id"] == str(asset.id)
         assert "CONTENT BLUEPRINT" in blueprint_prompt_section(seed.blueprint)
-
-
-class TestServiceBookingSetup:
-    def test_ensure_booking_link_for_service_business(self, db):
-        from apps.core.accounts.models import User, UserProfile
-        from apps.commerce.bookings.models import BookingLink
-        from apps.commerce.bookings.service_setup import ensure_primary_booking_link, sync_service_asset_to_booking_link
-        from apps.commerce.products.models import BusinessAsset
-
-        user = User.objects.create_user(
-            username="salon", email="salon@kova.ai", password="x", phone_number="0711222333",
-        )
-        UserProfile.objects.filter(user=user).update(
-            company_name="Glow Salon", business_model="service",
-        )
-        link = ensure_primary_booking_link(user)
-        assert link.slug
-        assert link.working_hours
-
-        asset = BusinessAsset.objects.create(
-            user=user,
-            asset_type=BusinessAsset.AssetType.SERVICE,
-            title="Box braids",
-            metadata={"price": "3500", "duration_minutes": 180},
-        )
-        sync_service_asset_to_booking_link(user, asset)
-        link.refresh_from_db()
-        assert any(s["name"] == "Box braids" for s in link.services)
-        assert BookingLink.objects.filter(user=user).count() == 1

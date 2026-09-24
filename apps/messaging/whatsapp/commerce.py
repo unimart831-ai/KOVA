@@ -1,7 +1,7 @@
 """
 WhatsApp Commerce Bot — Conversational commerce state machine.
 
-Handles product browsing, booking flows, and M-Pesa payments
+Handles product browsing, cart, and M-Pesa payments
 within WhatsApp conversations. Plugs into the existing auto-reply
 pipeline via handle_commerce_message().
 
@@ -28,7 +28,6 @@ PAYMENT_TRIGGERS = {"pay", "buy", "order", "nunua", "lipa"}
 
 COMMERCE_STATES = {
     "idle", "browsing", "product_detail", "cart_review",
-    "booking_select", "booking_time", "booking_confirm",
     "payment_pending",
 }
 
@@ -95,21 +94,10 @@ def handle_commerce_message(conversation, message, social_account):
             conversation, message, social_account, provider,
             text_lower, is_interactive, reply_id, ctx, user,
         )
-    elif state == "booking_select":
-        handled = _handle_booking_select(
-            conversation, message, social_account, provider,
-            text_lower, is_interactive, reply_id, ctx, user,
-        )
-    elif state == "booking_time":
-        handled = _handle_booking_time(
-            conversation, message, social_account, provider,
-            text_lower, is_interactive, reply_id, ctx, user,
-        )
-    elif state == "booking_confirm":
-        handled = _handle_booking_confirm(
-            conversation, message, social_account, provider,
-            text_lower, is_interactive, reply_id, ctx, user,
-        )
+    elif state in ("booking_select", "booking_time", "booking_confirm"):
+        # Legacy booking states — reset; product/M-Pesa commerce remains
+        _reset_state(conversation, ctx)
+        handled = False
     elif state == "payment_pending":
         handled = _handle_payment_pending(
             conversation, message, social_account, provider,
@@ -134,11 +122,13 @@ def _handle_idle(conversation, message, social_account, provider,
         return _show_categories(conversation, social_account, provider, token, to, ctx, user)
 
     if _matches_any(text_lower, BOOKING_TRIGGERS):
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
+        _send_text(provider, token, to,
+                   "Online booking isn't available here yet. Type *products* to browse what we sell, or ask a question!")
+        return True
 
     if _matches_any(text_lower, PAYMENT_TRIGGERS):
         _send_text(provider, token, to,
-                   "What would you like to pay for? You can browse our *products* or *book* a service first.")
+                   "What would you like to pay for? Type *products* to browse our catalog first.")
         return True
 
     return False
@@ -205,81 +195,6 @@ def _handle_product_detail(conversation, message, social_account, provider,
 
     return False
 
-
-def _handle_booking_select(conversation, message, social_account, provider,
-                           text_lower, is_interactive, reply_id, ctx, user):
-    token = social_account.access_token
-    to = conversation.contact_wa_id
-
-    if text_lower in ("back", "cancel", "exit"):
-        _reset_state(conversation, ctx)
-        _send_text(provider, token, to, "Booking cancelled. How else can I help?")
-        return True
-
-    if is_interactive and reply_id.startswith("svc_"):
-        service_index = reply_id[4:]
-        return _select_booking_service(
-            conversation, social_account, provider, token, to, ctx, user, service_index,
-        )
-
-    if _matches_any(text_lower, BOOKING_TRIGGERS):
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    return False
-
-
-def _handle_booking_time(conversation, message, social_account, provider,
-                         text_lower, is_interactive, reply_id, ctx, user):
-    token = social_account.access_token
-    to = conversation.contact_wa_id
-
-    if text_lower in ("back", "cancel", "exit"):
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    if is_interactive and reply_id.startswith("slot_"):
-        slot_str = reply_id[5:]
-        return _select_time_slot(
-            conversation, social_account, provider, token, to, ctx, user, slot_str,
-        )
-
-    # User typed a date — try to parse it
-    parsed_date = _parse_date_input(text_lower)
-    if parsed_date:
-        return _show_time_slots(
-            conversation, social_account, provider, token, to, ctx, user, parsed_date,
-        )
-
-    _send_text(provider, token, to,
-               "Please type a date (e.g. *tomorrow*, *Monday*, or *2026-05-25*).")
-    return True
-
-
-def _handle_booking_confirm(conversation, message, social_account, provider,
-                            text_lower, is_interactive, reply_id, ctx, user):
-    token = social_account.access_token
-    to = conversation.contact_wa_id
-
-    if is_interactive and reply_id == "confirm_booking":
-        return _confirm_booking(
-            conversation, social_account, provider, token, to, ctx, user,
-        )
-
-    if is_interactive and reply_id == "cancel_booking":
-        _reset_state(conversation, ctx)
-        _send_text(provider, token, to, "Booking cancelled. Let me know if you need anything else!")
-        return True
-
-    if text_lower in ("back", "cancel", "exit", "no"):
-        _reset_state(conversation, ctx)
-        _send_text(provider, token, to, "Booking cancelled. Let me know if you need anything else!")
-        return True
-
-    if text_lower in ("yes", "confirm"):
-        return _confirm_booking(
-            conversation, social_account, provider, token, to, ctx, user,
-        )
-
-    return False
 
 
 def _handle_payment_pending(conversation, message, social_account, provider,
@@ -486,319 +401,8 @@ def _show_product_detail(conversation, social_account, provider, token, to,
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# BOOKING FLOW
+# BOOKING FLOW (removed — bookings app stripped from V1)
 # ═════════════════════════════════════════════════════════════════════════════
-
-
-def _show_booking_services(conversation, social_account, provider, token, to, ctx, user):
-    from apps.commerce.bookings.models import BookingLink
-
-    booking_link = BookingLink.objects.filter(user=user, is_active=True).first()
-    if not booking_link:
-        _send_text(provider, token, to,
-                   "We don't have online booking set up yet. Please contact us directly!")
-        _reset_state(conversation, ctx)
-        return True
-
-    services = booking_link.services or []
-    if not services:
-        _send_text(provider, token, to,
-                   "No booking services available right now. Please check back later!")
-        _reset_state(conversation, ctx)
-        return True
-
-    rows = []
-    for i, svc in enumerate(services[:10]):
-        name = svc.get("name", f"Service {i + 1}")
-        duration = svc.get("duration_minutes", 0)
-        price = svc.get("price_kes", 0)
-        desc_parts = []
-        if duration:
-            desc_parts.append(f"{duration} min")
-        if price:
-            desc_parts.append(f"KES {price:,.0f}")
-        rows.append({
-            "id": f"svc_{i}",
-            "title": name[:24],
-            "description": " · ".join(desc_parts) if desc_parts else "Contact for pricing",
-        })
-
-    sections = [{"title": "Our Services", "rows": rows}]
-    provider.send_interactive_list(
-        access_token=token, to=to,
-        body="Choose a service to book 📅",
-        button_text="View Services",
-        sections=sections,
-        header="Book an Appointment",
-        footer="Reply 'exit' to cancel",
-    )
-
-    ctx["booking_link_id"] = str(booking_link.pk)
-    _set_state(conversation, ctx, "booking_select")
-    _log_action(user, "commerce_view_services", "Customer browsing booking services")
-    return True
-
-
-def _select_booking_service(conversation, social_account, provider, token, to,
-                            ctx, user, service_index_str):
-    from apps.commerce.bookings.models import BookingLink
-
-    booking_link_id = ctx.get("booking_link_id")
-    if not booking_link_id:
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    try:
-        booking_link = BookingLink.objects.get(pk=booking_link_id, user=user)
-    except BookingLink.DoesNotExist:
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    try:
-        idx = int(service_index_str)
-        service = booking_link.services[idx]
-    except (ValueError, IndexError):
-        _send_text(provider, token, to, "Service not found. Please select from the list.")
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    ctx["selected_service"] = service
-    ctx["selected_service_index"] = idx
-    _set_state(conversation, ctx, "booking_time")
-
-    name = service.get("name", "Service")
-    duration = service.get("duration_minutes", 0)
-    price = service.get("price_kes", 0)
-
-    lines = [
-        f"Great choice! You selected *{name}*.",
-    ]
-    if duration:
-        lines.append(f"⏱ Duration: {duration} minutes")
-    if price:
-        lines.append(f"💰 Price: KES {price:,.0f}")
-    lines.append("\nWhen would you like to come in?")
-    lines.append("Please type a date (e.g. *tomorrow*, *Monday*, or *2026-05-25*).")
-
-    _send_text(provider, token, to, "\n".join(lines))
-    return True
-
-
-def _show_time_slots(conversation, social_account, provider, token, to,
-                     ctx, user, target_date):
-    from apps.commerce.bookings.models import Booking, BookingLink
-
-    booking_link_id = ctx.get("booking_link_id")
-    if not booking_link_id:
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    try:
-        booking_link = BookingLink.objects.get(pk=booking_link_id, user=user)
-    except BookingLink.DoesNotExist:
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    service = ctx.get("selected_service", {})
-    duration = service.get("duration_minutes", 60)
-
-    # Get working hours for the target day
-    day_name = target_date.strftime("%a").lower()[:3]
-    working_hours = booking_link.working_hours or booking_link.default_working_hours()
-    day_hours = working_hours.get(day_name, [])
-
-    if not day_hours:
-        _send_text(provider, token, to,
-                   f"Sorry, we're closed on {target_date.strftime('%A, %b %d')}. "
-                   "Please pick another date.")
-        return True
-
-    # Generate time slots
-    existing_bookings = Booking.objects.filter(
-        booking_link=booking_link,
-        scheduled_at__date=target_date,
-        status__in=["pending", "confirmed"],
-    ).values_list("scheduled_at", flat=True)
-    booked_times = {b.astimezone(NAIROBI_TZ).strftime("%H:%M") for b in existing_bookings}
-
-    now = timezone.now().astimezone(NAIROBI_TZ)
-    slots = []
-    for window in day_hours:
-        start_h, start_m = map(int, window["start"].split(":"))
-        end_h, end_m = map(int, window["end"].split(":"))
-        current = datetime(
-            target_date.year, target_date.month, target_date.day,
-            start_h, start_m, tzinfo=NAIROBI_TZ,
-        )
-        end_time = datetime(
-            target_date.year, target_date.month, target_date.day,
-            end_h, end_m, tzinfo=NAIROBI_TZ,
-        )
-        while current + timedelta(minutes=duration) <= end_time:
-            time_str = current.strftime("%H:%M")
-            if time_str not in booked_times and current > now:
-                slots.append(time_str)
-            current += timedelta(minutes=30)
-
-    if not slots:
-        _send_text(provider, token, to,
-                   f"No available slots on {target_date.strftime('%A, %b %d')}. "
-                   "Please try another date.")
-        return True
-
-    # Show up to 3 slots as buttons (WhatsApp max)
-    display_slots = slots[:3]
-    date_str = target_date.isoformat()
-
-    buttons = [
-        {"id": f"slot_{date_str}T{s}", "title": s}
-        for s in display_slots
-    ]
-
-    ctx["booking_date"] = date_str
-    _save_commerce_ctx(conversation, ctx)
-
-    body = f"Available slots on *{target_date.strftime('%A, %b %d')}*:"
-    if len(slots) > 3:
-        body += f"\n(Showing first 3 of {len(slots)} slots)"
-
-    provider.send_interactive_buttons(
-        access_token=token, to=to,
-        body=body,
-        buttons=buttons,
-        footer="Reply 'back' to change date",
-    )
-    return True
-
-
-def _select_time_slot(conversation, social_account, provider, token, to,
-                      ctx, user, slot_str):
-    """slot_str is like '2026-05-25T10:00'"""
-    try:
-        dt = datetime.fromisoformat(slot_str)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=NAIROBI_TZ)
-    except ValueError:
-        _send_text(provider, token, to, "Invalid time slot. Please try again.")
-        return True
-
-    service = ctx.get("selected_service", {})
-    name = service.get("name", "Service")
-    duration = service.get("duration_minutes", 0)
-    price = service.get("price_kes", 0)
-
-    ctx["booking_datetime"] = dt.isoformat()
-    _set_state(conversation, ctx, "booking_confirm")
-
-    lines = [
-        "📋 *Booking Summary*",
-        f"Service: {name}",
-        f"Date: {dt.strftime('%A, %b %d, %Y')}",
-        f"Time: {dt.strftime('%I:%M %p')}",
-    ]
-    if duration:
-        lines.append(f"Duration: {duration} min")
-    if price:
-        lines.append(f"Price: KES {price:,.0f}")
-    lines.append(f"\nCustomer: {conversation.contact_name or conversation.contact_wa_id}")
-
-    _send_text(provider, token, to, "\n".join(lines))
-
-    provider.send_interactive_buttons(
-        access_token=token, to=to,
-        body="Confirm your booking?",
-        buttons=[
-            {"id": "confirm_booking", "title": "✅ Confirm"},
-            {"id": "cancel_booking", "title": "❌ Cancel"},
-        ],
-    )
-    return True
-
-
-def _confirm_booking(conversation, social_account, provider, token, to, ctx, user):
-    from apps.commerce.bookings.models import Booking, BookingLink
-
-    booking_link_id = ctx.get("booking_link_id")
-    service = ctx.get("selected_service", {})
-    datetime_str = ctx.get("booking_datetime")
-
-    if not booking_link_id or not datetime_str:
-        _send_text(provider, token, to, "Something went wrong. Let's start over.")
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    try:
-        booking_link = BookingLink.objects.get(pk=booking_link_id)
-    except BookingLink.DoesNotExist:
-        _send_text(provider, token, to, "Booking service not found. Please try again.")
-        _reset_state(conversation, ctx)
-        return True
-
-    try:
-        scheduled_dt = datetime.fromisoformat(datetime_str)
-        if scheduled_dt.tzinfo is None:
-            scheduled_dt = scheduled_dt.replace(tzinfo=NAIROBI_TZ)
-    except ValueError:
-        _send_text(provider, token, to, "Invalid booking time. Let's try again.")
-        return _show_booking_services(conversation, social_account, provider, token, to, ctx, user)
-
-    name = service.get("name", "Service")
-    duration = service.get("duration_minutes", 60)
-    price = Decimal(str(service.get("price_kes", 0)))
-
-    booking = Booking.objects.create(
-        booking_link=booking_link,
-        customer_name=conversation.contact_name or conversation.contact_wa_id,
-        customer_phone=conversation.contact_phone or conversation.contact_wa_id,
-        service_name=name,
-        duration_minutes=duration,
-        price_kes=price,
-        scheduled_at=scheduled_dt,
-        status=Booking.Status.CONFIRMED,
-        source_channel="engage_agent",
-        notes=f"Booked via WhatsApp commerce bot. Conversation: {conversation.pk}",
-    )
-
-    lines = [
-        "✅ *Booking Confirmed!*",
-        f"Service: {name}",
-        f"Date: {scheduled_dt.strftime('%A, %b %d, %Y')}",
-        f"Time: {scheduled_dt.strftime('%I:%M %p')}",
-        f"Ref: {str(booking.pk)[:8].upper()}",
-    ]
-
-    if price > 0:
-        lines.append(f"\nTotal: KES {price:,.0f}")
-        lines.append("Would you like to pay now via M-Pesa?")
-
-    _send_text(provider, token, to, "\n".join(lines))
-
-    _log_action(user, "commerce_booking_confirmed", f"Booking confirmed: {name}",
-                input_data={
-                    "booking_id": str(booking.pk),
-                    "service": name,
-                    "scheduled_at": scheduled_dt.isoformat(),
-                })
-
-    try:
-        from apps.commerce.leads.bridges import create_lead_from_booking
-
-        create_lead_from_booking(booking)
-    except Exception as exc:
-        logger.warning("Lead bridge from WA booking failed: %s", exc)
-
-    if price > 0:
-        ctx["payment_amount"] = str(price)
-        ctx["payment_description"] = f"Booking: {name}"
-        ctx["booking_id"] = str(booking.pk)
-        _set_state(conversation, ctx, "payment_pending")
-
-        provider.send_interactive_buttons(
-            access_token=token, to=to,
-            body=f"Pay KES {price:,.0f} via M-Pesa?",
-            buttons=[
-                {"id": "pay_mpesa", "title": "Pay Now 💳"},
-                {"id": "pay_later", "title": "Pay Later"},
-            ],
-        )
-    else:
-        _reset_state(conversation, ctx)
-
-    return True
 
 
 # ═════════════════════════════════════════════════════════════════════════════

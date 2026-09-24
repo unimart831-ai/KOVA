@@ -84,14 +84,11 @@ def build_setup_mission(user, stats: dict | None = None) -> dict | None:
             "url_name": "products:snap",
         })
         if is_service:
-            from apps.commerce.bookings.models import BookingLink
-
-            has_booking = BookingLink.objects.filter(user=user, is_active=True).exists()
             items.append({
-                "key": "booking",
-                "label": "Set up your booking page",
-                "done": has_booking,
-                "url_name": "bookings:list",
+                "key": "shop",
+                "label": "Share your service link",
+                "done": shop_ready,
+                "url_name": "products:list",
             })
         else:
             items.append({

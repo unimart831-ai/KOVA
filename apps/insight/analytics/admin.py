@@ -156,6 +156,6 @@ class PerformanceRecycleAdmin(admin.ModelAdmin):
     ]
     list_filter = ["status", "trigger_metric", "detected_at"]
     search_fields = ["user__email", "email_subject"]
-    raw_id_fields = ["user", "source_post", "post_metric", "email_campaign"]
+    raw_id_fields = ["user", "source_post", "post_metric"]
     readonly_fields = ["detected_at", "sent_at"]
     date_hierarchy = "detected_at"

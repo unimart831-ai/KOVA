@@ -42,8 +42,6 @@ app.conf.task_routes = {
     "content.generate_from_seed": {"queue": "default"},
     "agents.run_daily_research": {"queue": "default"},
     "agents.refresh_seed_suggestions": {"queue": "low"},
-    "agents.run_engage_cycle": {"queue": "default"},
-    "agents.run_engage_for_user": {"queue": "default"},
     "agents.run_research_for_user": {"queue": "default"},
     "agents.run_strategy_cycle": {"queue": "default"},
     "agents.run_strategy_for_user": {"queue": "default"},
@@ -56,21 +54,16 @@ app.conf.task_routes = {
     "billing.check_mpesa_subscriptions": {"queue": "low"},
     # WhatsApp — AI auto-reply must be fast
     "whatsapp.handle_incoming_message": {"queue": "critical"},
-    "whatsapp.execute_broadcast": {"queue": "critical"},
-    "whatsapp.process_sequence_steps": {"queue": "critical"},
     "whatsapp.send_followup_nudges": {"queue": "default"},
     "whatsapp.generate_status_content": {"queue": "default"},
     "whatsapp.repurpose_post_to_status": {"queue": "default"},
-    "whatsapp.cross_post_to_channel": {"queue": "default"},
     "whatsapp.aggregate_daily_analytics": {"queue": "low"},
     "whatsapp.generate_weekly_digest": {"queue": "low"},
-    "whatsapp.curate_channel_content": {"queue": "low"},
     # Products
     "products.expire_stale_commerce_payments": {"queue": "low"},
     "products.auto_promote_products": {"queue": "default"},
     "content.recycle_top_content": {"queue": "low"},
-    # Lead nurture + scoring + monthly reports
-    "leads.process_nurture_steps": {"queue": "default"},
+    # Lead scoring (nurture beat removed for V1)
     "leads.score_all_leads": {"queue": "low"},
     "leads.reengage_stale_leads": {"queue": "low"},
     "emails.send_monthly_reports_all": {"queue": "low"},

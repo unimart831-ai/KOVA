@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from apps.core.accounts.models import User, UserProfile
-from apps.commerce.bookings.models import BookingLink
 from apps.create.content.renderers import (
     apply_blueprint_renderer,
     blueprint_quality_score,
@@ -17,13 +16,10 @@ from apps.create.content.renderers import (
 @pytest.fixture
 def user(db):
     u = User.objects.create_user(username="r", email="r@kova.ai", password="x")
-    UserProfile.objects.filter(user=u).update(company_name="Glow Salon", business_model="service")
-    BookingLink.objects.create(
-        user=u,
-        slug="glow-salon",
-        label="Glow Salon",
-        services=[{"name": "Haircut", "duration_minutes": 45, "price_kes": 1500}],
-        working_hours={"mon": [{"start": "09:00", "end": "18:00"}]},
+    UserProfile.objects.filter(user=u).update(
+        company_name="Glow Salon",
+        business_model="service",
+        page_slug="glow-salon",
     )
     return u
 

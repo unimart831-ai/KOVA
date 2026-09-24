@@ -10,7 +10,7 @@ class ProductForm(forms.ModelForm):
         fields = [
             "offering_type", "name", "description", "category", "price", "currency",
             "price_range_min", "price_range_max", "image",
-            "product_url", "booking_link", "fulfillment_url", "fulfillment_notes", "external_id",
+            "product_url", "fulfillment_url", "fulfillment_notes", "external_id",
             "stock_status", "quantity", "low_stock_threshold",
             "is_featured", "is_active",
         ]
@@ -24,7 +24,6 @@ class ProductForm(forms.ModelForm):
             "price_range_min": forms.NumberInput(attrs={"class": "input", "placeholder": "Min", "step": "0.01"}),
             "price_range_max": forms.NumberInput(attrs={"class": "input", "placeholder": "Max", "step": "0.01"}),
             "product_url": forms.URLInput(attrs={"class": "input", "placeholder": "https://yourstore.com/product/timberland-casuals"}),
-            "booking_link": forms.Select(attrs={"class": "input"}),
             "fulfillment_url": forms.URLInput(attrs={"class": "input", "placeholder": "https://example.com/book-or-access"}),
             "fulfillment_notes": forms.Textarea(attrs={"class": "input", "rows": 3, "placeholder": "Optional booking, access, or delivery instructions for customers"}),
             "external_id": forms.TextInput(attrs={"class": "input", "placeholder": "SKU or external platform ID (optional)"}),
@@ -37,10 +36,7 @@ class ProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         plan_ctx = plan_ctx or {}
         if user:
-            from apps.commerce.bookings.models import BookingLink
-
             self.fields["category"].queryset = ProductCategory.objects.filter(user=user, is_active=True)
-            self.fields["booking_link"].queryset = BookingLink.objects.filter(user=user, is_active=True).order_by("-created_at")
         if not plan_ctx.get("quantity_tracking", True):
             for field in ("quantity", "low_stock_threshold"):
                 if field in self.fields:

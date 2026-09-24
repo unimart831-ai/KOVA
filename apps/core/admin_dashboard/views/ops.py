@@ -25,12 +25,6 @@ CRITICAL_BEAT_TASKS = (
         "stale_minutes": 10,
     },
     {
-        "task": "agents.run_engage_cycle",
-        "label": "Engage cycle",
-        "schedule_key": "run-engage-cycle",
-        "stale_minutes": 45,
-    },
-    {
         "task": "whatsapp.send_followup_nudges",
         "label": "WhatsApp follow-up",
         "schedule_key": "whatsapp-followup-nudges",

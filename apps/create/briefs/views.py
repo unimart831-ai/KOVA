@@ -8,7 +8,6 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.create.briefs.models import DailyBrief
-from apps.messaging.engage.models import Superfan
 from apps.core.utils.greetings import greeting_name
 
 
@@ -36,12 +35,7 @@ def _build_value_summary(user):
         user=user, created_at__gte=week_ago,
     ).count()
 
-    # Engagement replies handled (AI or human sent a response)
-    from apps.messaging.engage.models import Interaction
-    replies_count = Interaction.objects.filter(
-        user=user,
-        responded_at__gte=week_ago,
-    ).count()
+    replies_count = 0
 
     # Leads captured
     from apps.commerce.leads.models import Lead
@@ -109,22 +103,6 @@ def _build_quick_actions(user, brief):
             "priority": 1,
         })
 
-    # Unanswered comments/messages
-    try:
-        from apps.messaging.engage.models import Interaction
-        unanswered = Interaction.objects.filter(
-            user=user, status__in=["new", "flagged"],
-        ).count()
-        if unanswered > 0:
-            actions.append({
-                "label": f"Reply to {unanswered} comment{'s' if unanswered != 1 else ''}",
-                "url_name": "whatsapp:inbox",
-                "icon": "chat",
-                "priority": 2,
-            })
-    except Exception:
-        pass
-
     # New leads
     try:
         from apps.commerce.leads.models import Lead
@@ -149,25 +127,6 @@ def _build_quick_actions(user, brief):
             "priority": 1,
         })
 
-    # Bookings needing attention today
-    try:
-        from apps.commerce.bookings.models import Booking
-        today = timezone.now().date()
-        bookings_today = Booking.objects.filter(
-            booking_link__user=user,
-            scheduled_at__date=today,
-            status="pending",
-        ).count()
-        if bookings_today > 0:
-            actions.append({
-                "label": f"Confirm {bookings_today} booking{'s' if bookings_today != 1 else ''} today",
-                "url_name": "leads:list",
-                "icon": "user",
-                "priority": 2,
-            })
-    except Exception:
-        pass
-
     return sorted(actions, key=lambda a: a["priority"])[:3]
 
 
@@ -179,26 +138,12 @@ def _build_customer_pulse(user):
     """Live customer-facing signals for the Home sidebar."""
     from datetime import timedelta
 
-    from apps.commerce.bookings.models import Booking
-    from apps.messaging.engage.models import Interaction
     from apps.commerce.leads.models import Lead
     from apps.core.platforms.models import SocialAccount
     from apps.messaging.whatsapp.models import WhatsAppConversation
 
-    today = timezone.now().date()
     week_ago = timezone.now() - timedelta(days=7)
     pulse = []
-
-    inbox_waiting = Interaction.objects.filter(
-        user=user, status__in=["new", "flagged"],
-    ).count()
-    if inbox_waiting:
-        pulse.append({
-            "label": "Social inbox",
-            "detail": f"{inbox_waiting} waiting for reply",
-            "url_name": "whatsapp:inbox",
-            "tone": "amber" if inbox_waiting >= 3 else "blue",
-        })
 
     new_leads = Lead.objects.filter(user=user, status="new").count()
     if new_leads:
@@ -207,19 +152,6 @@ def _build_customer_pulse(user):
             "detail": f"{new_leads} new lead{'s' if new_leads != 1 else ''}",
             "url_name": "leads:list",
             "tone": "purple",
-        })
-
-    bookings_today = Booking.objects.filter(
-        booking_link__user=user,
-        scheduled_at__date=today,
-        status__in=["pending", "confirmed"],
-    ).count()
-    if bookings_today:
-        pulse.append({
-            "label": "Bookings",
-            "detail": f"{bookings_today} today",
-            "url_name": "leads:list",
-            "tone": "green",
         })
 
     wa_accounts = SocialAccount.objects.filter(
@@ -413,7 +345,7 @@ def brief_home(request):
     recent_briefs = DailyBrief.objects.filter(user=request.user).exclude(
         date=brief.date if brief else today,
     )[:7]
-    superfans = Superfan.objects.filter(user=request.user)[:5]
+    superfans = []
 
     return render(request, "dashboard/brief.html", {
         "brief": brief,

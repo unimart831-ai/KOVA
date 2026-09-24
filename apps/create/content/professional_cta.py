@@ -40,17 +40,7 @@ def compose_professional_first_comment(platform: str, post, *, cta_text: str = "
 
 
 def consultation_url_for_user(user) -> str:
-    """Best URL for a consultation/booking CTA."""
-    try:
-        from apps.commerce.bookings.models import BookingLink
-        from apps.commerce.bookings.service_setup import booking_public_url
-
-        link = BookingLink.objects.filter(user=user, is_active=True).order_by("created_at").first()
-        if link:
-            return booking_public_url(link)
-    except Exception:
-        pass
-
+    """Best URL for a consultation/booking CTA — shop/fulfillment only (no BookingLink)."""
     profile = getattr(user, "profile", None)
     if profile:
         from apps.commerce.products.commerce_canonical import canonical_business_url

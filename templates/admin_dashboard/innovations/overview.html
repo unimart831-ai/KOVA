@@ -48,10 +48,9 @@
     {% endif %}
   </a>
 
-  {# Screenshot to Compete #}
-  <a href="{% url 'admin_dashboard:screenshot_list' %}"
-     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
-    <div class="flex items-center gap-3 mb-4">
+  {# Screenshot to Compete — deferred past V1 #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 shadow-sm p-5 opacity-60">
+    <div class="flex items-center gap-3 mb-2">
       <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
         <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
@@ -60,24 +59,10 @@
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Screenshot to Compete</h3>
-        <p class="text-[10px] text-gray-400">Competitor screenshot → counter-posts</p>
+        <p class="text-[10px] text-gray-400">Deferred past V1</p>
       </div>
     </div>
-    <div class="grid grid-cols-3 gap-2 text-center">
-      <div>
-        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ screenshot_total }}</p>
-        <p class="text-[10px] text-gray-400">Total</p>
-      </div>
-      <div>
-        <p class="text-lg font-bold text-growth-600">{{ screenshot_completed }}</p>
-        <p class="text-[10px] text-gray-400">Analyzed</p>
-      </div>
-      <div>
-        <p class="text-lg font-bold text-kova-600">{{ screenshot_7d }}</p>
-        <p class="text-[10px] text-gray-400">Last 7d</p>
-      </div>
-    </div>
-  </a>
+  </div>
 
   {# Receipt to Restock #}
   <a href="{% url 'admin_dashboard:restock_scan_list' %}"
@@ -143,10 +128,9 @@
     </div>
   </a>
 
-  {# Performance to Email #}
-  <a href="{% url 'admin_dashboard:recycle_list' %}"
-     class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 hover:border-kova-300 dark:hover:border-kova-700 transition-colors block">
-    <div class="flex items-center gap-3 mb-4">
+  {# Performance to Email — deferred past V1 #}
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 shadow-sm p-5 opacity-60">
+    <div class="flex items-center gap-3 mb-2">
       <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
         <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -154,28 +138,10 @@
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Performance to Email</h3>
-        <p class="text-[10px] text-gray-400">Top posts → auto email drafts</p>
+        <p class="text-[10px] text-gray-400">Deferred past V1</p>
       </div>
     </div>
-    <div class="grid grid-cols-4 gap-2 text-center">
-      <div>
-        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ recycle_total }}</p>
-        <p class="text-[10px] text-gray-400">Detected</p>
-      </div>
-      <div>
-        <p class="text-lg font-bold text-gold-600">{{ recycle_ready }}</p>
-        <p class="text-[10px] text-gray-400">Ready</p>
-      </div>
-      <div>
-        <p class="text-lg font-bold text-growth-600">{{ recycle_sent }}</p>
-        <p class="text-[10px] text-gray-400">Sent</p>
-      </div>
-      <div>
-        <p class="text-lg font-bold text-kova-600">{{ avg_multiplier }}x</p>
-        <p class="text-[10px] text-gray-400">Avg Multi</p>
-      </div>
-    </div>
-  </a>
+  </div>
 
 </div>
 

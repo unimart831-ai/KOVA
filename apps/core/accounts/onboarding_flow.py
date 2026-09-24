@@ -66,38 +66,240 @@ def apply_url_inference_to_profile(profile, data: dict) -> list[str]:
     return updated
 
 
+def _looks_like_post_caption(text: str) -> bool:
+    """Heuristic: real sample posts vs a business-description blurb."""
+    t = (text or "").strip()
+    if not t or len(t) < 24:
+        return False
+    lower = t.lower()
+    blurb_markers = (
+        "we run",
+        "we are",
+        "we're a",
+        "i run",
+        "my business",
+        "our business",
+        "we help",
+        "we sell",
+        "ecommerce business",
+        "e-commerce business",
+    )
+    if any(lower.startswith(m) or f" {m} " in f" {lower} " for m in blurb_markers):
+        # Still allow if it clearly looks like a caption (hook + emoji/hashtag/line breaks)
+        if "\n" in t or "#" in t or any(ch in t for ch in "🔥✨💪🙌"):
+            return True
+        return False
+    return True
+
+
+def _template_starter_captions(profile) -> list[dict]:
+    """Deterministic, publishable captions from brand context (no LLM)."""
+    company = (profile.company_name or "our brand").strip()
+    what = (profile.brand_voice or "").strip()
+    audience = (profile.target_audience or "").strip()
+    industry = (getattr(profile, "industry", "") or "").replace("_", " ").strip()
+
+    who = audience or "the people we serve"
+    hook_what = what[:140].rstrip(".") if what else f"what makes {company} different"
+    reason = what[:120].rstrip(".") if what else "the usual options were not built for you"
+    proof = what[:160] if what else "Real people. Real results. Local first."
+    industry_bit = f" in {industry}" if industry else ""
+
+    return [
+        {
+            "content": (
+                f"Meet {company}.\n\n"
+                f"{hook_what}.\n\n"
+                f"Built for {who}{industry_bit}.\n\n"
+                "Follow along — we're just getting started."
+            ),
+            "angle": "Brand intro",
+            "platform": "instagram",
+            "cta_type": "none",
+        },
+        {
+            "content": (
+                f"If you're {who}, this is for you.\n\n"
+                f"{company} exists because {reason}.\n\n"
+                "Tell us what you need most — reply or DM."
+            ),
+            "angle": "Audience hook",
+            "platform": "facebook",
+            "cta_type": "whatsapp",
+        },
+        {
+            "content": (
+                f"A quick look at how {company} helps {who}.\n\n"
+                f"{proof}\n\n"
+                "Save this for later — and share it with someone who needs it."
+            ),
+            "angle": "Value proof",
+            "platform": "instagram",
+            "cta_type": "none",
+        },
+    ]
+
+
+def _llm_starter_captions(user, profile) -> list[dict]:
+    """Ask the LLM for 3 ready-to-post captions. Returns [] on any failure."""
+    try:
+        from apps.create.agents.llm import generate, get_model_for_task, parse_llm_json
+    except Exception:
+        return []
+
+    company = (profile.company_name or "the business").strip()
+    what = (profile.brand_voice or "").strip()
+    examples = [e.strip() for e in (profile.brand_voice_examples or []) if e and str(e).strip()]
+    audience = (profile.target_audience or "").strip()
+    industry = (getattr(profile, "industry", "") or "").replace("_", " ")
+
+    system = (
+        "You are a social media copywriter for African SMEs. "
+        "Write short, publish-ready posts — never paste a business description as a caption. "
+        "Fix grammar. Use a warm, clear voice. "
+        "Respond ONLY with JSON: "
+        '{"posts":[{"content":"...","angle":"...","platform":"instagram|facebook|whatsapp","cta_hint":"..."}]}'
+    )
+    prompt = (
+        f"Company: {company}\n"
+        f"Industry: {industry or 'general'}\n"
+        f"Audience: {audience or 'local customers'}\n"
+        f"What they do (CONTEXT ONLY — do not paste as the post): {what or 'n/a'}\n"
+        f"Sample posts (style reference): {examples[:2] or 'none'}\n\n"
+        "Write exactly 3 different posts:\n"
+        "1) Brand intro (Instagram)\n"
+        "2) Audience problem → how you help (Facebook)\n"
+        "3) Soft CTA / engagement ask (Instagram)\n"
+        "Each 400–900 characters. Include light emoji where natural. No hashtag spam."
+    )
+
+    try:
+        response = generate(
+            prompt=prompt,
+            system=system,
+            model=get_model_for_task("create.content", user=user),
+            json_mode=True,
+            temperature=0.7,
+            max_tokens=1200,
+        )
+        data = parse_llm_json(response.content)
+        posts = data.get("posts") or []
+        out = []
+        for p in posts[:3]:
+            content = (p.get("content") or "").strip()
+            if len(content) < 40:
+                continue
+            # Guard: if model still pasted the blurb, skip that item
+            if what and content.lower().startswith(what.lower()[:40]):
+                continue
+            out.append(
+                {
+                    "content": content[:2200],
+                    "angle": (p.get("angle") or "Starter")[:120],
+                    "platform": (p.get("platform") or "instagram").lower()[:20],
+                    "cta_type": (p.get("cta_hint") or "none")[:20],
+                }
+            )
+        return out
+    except Exception:
+        logger.exception("LLM starter captions failed for %s", getattr(user, "email", user))
+        return []
+
+
+def _attach_starter_graphic(post, profile) -> None:
+    """Attach a simple branded graphic so Instagram drafts aren't blocked on media."""
+    try:
+        from apps.create.agents.graphics import GraphicType, generate_branded_graphic
+
+        company = (profile.company_name or "Your brand").strip()
+        generate_branded_graphic(
+            post,
+            GraphicType.CTA_BANNER,
+            headline=company[:48],
+            subtext=((profile.brand_voice or "")[:80] or "Built for your customers"),
+            cta_text="Follow for more",
+        )
+    except Exception:
+        logger.exception("Starter graphic failed for post %s", getattr(post, "pk", None))
+
+
 def seed_onboarding_preview_posts(user) -> int:
-    """Create instant draft posts from user voice examples (visible before Celery)."""
+    """
+    Create instant, publishable draft posts for the WOW screen.
+
+    Never dumps the raw "What do you do?" blurb into content_text.
+    Prefers LLM captions; falls back to strong templates. Attaches a graphic
+    to the first Instagram-bound draft so approve isn't blocked on media.
+    """
     from apps.create.content.models import Post
 
     profile = user.profile
-    examples = [e.strip() for e in (profile.brand_voice_examples or []) if e and str(e).strip()]
-    if not examples and (profile.brand_voice or "").strip():
-        examples = [(profile.brand_voice or "").strip()[:500]]
-
-    if not examples:
-        return 0
     if Post.objects.filter(user=user, generated_by_agent="onboarding_seed").exists():
         return 0
 
+    captions: list[dict] = []
+
+    # Real sample posts the user typed can be used as-is (polished lightly later by Celery).
+    for raw in (profile.brand_voice_examples or [])[:2]:
+        text = (raw or "").strip()
+        if _looks_like_post_caption(text):
+            captions.append(
+                {
+                    "content": text[:2200],
+                    "angle": "Your sample",
+                    "platform": "instagram",
+                    "cta_type": "",
+                }
+            )
+
+    if len(captions) < 3:
+        llm_posts = _llm_starter_captions(user, profile)
+        for p in llm_posts:
+            if len(captions) >= 3:
+                break
+            captions.append(p)
+
+    if len(captions) < 3:
+        for p in _template_starter_captions(profile):
+            if len(captions) >= 3:
+                break
+            captions.append(p)
+
+    if not captions:
+        return 0
+
     created = 0
-    for text in examples[:3]:
-        Post.objects.create(
+    for i, item in enumerate(captions[:3]):
+        platform = item.get("platform") or "instagram"
+        if platform not in ("instagram", "facebook", "whatsapp", "twitter", "linkedin"):
+            platform = "instagram"
+        post = Post.objects.create(
             user=user,
-            content_text=text[:2200],
+            content_text=item["content"][:2200],
+            ai_original_text=item["content"][:2200],
+            ai_angle=item.get("angle") or "Onboarding starter",
+            ai_reasoning=(
+                "Drafted from your brand during onboarding. "
+                "Review, add a photo if you want, then approve."
+            ),
             status=Post.Status.PENDING_APPROVAL,
             generated_by_agent="onboarding_seed",
-            platform="instagram",
+            platform=platform,
+            cta_type=(item.get("cta_type") or "none")[:20],
         )
+        if i == 0 and platform in ("instagram", "facebook"):
+            _attach_starter_graphic(post, profile)
         created += 1
     return created
 
 
 def ensure_instant_onboarding_wow(user) -> bool:
     """
-    Sync bootstrap so the WOW screen shows posts + brief immediately.
-    Celery may enrich later; this must never block on LLM.
-    Returns True when instant value is ready (posts or welcome brief).
+    Sync bootstrap so the WOW screen shows real drafts + brief immediately.
+
+    Marks research / campaign plan / welcome brief as instant-complete so the
+    checklist can light up — but leaves **content** incomplete so Celery
+    `run_onboarding_intelligence` still enriches (LLM research + better posts).
     """
     from apps.create.agents.models import AgentAction
     from apps.create.agents.onboarding_tasks import ONBOARDING_STEPS
@@ -116,6 +318,7 @@ def ensure_instant_onboarding_wow(user) -> bool:
         status__in=[Post.Status.PENDING_APPROVAL, Post.Status.DRAFT],
     ).count()
 
+    audience = (profile.target_audience or "").strip() or "customers"
     opportunity_briefs = [
         {
             "title": f"Introduce {company}",
@@ -123,27 +326,27 @@ def ensure_instant_onboarding_wow(user) -> bool:
             "why_now": "First impression on social",
         },
         {
-            "title": f"A day in the life of {company}",
-            "description": "Show customers what makes you different",
+            "title": f"Prove why {audience} choose you",
+            "description": "Show the problem you solve in plain language",
             "why_now": "Build trust early",
         },
+        {
+            "title": f"Invite a conversation with {company}",
+            "description": "Soft CTA — DM, reply, or WhatsApp",
+            "why_now": "Turn followers into leads",
+        },
     ]
-    if brand_snippet:
-        opportunity_briefs.insert(0, {
-            "title": "Your brand story",
-            "description": brand_preview,
-            "why_now": "From what you told Kova",
-        })
 
     stub_research = {
         "trending_topics": [
             {
-                "topic": f"Content ideas for {company}",
-                "suggested_angle": "Lead with your own words — Kova matches your voice",
+                "topic": f"Content angles for {company}",
+                "suggested_angle": "Lead with customer pain, then your proof — not a company bio",
             }
         ],
         "opportunity_briefs": opportunity_briefs[:3],
         "source": "brand_description",
+        "instant": True,
     }
 
     completed = AgentAction.ActionStatus.COMPLETED
@@ -154,7 +357,7 @@ def ensure_instant_onboarding_wow(user) -> bool:
         if existing:
             if existing.status == completed:
                 return
-            if existing.status == AgentAction.ActionStatus.RUNNING:
+            if existing.status == AgentAction.ActionStatus.STARTED:
                 return
         AgentAction.objects.update_or_create(
             user=user,
@@ -168,33 +371,54 @@ def ensure_instant_onboarding_wow(user) -> bool:
             },
         )
 
+    def _mark_pending(step_key: str, agent_type: str, description: str) -> None:
+        """Ensure content shows as Working until Celery finishes enrichment."""
+        action_type = ONBOARDING_STEPS[step_key]
+        existing = AgentAction.objects.filter(user=user, action_type=action_type).first()
+        if existing and existing.status == completed:
+            # Only keep completed if Celery already enriched (not instant stub)
+            if not (existing.output_data or {}).get("instant"):
+                return
+        AgentAction.objects.update_or_create(
+            user=user,
+            action_type=action_type,
+            defaults={
+                "agent_type": agent_type,
+                "description": description,
+                "status": AgentAction.ActionStatus.STARTED,
+                "output_data": {"instant_preview": True, "posts_preview": post_count},
+                "error_message": "",
+            },
+        )
+
     _mark_complete(
         "research",
         "research",
-        "Starter plan from your profile",
+        f"Mapped starter angles for {company}",
         stub_research,
     )
     _mark_complete(
         "seeds",
         "strategist",
-        "Planned starter campaign angles",
+        "Planned your first 3 post angles",
         {"seed_count": len(opportunity_briefs), "instant": True},
     )
+
+    # Content stays STARTED so Celery enrichment is not skipped.
     if post_count:
-        _mark_complete(
+        _mark_pending(
             "content",
             "create",
-            "Draft posts ready in Studio",
-            {"posts_created": post_count, "instant": True},
+            f"{post_count} draft{'s' if post_count != 1 else ''} ready — sharpening copy…",
         )
 
     today = timezone.now().date()
     brief = DailyBrief.objects.filter(user=user, date=today).first()
     if not brief:
         summary = (
-            f"Welcome to Kova, {company}! "
-            f"{'Your draft posts are waiting in Studio — written in your voice. ' if post_count else ''}"
-            f"Kova is learning from what you told us and will sharpen every post as you approve content."
+            f"Welcome to Kova, {company}. "
+            f"{'Your first drafts are ready in Studio — written as real posts, not a bio dump. ' if post_count else ''}"
+            f"Next: review a draft, connect Instagram/Facebook/WhatsApp, then approve."
         )
         brief = DailyBrief.objects.create(
             user=user,
@@ -206,8 +430,8 @@ def ensure_instant_onboarding_wow(user) -> bool:
                 for b in opportunity_briefs[:3]
             ],
             performance_summary={
-                "highlight": f"You're set up. Approve your first post to train the agents on {company}'s voice.",
-                "agent_summary": "Research, Create, and Strategist agents are active on your brand.",
+                "highlight": f"Approve one post to teach Kova how {company} sounds.",
+                "agent_summary": "Research and Create are active on your brand.",
             },
             agent_activity=[],
             posts_pending=post_count,
@@ -220,10 +444,11 @@ def ensure_instant_onboarding_wow(user) -> bool:
         {"brief_id": str(brief.pk), "instant": True},
     )
 
+    # Do NOT record intelligence_completed here — Celery owns the real finish line.
     try:
-        profile.record_onboarding_step("intelligence_completed")
+        profile.record_onboarding_step("intelligence_preview_ready")
     except Exception:
-        logger.exception("record intelligence_completed failed for %s", user.email)
+        logger.exception("record intelligence_preview_ready failed for %s", user.email)
 
     return bool(post_count or brief)
 
@@ -266,21 +491,12 @@ def finish_onboarding(user, *, skipped_platform_connect=False):
     fire_task(send_welcome_email, str(user.pk))
     bootstrap_email_automation(user)
 
-    if getattr(profile, "business_model", "") == "service":
-        from apps.commerce.bookings.service_setup import bootstrap_service_booking_link
-        try:
-            bootstrap_service_booking_link(user)
-        except Exception:
-            logger.exception("bootstrap_service_booking_link failed for %s", user.email)
-
     profile.onboarding_intelligence_started_at = timezone.now()
     profile.save(update_fields=["onboarding_intelligence_started_at"])
     profile.record_onboarding_step("intelligence_started")
     ensure_instant_onboarding_wow(user)
 
     # First Business Report — the "Kova already understands my business" moment.
-    # Built deterministically (no LLM) so it's ready the instant the completion
-    # screen loads; the async intelligence chain enriches signals afterwards.
     try:
         from apps.core.accounts.first_business_report import cache_first_business_report
         cache_first_business_report(user)

@@ -561,55 +561,31 @@ def _handle_leads(user) -> tuple[str, str, bool, dict]:
 
 
 def _handle_book(user) -> tuple[str, str, bool, dict]:
-    from apps.commerce.bookings.models import Booking, BookingLink
-    from apps.commerce.bookings.service_setup import booking_public_url, ensure_primary_booking_link
-
-    link = BookingLink.objects.filter(user=user, is_active=True).order_by("created_at").first()
+    """Service CTA without BookingLink — shop / fulfillment / products."""
+    site = getattr(settings, "SITE_URL", "").rstrip("/")
     profile = getattr(user, "profile", None)
-    if not link and profile and getattr(profile, "business_model", "") == "service":
-        link = ensure_primary_booking_link(user)
+    url = ""
+    try:
+        from apps.commerce.products.commerce_canonical import canonical_business_url
 
-    if not link:
-        site = getattr(settings, "SITE_URL", "").rstrip("/")
+        if profile:
+            url = canonical_business_url(user, profile) or ""
+    except Exception:
+        pass
+    if not url and profile and getattr(profile, "page_slug", ""):
+        url = f"{site}/s/{profile.page_slug}/"
+    if not url:
         return (
-            f"No booking page yet.\n\nSet one up: {site}/bookings/links/new/",
+            f"No public page yet.\n\nAdd a service: {site}/products/snap/",
             "book",
             True,
             {"has_booking_link": False},
         )
-
-    url = booking_public_url(link)
-    services = link.services or []
-    service_lines = []
-    for svc in services[:5]:
-        name = svc.get("name", "Service")
-        price = svc.get("price_kes", 0)
-        duration = svc.get("duration_minutes", 60)
-        service_lines.append(f"• {name} — KES {price:,.0f} ({duration} min)")
-
-    upcoming = Booking.objects.filter(
-        booking_link=link,
-        status__in=[Booking.Status.CONFIRMED, Booking.Status.PENDING],
-        scheduled_at__gte=timezone.now(),
-    ).count()
-
-    body = (
-        f"Booking page: {link.label}\n"
-        f"Link: {url}\n"
-        f"Upcoming: {upcoming} appointment(s)"
-    )
-    if service_lines:
-        body += "\n\nServices:\n" + "\n".join(service_lines)
-    else:
-        body += "\n\nAdd services in the app to show them here."
-
-    site = getattr(settings, "SITE_URL", "").rstrip("/")
-    body += f"\n\nManage: {site}/bookings/"
     return (
-        body,
+        f"Your service page:\n{url}\n\nManage offerings: {site}/products/",
         "book",
         True,
-        {"has_booking_link": True, "booking_url": url, "upcoming": upcoming},
+        {"has_booking_link": False, "booking_url": url, "upcoming": 0},
     )
 
 

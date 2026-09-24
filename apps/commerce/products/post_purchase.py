@@ -89,9 +89,4 @@ def _source_post_for(product):
 
 
 def _review_scheduled(payment) -> bool:
-    try:
-        from apps.commerce.reviews.models import ReviewRequest
-
-        return ReviewRequest.objects.filter(user=payment.user, customer_phone=payment.phone_number).exists()
-    except Exception:
-        return False
+    return False

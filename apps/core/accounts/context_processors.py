@@ -31,7 +31,7 @@ def _count_pending_posts(user):
     try:
         from apps.create.content.models import Post
         from apps.create.content.share_bundle import exclude_share_bundle_posts
-        from apps.core.teams.permissions import get_teammate_ids
+        from apps.core.accounts.access import get_teammate_ids
 
         qs = Post.objects.filter(
             user_id__in=get_teammate_ids(user),
@@ -46,7 +46,7 @@ def _count_share_attention(user):
     """Quick Share bundles with pending review or failed posts."""
     try:
         from apps.create.content.models import ContentSeed, Post
-        from apps.core.teams.permissions import get_teammate_ids
+        from apps.core.accounts.access import get_teammate_ids
 
         visible = get_teammate_ids(user)
         seed_ids = list(
@@ -71,13 +71,7 @@ def _count_share_attention(user):
 
 
 def _count_unread_inbox(user):
-    try:
-        from apps.messaging.engage.models import Interaction
-        return Interaction.objects.filter(
-            user=user, status=Interaction.Status.NEW
-        ).count()
-    except Exception:
-        return 0
+    return 0
 
 
 def _count_new_leads(user):

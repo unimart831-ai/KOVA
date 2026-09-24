@@ -401,15 +401,13 @@ class EmailService:
 
     def send_marketplace_seller_welcome(self, user, marketplace_name, branding=None):
         branding = branding or {}
-        from apps.core.partners.seller_provisioning import build_password_reset_url
-
         return self._send(
             "marketplace_seller_welcome",
             user.email,
             user=user,
             context={
                 "marketplace_name": marketplace_name,
-                "password_reset_url": build_password_reset_url(user),
+                "password_reset_url": "",
                 "accent_color": branding.get("accent_color", "#0066FF"),
                 "powered_by_text": branding.get("powered_by_text", ""),
             },

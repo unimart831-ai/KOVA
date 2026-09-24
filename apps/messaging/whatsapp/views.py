@@ -8,7 +8,7 @@ from datetime import timedelta
 from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
@@ -18,15 +18,9 @@ from apps.core.platforms.models import SocialAccount
 from apps.core.platforms.providers.registry import get_provider
 from apps.core.utils import fire_task
 from apps.messaging.whatsapp.models import (
-    BroadcastSequence,
-    BroadcastSequenceStep,
-    ChannelPost,
-    SequenceEnrollment,
     StatusContent,
     WeeklyDigest,
     WhatsAppAnalytics,
-    WhatsAppBroadcast,
-    WhatsAppChannel,
     WhatsAppConversation,
     WhatsAppMessage,
     WhatsAppTemplate,
@@ -638,303 +632,63 @@ def status_calendar(request):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# SPRINT 5D — BROADCAST INTELLIGENCE + ANALYTICS
+# SPRINT 5D — BROADCASTS / SEQUENCES (V1: UI removed; models kept)
 # ═════════════════════════════════════════════════════════════════════════════
+
+def _v1_broadcasts_removed(request):
+    django_messages.info(request, "Broadcasts are not available in Kova V1.")
+    return redirect("whatsapp:inbox")
+
 
 @login_required
 def broadcast_list(request):
-    """List all broadcasts and drip sequences."""
-    wa_accounts = _get_wa_accounts(request.user)
-
-    broadcasts = WhatsAppBroadcast.objects.filter(
-        social_account__in=wa_accounts,
-    ).order_by("-created_at")
-
-    sequences = BroadcastSequence.objects.filter(
-        social_account__in=wa_accounts,
-    ).order_by("-created_at")
-
-    status_filter = request.GET.get("status", "")
-    if status_filter:
-        broadcasts = broadcasts.filter(status=status_filter)
-
-    # Stats
-    stats = {
-        "total_broadcasts": broadcasts.count(),
-        "active_sequences": sequences.filter(status="active").count(),
-        "total_sent": broadcasts.aggregate(s=Sum("sent_count"))["s"] or 0,
-        "total_delivered": broadcasts.aggregate(s=Sum("delivered_count"))["s"] or 0,
-    }
-
-    return render(request, "dashboard/whatsapp/broadcast/list.html", {
-        "broadcasts": broadcasts[:30],
-        "sequences": sequences[:20],
-        "stats": stats,
-        "wa_accounts": wa_accounts,
-        "status_filter": status_filter,
-    })
+    return _v1_broadcasts_removed(request)
 
 
 @login_required
 @require_POST
 def broadcast_create(request):
-    """Create a new broadcast campaign."""
-    wa_accounts = _get_wa_accounts(request.user)
-    if not wa_accounts.exists():
-        django_messages.error(request, "Connect a WhatsApp account first.")
-        return redirect("whatsapp:broadcast_list")
-
-    account = wa_accounts.first()
-    name = request.POST.get("name", "").strip()
-    template_id = request.POST.get("template_id", "")
-
-    if not name:
-        django_messages.error(request, "Broadcast name is required.")
-        return redirect("whatsapp:broadcast_list")
-
-    broadcast = WhatsAppBroadcast.objects.create(
-        social_account=account,
-        name=name,
-    )
-
-    if template_id:
-        try:
-            template = WhatsAppTemplate.objects.get(pk=template_id, social_account=account)
-            broadcast.template = template
-            broadcast.save(update_fields=["template"])
-        except WhatsAppTemplate.DoesNotExist:
-            pass
-
-    django_messages.success(request, f'Broadcast "{name}" created.')
-    return redirect("whatsapp:broadcast_detail", pk=broadcast.pk)
+    return _v1_broadcasts_removed(request)
 
 
 @login_required
 def broadcast_detail(request, pk):
-    """Broadcast campaign detail — configure, segment, and launch."""
-    wa_accounts = _get_wa_accounts(request.user)
-    broadcast = get_object_or_404(
-        WhatsAppBroadcast,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
-
-    templates = WhatsAppTemplate.objects.filter(
-        social_account=broadcast.social_account,
-        status="approved",
-    )
-
-    # Eligible recipients
-    conversations = WhatsAppConversation.objects.filter(
-        social_account=broadcast.social_account,
-    )
-
-    # Parse segment filters
-    segment = broadcast.segment or {}
-    if segment.get("tags"):
-        for tag in segment["tags"]:
-            conversations = conversations.filter(tags__contains=tag)
-    if segment.get("languages"):
-        conversations = conversations.filter(language__in=segment["languages"])
-
-    return render(request, "dashboard/whatsapp/broadcast/detail.html", {
-        "broadcast": broadcast,
-        "templates": templates,
-        "eligible_count": conversations.count(),
-        "segment": segment,
-    })
+    return _v1_broadcasts_removed(request)
 
 
 @login_required
 @require_POST
 def broadcast_launch(request, pk):
-    """Launch a broadcast campaign — resolve recipients and start sending."""
-    wa_accounts = _get_wa_accounts(request.user)
-    broadcast = get_object_or_404(
-        WhatsAppBroadcast,
-        pk=pk,
-        social_account__in=wa_accounts,
-        status="draft",
-    )
-
-    if not broadcast.template:
-        django_messages.error(request, "Select an approved template before launching.")
-        return redirect("whatsapp:broadcast_detail", pk=pk)
-
-    # Resolve recipients from segment
-    conversations = WhatsAppConversation.objects.filter(
-        social_account=broadcast.social_account,
-    )
-    segment = broadcast.segment or {}
-    if segment.get("tags"):
-        for tag in segment["tags"]:
-            conversations = conversations.filter(tags__contains=tag)
-    if segment.get("languages"):
-        conversations = conversations.filter(language__in=segment["languages"])
-
-    phones = list(conversations.values_list("contact_wa_id", flat=True))
-    if not phones:
-        django_messages.error(request, "No eligible recipients found for this segment.")
-        return redirect("whatsapp:broadcast_detail", pk=pk)
-
-    from apps.core.billing.whatsapp_marketing import check_whatsapp_marketing_limit
-
-    allowed, msg = check_whatsapp_marketing_limit(
-        request.user,
-        additional_conversations=len(phones),
-        template=broadcast.template,
-    )
-    if not allowed:
-        django_messages.error(request, msg)
-        return redirect("whatsapp:broadcast_detail", pk=pk)
-
-    broadcast.recipient_phones = phones
-    broadcast.total_recipients = len(phones)
-    broadcast.status = WhatsAppBroadcast.BroadcastStatus.SCHEDULED
-    broadcast.scheduled_at = timezone.now()
-    broadcast.save(update_fields=["recipient_phones", "total_recipients", "status", "scheduled_at", "updated_at"])
-
-    # Trigger async execution
-    from apps.messaging.whatsapp.tasks import execute_broadcast
-    fire_task(execute_broadcast, str(broadcast.pk))
-
-    django_messages.success(request, f"Broadcast launched to {len(phones)} recipients!")
-    return redirect("whatsapp:broadcast_detail", pk=pk)
+    return _v1_broadcasts_removed(request)
 
 
 @login_required
 @require_POST
 def broadcast_pause(request, pk):
-    """Pause or cancel a broadcast."""
-    wa_accounts = _get_wa_accounts(request.user)
-    broadcast = get_object_or_404(
-        WhatsAppBroadcast,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
+    return _v1_broadcasts_removed(request)
 
-    if broadcast.status in ("sending", "scheduled"):
-        broadcast.status = WhatsAppBroadcast.BroadcastStatus.PAUSED
-        broadcast.save(update_fields=["status", "updated_at"])
-        django_messages.info(request, "Broadcast paused.")
-
-    return redirect("whatsapp:broadcast_detail", pk=pk)
-
-
-# ─── Drip Sequences ─────────────────────────────────────────────────────────
 
 @login_required
 @require_POST
 def sequence_create(request):
-    """Create a new drip sequence."""
-    wa_accounts = _get_wa_accounts(request.user)
-    if not wa_accounts.exists():
-        django_messages.error(request, "Connect a WhatsApp account first.")
-        return redirect("whatsapp:broadcast_list")
-
-    account = wa_accounts.first()
-    name = request.POST.get("name", "").strip()
-    seq_type = request.POST.get("sequence_type", "custom")
-
-    if not name:
-        django_messages.error(request, "Sequence name is required.")
-        return redirect("whatsapp:broadcast_list")
-
-    sequence = BroadcastSequence.objects.create(
-        social_account=account,
-        name=name,
-        sequence_type=seq_type,
-    )
-
-    django_messages.success(request, f'Sequence "{name}" created.')
-    return redirect("whatsapp:sequence_detail", pk=sequence.pk)
+    return _v1_broadcasts_removed(request)
 
 
 @login_required
 def sequence_detail(request, pk):
-    """Drip sequence detail — manage steps and enrollment."""
-    wa_accounts = _get_wa_accounts(request.user)
-    sequence = get_object_or_404(
-        BroadcastSequence,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
-
-    steps = sequence.steps.select_related("template").order_by("order")
-    enrollments = sequence.enrollments.select_related("conversation").order_by("-enrolled_at")[:20]
-
-    templates = WhatsAppTemplate.objects.filter(
-        social_account=sequence.social_account,
-        status="approved",
-    )
-
-    return render(request, "dashboard/whatsapp/broadcast/sequence_detail.html", {
-        "sequence": sequence,
-        "steps": steps,
-        "enrollments": enrollments,
-        "templates": templates,
-    })
+    return _v1_broadcasts_removed(request)
 
 
 @login_required
 @require_POST
 def sequence_add_step(request, pk):
-    """Add a step to a drip sequence."""
-    wa_accounts = _get_wa_accounts(request.user)
-    sequence = get_object_or_404(
-        BroadcastSequence,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
-
-    template_id = request.POST.get("template_id", "")
-    delay_hours = int(request.POST.get("delay_hours", 24))
-    next_order = (sequence.steps.count()) + 1
-
-    step = BroadcastSequenceStep.objects.create(
-        sequence=sequence,
-        order=next_order,
-        delay_hours=max(1, delay_hours),
-    )
-
-    if template_id:
-        try:
-            template = WhatsAppTemplate.objects.get(
-                pk=template_id,
-                social_account=sequence.social_account,
-            )
-            step.template = template
-            step.save(update_fields=["template"])
-        except WhatsAppTemplate.DoesNotExist:
-            pass
-
-    django_messages.success(request, f"Step {next_order} added.")
-    return redirect("whatsapp:sequence_detail", pk=pk)
+    return _v1_broadcasts_removed(request)
 
 
 @login_required
 @require_POST
 def sequence_toggle(request, pk):
-    """Activate or pause a drip sequence."""
-    wa_accounts = _get_wa_accounts(request.user)
-    sequence = get_object_or_404(
-        BroadcastSequence,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
-
-    if sequence.status == BroadcastSequence.SequenceStatus.ACTIVE:
-        sequence.status = BroadcastSequence.SequenceStatus.PAUSED
-    else:
-        if sequence.steps.count() == 0:
-            django_messages.error(request, "Add at least one step before activating.")
-            return redirect("whatsapp:sequence_detail", pk=pk)
-        sequence.status = BroadcastSequence.SequenceStatus.ACTIVE
-
-    sequence.save(update_fields=["status", "updated_at"])
-    state = "activated" if sequence.status == "active" else "paused"
-    django_messages.success(request, f"Sequence {state}.")
-    return redirect("whatsapp:sequence_detail", pk=pk)
+    return _v1_broadcasts_removed(request)
 
 
 # ─── Analytics ───────────────────────────────────────────────────────────────
@@ -1000,177 +754,43 @@ def wa_digest_detail(request, pk):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# SPRINT 5E — WHATSAPP CHANNELS
+# SPRINT 5E — WHATSAPP CHANNELS (V1: UI removed; models kept)
 # ═════════════════════════════════════════════════════════════════════════════
+
+def _v1_channels_removed(request):
+    django_messages.info(request, "WhatsApp Channels are not available in Kova V1.")
+    return redirect("whatsapp:inbox")
+
 
 @login_required
 def channel_dashboard(request):
-    """WhatsApp Channels dashboard — manage channels and content."""
-    wa_accounts = _get_wa_accounts(request.user)
-
-    channels = WhatsAppChannel.objects.filter(
-        social_account__in=wa_accounts,
-    )
-
-    # Get posts for all channels
-    channel_ids = channels.values_list("id", flat=True)
-    recent_posts = ChannelPost.objects.filter(
-        channel__in=channel_ids,
-    ).select_related("channel").order_by("-created_at")[:20]
-
-    # Stats
-    stats = {
-        "total_channels": channels.count(),
-        "total_followers": channels.aggregate(s=Sum("follower_count"))["s"] or 0,
-        "posts_published": ChannelPost.objects.filter(
-            channel__in=channel_ids, status="published"
-        ).count(),
-        "total_reach": ChannelPost.objects.filter(
-            channel__in=channel_ids, status="published"
-        ).aggregate(s=Sum("reach"))["s"] or 0,
-    }
-
-    return render(request, "dashboard/whatsapp/channels/dashboard.html", {
-        "channels": channels,
-        "recent_posts": recent_posts,
-        "stats": stats,
-        "wa_accounts": wa_accounts,
-    })
+    return _v1_channels_removed(request)
 
 
 @login_required
 @require_POST
 def channel_create(request):
-    """Register a new WhatsApp Channel."""
-    wa_accounts = _get_wa_accounts(request.user)
-    if not wa_accounts.exists():
-        django_messages.error(request, "Connect a WhatsApp account first.")
-        return redirect("whatsapp:channel_dashboard")
-
-    account = wa_accounts.first()
-    name = request.POST.get("name", "").strip()
-    description = request.POST.get("description", "").strip()
-
-    if not name:
-        django_messages.error(request, "Channel name is required.")
-        return redirect("whatsapp:channel_dashboard")
-
-    WhatsAppChannel.objects.create(
-        social_account=account,
-        name=name,
-        description=description,
-    )
-
-    django_messages.success(request, f'Channel "{name}" created.')
-    return redirect("whatsapp:channel_dashboard")
+    return _v1_channels_removed(request)
 
 
 @login_required
 def channel_detail(request, pk):
-    """View a single channel — posts, analytics, settings."""
-    wa_accounts = _get_wa_accounts(request.user)
-    channel = get_object_or_404(
-        WhatsAppChannel,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
-
-    posts = ChannelPost.objects.filter(channel=channel).order_by("-created_at")
-
-    status_filter = request.GET.get("status", "")
-    if status_filter:
-        posts = posts.filter(status=status_filter)
-
-    paginator = Paginator(posts, 20)
-    page = paginator.get_page(request.GET.get("page", 1))
-
-    # Channel analytics
-    stats = {
-        "total_posts": posts.count(),
-        "published": posts.filter(status="published").count(),
-        "scheduled": posts.filter(status="scheduled").count(),
-        "total_reach": posts.filter(status="published").aggregate(s=Sum("reach"))["s"] or 0,
-        "total_reactions": posts.filter(status="published").aggregate(s=Sum("reactions"))["s"] or 0,
-    }
-
-    return render(request, "dashboard/whatsapp/channels/detail.html", {
-        "channel": channel,
-        "page_obj": page,
-        "stats": stats,
-        "status_filter": status_filter,
-    })
+    return _v1_channels_removed(request)
 
 
 @login_required
 @require_POST
 def channel_post_create(request, pk):
-    """Create a new post for a channel (manual or cross-post)."""
-    wa_accounts = _get_wa_accounts(request.user)
-    channel = get_object_or_404(
-        WhatsAppChannel,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
-
-    text = request.POST.get("text", "").strip()
-    source_post_id = request.POST.get("source_post_id", "")
-
-    if source_post_id:
-        # Cross-post from existing content
-        from apps.messaging.whatsapp.tasks import cross_post_to_channel
-        fire_task(cross_post_to_channel, str(channel.pk), source_post_id)
-        django_messages.success(request, "AI is adapting and scheduling your cross-post...")
-        return redirect("whatsapp:channel_detail", pk=pk)
-
-    if not text:
-        django_messages.error(request, "Post text is required.")
-        return redirect("whatsapp:channel_detail", pk=pk)
-
-    ChannelPost.objects.create(
-        channel=channel,
-        text=text,
-        status=ChannelPost.PostStatus.DRAFT,
-    )
-
-    django_messages.success(request, "Channel post created as draft.")
-    return redirect("whatsapp:channel_detail", pk=pk)
+    return _v1_channels_removed(request)
 
 
 @login_required
 @require_POST
 def channel_post_publish(request, channel_pk, post_pk):
-    """Publish a channel post (or schedule it)."""
-    wa_accounts = _get_wa_accounts(request.user)
-    channel = get_object_or_404(
-        WhatsAppChannel,
-        pk=channel_pk,
-        social_account__in=wa_accounts,
-    )
-    post = get_object_or_404(ChannelPost, pk=post_pk, channel=channel)
-
-    # For now, mark as published (actual API integration when Meta opens it)
-    post.status = ChannelPost.PostStatus.PUBLISHED
-    post.published_at = timezone.now()
-    post.save(update_fields=["status", "published_at"])
-
-    django_messages.success(request, "Post published to channel.")
-    return redirect("whatsapp:channel_detail", pk=channel_pk)
+    return _v1_channels_removed(request)
 
 
 @login_required
 @require_POST
 def channel_toggle_curate(request, pk):
-    """Toggle auto-curation for a channel."""
-    wa_accounts = _get_wa_accounts(request.user)
-    channel = get_object_or_404(
-        WhatsAppChannel,
-        pk=pk,
-        social_account__in=wa_accounts,
-    )
-
-    channel.auto_curate = not channel.auto_curate
-    channel.save(update_fields=["auto_curate", "updated_at"])
-
-    state = "enabled" if channel.auto_curate else "disabled"
-    django_messages.success(request, f"Auto-curation {state}.")
-    return redirect("whatsapp:channel_detail", pk=pk)
+    return _v1_channels_removed(request)

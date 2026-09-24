@@ -104,7 +104,7 @@ _IMAGE_STYLE_BY_VISUAL = {
 def resolve_brand_dna(user, profile=None) -> BrandDNA:
   """Build BrandDNA from profile, agency brand, and commerce tokens."""
   from apps.commerce.products.commerce_seo import brand_name
-  from apps.core.teams.branding import get_commerce_branding
+  from apps.core.accounts.access import get_commerce_branding
 
   profile = profile or getattr(user, "profile", None)
   commerce = get_commerce_branding(user, profile) if user else {}

@@ -229,14 +229,15 @@ class TestEnforcement:
         assert allowed is False
         assert "marketing campaign" in msg.lower()
 
-    def test_ab_testing_blocked_on_starter(self, user):
+    def test_ab_testing_not_gated_in_v1(self, user):
         from apps.core.billing.enforcement import check_ab_testing
 
         user.profile.plan = "starter"
         user.profile.subscription_status = "active"
         user.profile.save(update_fields=["plan", "subscription_status"])
         allowed, msg = check_ab_testing(user)
-        assert allowed is False
+        assert allowed is True
+        assert msg == ""
 
     def test_llm_config_overrides_daily_cap(self, user):
         from apps.create.agents.models import LLMConfig

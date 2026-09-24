@@ -880,10 +880,6 @@ class PerformanceRecycle(models.Model):
     )
 
     # ── Generated email content ──
-    email_campaign = models.ForeignKey(
-        "emails.EmailCampaign", on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="performance_recycles",
-    )
     email_subject = models.CharField(max_length=200, blank=True)
     email_body_html = models.TextField(
         blank=True,

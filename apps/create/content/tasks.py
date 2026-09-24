@@ -1678,26 +1678,7 @@ def publish_post(self, post_id: str):
         return {"error": "already_claimed", "duplicate": True}
     post.status = Post.Status.PUBLISHING
 
-    # ── Marketplace seller rules ──
-    from apps.core.partners.marketplace_rules import is_platform_allowed, is_sandbox_publish
-    if platform_name and not is_platform_allowed(post.user, platform_name, post.product):
-        _fail_post(post, f"Platform '{platform_name}' is not allowed for this marketplace seller")
-        Notification.create_for_user(
-            post.user, "publish_failed",
-            f"Publishing to {platform_name} is not enabled for your marketplace account.",
-            related_post=post,
-        )
-        return {"error": "platform_not_allowed"}
-
-    if is_sandbox_publish(post.user, post.product):
-        post.status = Post.Status.PUBLISHED
-        post.published_at = timezone.now()
-        meta = dict(post.visual_metadata or {})
-        meta["sandbox_dry_run"] = True
-        post.visual_metadata = meta
-        post.save(update_fields=["status", "published_at", "visual_metadata", "updated_at"])
-        logger.info("Sandbox dry-run publish for post %s (platform=%s)", post_id, platform_name)
-        return {"ok": True, "sandbox": True}
+    # Marketplace seller rules removed from V1 publish path.
 
     provider = get_provider(account.platform)
 
@@ -2183,10 +2164,6 @@ def publish_post(self, post_id: str):
             "platform_post_url", "publish_error", "updated_at",
         ])
         account.mark_synced()
-
-        if post.product_id:
-            from apps.core.partners.webhooks import notify_post_published
-            notify_post_published(post)
 
         # Clear any outage flags — this platform is working
         from apps.core.platforms.outage import record_success as clear_outage

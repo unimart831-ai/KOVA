@@ -16,10 +16,6 @@ class ContentSeed(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="content_seeds")
-    brand = models.ForeignKey(
-        "teams.Brand", on_delete=models.SET_NULL, null=True, blank=True, related_name="content_seeds",
-        help_text="Brand this content is for. Null = user's default brand voice.",
-    )
     product = models.ForeignKey(
         "products.Product", on_delete=models.SET_NULL, null=True, blank=True, related_name="content_seeds",
         help_text="Product this seed promotes. Enables product-to-content pipeline tracking.",
@@ -196,10 +192,6 @@ class Post(SoftDeleteMixin, models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
-    brand = models.ForeignKey(
-        "teams.Brand", on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
-        help_text="Brand this post belongs to. Null = user's default brand voice.",
-    )
     seed = models.ForeignKey(
         ContentSeed, on_delete=models.SET_NULL, null=True, blank=True, related_name="posts",
     )
@@ -803,11 +795,6 @@ class VoiceBrief(models.Model):
     seeds_created = models.PositiveIntegerField(
         default=0,
         help_text="Number of content seeds generated",
-    )
-    email_campaign = models.ForeignKey(
-        "emails.EmailCampaign", on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="voice_briefs",
-        help_text="Optional email campaign generated if user mentioned email/subscribers",
     )
 
     # ── Metadata ──

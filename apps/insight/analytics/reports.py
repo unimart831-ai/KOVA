@@ -11,7 +11,7 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 def gather_report_data(user, days=30):
     """Build the full attribution report data for a user."""
     from apps.insight.analytics.models import Conversion, PostMetric
-    from apps.messaging.engage.models import Interaction
     from apps.commerce.leads.models import Lead
     from apps.commerce.links.models import LinkClick
 
@@ -90,18 +89,10 @@ def gather_report_data(user, days=30):
         .order_by("-revenue")
     )
 
-    # Response time
-    responded = Interaction.objects.filter(
-        user=user, responded_at__isnull=False, created_at__gte=cutoff,
-    )
-    resp_agg = responded.aggregate(count=Count("id"), avg_seconds=Avg(F("responded_at") - F("created_at")))
-    total_interactions = Interaction.objects.filter(user=user, created_at__gte=cutoff).count()
-    replied = Interaction.objects.filter(
-        user=user, created_at__gte=cutoff, status__in=["ai_replied", "user_replied"],
-    ).count()
+    # Response time — Engage removed
+    total_interactions = 0
+    replied = 0
     avg_resp_min = None
-    if resp_agg["avg_seconds"]:
-        avg_resp_min = round(resp_agg["avg_seconds"].total_seconds() / 60, 1)
 
     # Funnel
     total_clicks = link_clicks + (conv.filter(conversion_type="click").count())
@@ -139,7 +130,7 @@ def gather_report_data(user, days=30):
         # Response
         "total_interactions": total_interactions,
         "replied_interactions": replied,
-        "reply_rate": round(replied / total_interactions * 100, 1) if total_interactions else 0,
+        "reply_rate": 0,
         "avg_response_minutes": avg_resp_min,
         # Funnel rates
         "reach_to_engage": round(eng["engagements"] / eng["reach"] * 100, 2) if eng["reach"] else 0,
@@ -150,7 +141,7 @@ def gather_report_data(user, days=30):
 
 def generate_report_pdf(user, days=30):
     """Generate a PDF report and return bytes."""
-    from apps.core.teams.branding import get_report_branding
+    from apps.core.accounts.access import get_report_branding
 
     data = gather_report_data(user, days)
 

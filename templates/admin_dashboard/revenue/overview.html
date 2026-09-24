@@ -158,8 +158,7 @@
 {# ── Shopify Stores ──────────────────────────────────────────────────── #}
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
   <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Shopify Stores ({{ shopify_stores|length }})</h2>
-    <a href="{% url 'admin_dashboard:shopify_stores' %}" class="text-xs text-kova-600 dark:text-kova-400 hover:underline">Manage →</a>
+    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Shopify Stores ({{ shopify_stores|length }}) <span class="text-xs font-normal text-gray-400">— deferred past V1</span></h2>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">

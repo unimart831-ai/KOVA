@@ -62,8 +62,8 @@
 
       <div class="mt-7 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         {% if not strategist_active %}
-          {% url 'agents:control' as home_cta_url %}
-          {% include "components/brand/_primary_cta.html" with href=home_cta_url label="Enable coach" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
+          {% url 'accounts:settings' as home_cta_url %}
+          {% include "components/brand/_primary_cta.html" with href=home_cta_url label="Open Settings" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
         {% elif not has_connected_platform %}
           {% url 'platforms:list' as home_cta_url %}
           {% include "components/brand/_primary_cta.html" with href=home_cta_url label="Connect a channel" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}

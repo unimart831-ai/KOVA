@@ -82,10 +82,5 @@ def sync_asset_from_product(
         asset.metadata = metadata
         asset.save()
     if asset.asset_type == BusinessAsset.AssetType.SERVICE:
-        try:
-            from apps.commerce.bookings.service_setup import sync_service_asset_to_booking_link
-
-            sync_service_asset_to_booking_link(product.user, asset)
-        except Exception:
-            pass
+        pass
     return asset

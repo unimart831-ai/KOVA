@@ -515,18 +515,16 @@
               </div>
 
             {% elif field.name == 'engage_autonomy_level' %}
-              {# Engage Agent v2 graduated-autonomy dropdown — plan-tier-gated.
-                 The form's __init__ already narrows the choices to whatever
-                 the user's plan allows; we just render. #}
+              {# WhatsApp AI reply autonomy — plan-tier-gated choices from the form. #}
               <div class="mb-4">
-                <label for="id_brand_{{ field.name }}" class="label">{{ field.label }}</label>
+                <label for="id_brand_{{ field.name }}" class="label">WhatsApp reply style</label>
                 <select name="{{ field.html_name }}" id="id_brand_{{ field.name }}"
                         class="input w-full">
                   {% for value, label in field.field.choices %}
                     <option value="{{ value }}" {% if value == field.value %}selected{% endif %}>{{ label }}</option>
                   {% endfor %}
                 </select>
-                {% if field.help_text %}<p class="text-xs text-white/45 mt-1">{{ field.help_text }}</p>{% endif %}
+                <p class="text-xs text-white/45 mt-1">How much AI help you want for WhatsApp inbox replies — draft for approval, or auto-send safe replies.</p>
                 {% for error in field.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
               </div>
             {% endif %}
@@ -552,17 +550,17 @@
           <div class="mb-4 p-3 rounded-lg border border-kova-500/20 bg-kova-500/10">
             {% if business_model == 'service' %}
             <p class="text-sm font-medium text-kova-200">Autopilot for service businesses</p>
-            <p class="text-xs text-kova-300 mt-1">Kova handles booking confirmations, follow-ups, and lead nurture — you focus on your clients.</p>
+            <p class="text-xs text-kova-300 mt-1">WhatsApp follow-ups and auto-publish for approved posts — you stay in control.</p>
             {% elif business_model == 'professional' %}
             <p class="text-sm font-medium text-kova-200">Autopilot for professionals</p>
-            <p class="text-xs text-kova-300 mt-1">Kova manages consultation follow-ups, authority content cadence, and lead qualification.</p>
+            <p class="text-xs text-kova-300 mt-1">WhatsApp follow-ups and auto-publish for approved authority posts.</p>
             {% else %}
             <p class="text-sm font-medium text-kova-200">Autopilot for your store</p>
-            <p class="text-xs text-kova-300 mt-1">Kova handles product listing, stock updates, and customer follow-ups automatically.</p>
+            <p class="text-xs text-kova-300 mt-1">WhatsApp customer nudges and auto-publish for approved posts.</p>
             {% endif %}
           </div>
           <p class="text-sm text-white/45 mb-2">
-            Lead follow-up, WhatsApp nudges, and auto-publish — all off by default. Turn on only what you want.
+            WhatsApp nudges and auto-publish — all off by default. Turn on only what you want.
           </p>
           <p class="text-xs text-white/45 mb-4">
             <strong>Content autopilot</strong> (weekly campaign plans) lives in <a href="{% url 'content:studio' %}" class="text-kova-300 underline">Studio → Autopilot</a>.
@@ -583,7 +581,7 @@
                   <label for="id_{{ field.name }}" class="text-sm font-medium text-white">Auto-publish approved posts</label>
                   <p class="text-xs text-white/45 mt-0.5">
                     {% if business_model == 'service' %}
-                    Publish approved booking promos and service showcases automatically when their schedule time arrives.
+                    Publish approved service showcases automatically when their schedule time arrives.
                     {% elif business_model == 'professional' %}
                     Publish approved authority posts and case studies automatically when their schedule time arrives.
                     {% else %}
@@ -593,23 +591,7 @@
                 </div>
               </div>
             {% elif field.name == 'autopilot_auto_enroll_leads' %}
-              <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-kova-500/25 bg-kova-500/10">
-                <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"
-                       {% if field.value %}checked{% endif %}
-                       class="mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-900">
-                <div>
-                  <label for="id_{{ field.name }}" class="text-sm font-medium text-white">Auto-enroll new leads</label>
-                  <p class="text-xs text-white/45 mt-0.5">
-                    {% if business_model == 'service' %}
-                    New inquiries automatically join your booking follow-up sequence. Manual enroll still works anytime.
-                    {% elif business_model == 'professional' %}
-                    New leads automatically join your consultation nurture sequence. Manual enroll still works anytime.
-                    {% else %}
-                    New leads from forms, walk-ins, WhatsApp, and QR automatically join your Welcome nurture sequence. Manual enroll still works anytime.
-                    {% endif %}
-                  </p>
-                </div>
-              </div>
+              {# V1: nurture sequences UI removed — skip settings control #}
             {% elif field.name == 'autopilot_auto_create_wa_leads' %}
               <div class="flex items-start space-x-3 mb-4 p-4 rounded-xl border border-growth-500/25 bg-growth-500/10 {% if not plan_limits.whatsapp_enabled and not plan_limits.whatsapp_inbox_enabled %}opacity-60{% endif %}">
                 <input type="checkbox" name="{{ field.html_name }}" id="id_{{ field.name }}"

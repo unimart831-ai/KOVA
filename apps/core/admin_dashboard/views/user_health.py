@@ -146,7 +146,7 @@ def user_health(request):
         _service_ready_count=Count(
             "products",
             filter=Q(products__is_active=True, products__offering_type="service")
-            & (Q(products__booking_link__isnull=False) | Q(products__fulfillment_url__gt="")),
+            & (Q(products__fulfillment_url__gt="") | Q(products__product_url__gt="")),
             distinct=True,
         ),
         _digital_ready_count=Count(

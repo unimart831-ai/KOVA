@@ -74,7 +74,7 @@ def build_hub_context(profile, user) -> dict:
 
     from apps.commerce.products.commerce_links import resolve_page_slug
     from apps.commerce.products.commerce_seo import brand_name as storefront_brand_name
-    from apps.core.teams.branding import get_commerce_branding
+    from apps.core.accounts.access import get_commerce_branding
 
     brand = storefront_brand_name(profile, user)
     shop_slug = resolve_page_slug(profile)
@@ -168,10 +168,7 @@ def _load_products(user) -> list:
 
 
 def _first_active_booking(user):
-    try:
-        return user.booking_links.filter(is_active=True).first()
-    except Exception:
-        return None
+    return None
 
 
 def _load_assets(user, asset_type: str) -> list:
@@ -190,11 +187,5 @@ def _load_assets(user, asset_type: str) -> list:
 
 
 def _load_testimonials(user) -> list:
-    """Positive review responses surfaced as public testimonials."""
-    try:
-        from apps.commerce.reviews.models import Review
-
-        qs = Review.objects.filter(user=user).exclude(response_text="").order_by("-created_at")[:6]
-        return [r for r in qs if (r.response_text or "").strip()]
-    except Exception:
-        return []
+    """Public testimonials — reviews app stripped in V1."""
+    return []

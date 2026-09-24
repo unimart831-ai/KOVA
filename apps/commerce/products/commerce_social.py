@@ -59,12 +59,6 @@ def resolve_shop_whatsapp(profile, user=None) -> str:
         return number
 
     if user is not None:
-        bl = user.booking_links.filter(is_active=True).first()
-        if bl and bl.owner_whatsapp:
-            number = normalize_whatsapp_number(bl.owner_whatsapp)
-            if number:
-                return number
-
         wa_account = (
             SocialAccount.objects.filter(
                 user=user,

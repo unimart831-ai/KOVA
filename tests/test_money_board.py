@@ -8,7 +8,6 @@ from django.utils import timezone
 
 from apps.create.briefs.dashboard import get_money_board_stats
 from apps.create.content.models import Post
-from apps.messaging.engage.models import Interaction
 from apps.commerce.leads.models import Lead
 from apps.core.platforms.models import SocialAccount
 from apps.messaging.whatsapp.models import WhatsAppConversation
@@ -19,15 +18,6 @@ class TestMoneyBoardStats:
     def test_counts_needs_reply_hot_leads_and_approvals(self, user):
         user.onboarding_completed = True
         user.save(update_fields=["onboarding_completed"])
-
-        Interaction.objects.create(
-            user=user,
-            platform="instagram",
-            interaction_type="comment",
-            status="new",
-            content="Price?",
-            author_username="buyer1",
-        )
 
         wa_account = SocialAccount.objects.create(
             user=user,
@@ -64,8 +54,8 @@ class TestMoneyBoardStats:
 
         stats = get_money_board_stats(user)
 
-        assert stats["needs_reply"] == 2
+        assert stats["needs_reply"] == 1
         assert stats["needs_reply_wa"] == 1
-        assert stats["needs_reply_engage"] == 1
+        assert stats["needs_reply_engage"] == 0
         assert stats["hot_leads"] == 2
         assert stats["ready_to_approve"] == 1

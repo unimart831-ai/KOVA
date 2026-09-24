@@ -31,7 +31,7 @@ class PostAdmin(admin.ModelAdmin):
         "user", "social_account", "status", "content_type",
         "variant_label", "scheduled_at", "created_at",
     ]
-    list_filter = ["status", "content_type", "social_account__platform", "ab_test", "generated_by_agent"]
+    list_filter = ["status", "content_type", "social_account__platform", "generated_by_agent"]
     search_fields = ["content_text", "user__email", "ai_angle"]
     readonly_fields = ["created_at", "updated_at"]
     date_hierarchy = "created_at"
@@ -59,7 +59,7 @@ class ContentSeedAdmin(admin.ModelAdmin):
     search_fields = ["idea", "notes", "user__email"]
     readonly_fields = ["created_at", "updated_at"]
     date_hierarchy = "created_at"
-    raw_id_fields = ["user", "brand", "product"]
+    raw_id_fields = ["user", "product"]
 
     def id_short(self, obj):
         return str(obj.id)[:8]
@@ -138,14 +138,14 @@ class VoiceBriefAdmin(admin.ModelAdmin):
     search_fields = ["user__email", "transcript"]
     readonly_fields = ["created_at", "completed_at", "processing_time_ms"]
     date_hierarchy = "created_at"
-    raw_id_fields = ["user", "campaign", "email_campaign"]
+    raw_id_fields = ["user", "campaign"]
     fieldsets = (
         ("Audio", {"fields": ("user", "audio_file", "duration_seconds", "status")}),
         ("AI processing", {
             "fields": ("transcript", "language_detected", "ai_extraction", "error_message"),
         }),
         ("Outputs", {
-            "fields": ("seeds_created", "campaign", "email_campaign"),
+            "fields": ("seeds_created", "campaign"),
         }),
         ("Timestamps", {"fields": ("created_at", "completed_at", "processing_time_ms"), "classes": ("collapse",)}),
     )

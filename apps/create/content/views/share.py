@@ -16,7 +16,7 @@ from apps.create.content.share_bundle import (
     reschedule_share_bundle,
     summarize_share_bundle,
 )
-from apps.core.teams.permissions import get_teammate_ids
+from apps.core.accounts.access import get_teammate_ids
 
 
 def _share_seed_queryset(user):

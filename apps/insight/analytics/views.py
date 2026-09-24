@@ -93,14 +93,7 @@ def insights(request):
         leads_this_month = 0
         hot_leads = 0
 
-    try:
-        from apps.commerce.bookings.models import Booking
-        bookings_this_month = Booking.objects.filter(
-            booking_link__user=request.user,
-            created_at__gte=month_start,
-        ).count()
-    except Exception:
-        bookings_this_month = 0
+    bookings_this_month = 0
 
     # Week-over-week engagement trends
     now = timezone.now()
@@ -784,7 +777,6 @@ def attribution_dashboard(request):
     from django.db.models import Avg, F
     from django.db.models.functions import TruncDate
 
-    from apps.messaging.engage.models import Interaction
     from apps.commerce.leads.models import Lead
     from apps.commerce.links.models import LinkClick
 
@@ -887,35 +879,13 @@ def attribution_dashboard(request):
         .order_by("date")
     )
 
-    # ── 5. Response Time Metrics ─────────────────────────────────────────────
-    responded = Interaction.objects.filter(
-        user=request.user,
-        responded_at__isnull=False,
-        created_at__gte=cutoff,
-    )
-    response_stats = responded.aggregate(
-        count=Count("id"),
-        avg_seconds=Avg(F("responded_at") - F("created_at")),
-    )
-    total_interactions = Interaction.objects.filter(
-        user=request.user, created_at__gte=cutoff,
-    ).count()
-    replied_interactions = Interaction.objects.filter(
-        user=request.user, created_at__gte=cutoff,
-        status__in=["ai_replied", "user_replied"],
-    ).count()
-
-    # Convert avg timedelta to minutes
-    avg_response_minutes = None
-    if response_stats["avg_seconds"]:
-        avg_response_minutes = round(response_stats["avg_seconds"].total_seconds() / 60, 1)
-
+    # ── 5. Response Time Metrics (Engage removed — empty defaults) ───────────
     response_metrics = {
-        "total_interactions": total_interactions,
-        "replied": replied_interactions,
-        "reply_rate": round(replied_interactions / total_interactions * 100, 1) if total_interactions else 0,
-        "avg_response_minutes": avg_response_minutes,
-        "responded_count": response_stats["count"] or 0,
+        "total_interactions": 0,
+        "replied": 0,
+        "reply_rate": 0,
+        "avg_response_minutes": None,
+        "responded_count": 0,
     }
 
     # ── 6. The Answer ────────────────────────────────────────────────────────
@@ -1235,44 +1205,15 @@ def screenshot_compete(request):
 
 @login_required
 def performance_recycle(request):
-    """View top-performing posts recycled into email campaigns."""
-    from apps.insight.analytics.models import PerformanceRecycle
+    """V1: email recycle UI removed — redirect to Results."""
+    from django.contrib import messages
 
-    status_filter = request.GET.get("status", "")
-    qs = (
-        PerformanceRecycle.objects
-        .filter(user=request.user)
-        .select_related("source_post", "email_campaign")
-        .order_by("-detected_at")
-    )
-
-    if status_filter:
-        qs = qs.filter(status=status_filter)
-
-    return render(request, "dashboard/analytics/performance_recycle.html", {
-        "recycles": qs[:50],
-        "status_filter": status_filter,
-        "status_choices": PerformanceRecycle.Status.choices,
-    })
+    messages.info(request, "Email recycle is not part of V1. Check Results for performance.")
+    return redirect("analytics:revenue")
 
 
 @login_required
 @require_POST
 def recycle_action(request, pk):
-    """Dismiss or send a performance recycle."""
-    from apps.insight.analytics.models import PerformanceRecycle
-
-    recycle = get_object_or_404(PerformanceRecycle, pk=pk, user=request.user)
-    action = request.POST.get("action")
-
-    if action == "dismiss" and recycle.status in ("detected", "ready"):
-        recycle.status = "dismissed"
-        recycle.save(update_fields=["status"])
-        messages.info(request, "Recycle dismissed.")
-    elif action == "send" and recycle.status == "ready":
-        from apps.messaging.emails.automation import send_performance_recycle
-
-        send_performance_recycle(recycle)
-        messages.success(request, "Email queued to your subscriber list!")
-
-    return redirect("analytics:performance_recycle")
+    """V1: email recycle UI removed."""
+    return redirect("analytics:revenue")

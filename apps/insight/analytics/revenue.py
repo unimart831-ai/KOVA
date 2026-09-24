@@ -20,33 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 def _get_bookings_queryset(user, cutoff):
-    """Completed bookings in the active window. CONFIRMED excluded — service
-    not yet delivered; CANCELLED bookings should never appear as revenue."""
-    try:
-        from apps.commerce.bookings.models import Booking
-    except Exception:
-        return _EmptyQS()
-    try:
-        return Booking.objects.filter(
-            booking_link__user=user,
-            status=Booking.Status.COMPLETED,
-            scheduled_at__gte=cutoff,
-        )
-    except Exception:
-        return _EmptyQS()
+    """Bookings app stripped from V1 analytics."""
+    return _EmptyQS()
 
 
 def _get_walkins_queryset(user, cutoff):
-    """Walk-ins in the active window. Falls back to empty if the app/table
-    isn't installed yet (lets analytics run on instances that haven't migrated)."""
-    try:
-        from apps.commerce.qr_attribution.models import WalkInEvent
-    except Exception:
-        return _EmptyQS()
-    try:
-        return WalkInEvent.objects.filter(user=user, recorded_at__gte=cutoff)
-    except Exception:
-        return _EmptyQS()
+    """QR/walk-in attribution stripped from V1 analytics."""
+    return _EmptyQS()
 
 
 class _EmptyQS:

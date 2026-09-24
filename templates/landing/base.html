@@ -7,7 +7,7 @@
 <script nonce="{{ request.csp_nonce }}">
   try { document.documentElement.classList.remove('dark'); } catch (e) {}
 </script>
-<div class="min-h-screen flex flex-col font-sans" x-data="{ mobileMenuOpen: false, openMenu: '' }" @keydown.escape.window="openMenu = ''; mobileMenuOpen = false">
+<div class="min-h-screen flex flex-col font-sans" x-data="{ mobileMenuOpen: false }" @keydown.escape.window="mobileMenuOpen = false">
 <a href="#marketing-main" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-white focus:text-kova-600">
   Skip to main content
 </a>

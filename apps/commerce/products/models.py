@@ -101,14 +101,6 @@ class Product(models.Model):
         blank=True,
         help_text="Direct purchase/product page URL — used for 'Shop Now' CTAs in generated content.",
     )
-    booking_link = models.ForeignKey(
-        "bookings.BookingLink",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="products",
-        help_text="If this is a service, use this booking page as the primary fulfillment path.",
-    )
     fulfillment_url = models.URLField(
         blank=True,
         help_text="Optional external booking, access, or delivery URL for service and digital offers.",
@@ -138,11 +130,6 @@ class Product(models.Model):
 
     source = models.CharField(
         max_length=15, choices=Source.choices, default=Source.MANUAL,
-    )
-    marketplace_partner = models.ForeignKey(
-        "partners.MarketplacePartner", on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="synced_products",
-        help_text="Which marketplace synced this product (if source=marketplace)",
     )
     last_synced_at = models.DateTimeField(
         null=True, blank=True,
@@ -326,12 +313,12 @@ class Product(models.Model):
     @property
     def sync_source_label(self) -> str:
         """Human label for where this product was imported from."""
-        if self.source == self.Source.MARKETPLACE and self.marketplace_partner_id:
-            return self.marketplace_partner.name
         meta = self.marketplace_metadata or {}
         if meta.get("shopify"):
             domain = meta.get("shop_domain") or "Shopify"
             return f"Shopify · {domain.replace('.myshopify.com', '')}"
+        if self.source == self.Source.MARKETPLACE:
+            return meta.get("marketplace_name") or "Marketplace"
         if self.source == self.Source.API:
             return "Connected store"
         if self.source == self.Source.CSV:
@@ -348,7 +335,7 @@ class Product(models.Model):
     @property
     def has_service_fulfillment(self) -> bool:
         return self.offering_type == self.OfferingType.SERVICE and bool(
-            self.booking_link_id or (self.fulfillment_url or "").strip()
+            (self.fulfillment_url or "").strip() or (self.product_url or "").strip()
         )
 
     @property

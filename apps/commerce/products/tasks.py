@@ -1787,12 +1787,6 @@ def snap_to_sell_analyze(
         product_id, seed.id, user.email,
     )
 
-    if product.marketplace_partner_id:
-        from apps.core.partners.webhooks import notify_content_generated
-
-        posts_count = product.posts.filter(seed=seed).count()
-        notify_content_generated(product, posts_created=posts_count, seed_id=str(seed.pk))
-
     return {
         "product_id": str(product.pk),
         "seed_id": str(seed.pk),

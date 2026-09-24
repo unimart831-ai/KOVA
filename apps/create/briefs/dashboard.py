@@ -28,13 +28,11 @@ def invalidate_home_cache(user_id) -> None:
 def _collect_home_stats(user, today, week_ago):
     """Batch count queries shared across home dashboard widgets."""
     from apps.create.briefs.models import DailyBrief
-    from apps.commerce.bookings.models import Booking
     from apps.create.content.models import Post
-    from apps.messaging.engage.models import Interaction
     from apps.commerce.leads.models import Lead
     from apps.core.platforms.models import SocialAccount
 
-    from apps.core.teams.permissions import get_scoped_post_queryset
+    from apps.core.accounts.access import get_scoped_post_queryset
 
     post_stats = get_scoped_post_queryset(user).aggregate(
         published_today=Count("id", filter=Q(
@@ -48,21 +46,17 @@ def _collect_home_stats(user, today, week_ago):
         created_week=Count("id", filter=Q(created_at__gte=week_ago)),
     )
 
-    engage_stats = Interaction.objects.filter(user=user).aggregate(
-        inbox_waiting=Count("id", filter=Q(status__in=["new", "flagged"])),
-        replies_week=Count("id", filter=Q(responded_at__gte=week_ago)),
-    )
+    engage_stats = {
+        "inbox_waiting": 0,
+        "replies_week": 0,
+    }
 
     lead_stats = Lead.objects.filter(user=user).aggregate(
         new_leads=Count("id", filter=Q(status="new")),
         leads_week=Count("id", filter=Q(first_seen_at__gte=week_ago)),
     )
 
-    booking_today = Booking.objects.filter(
-        booking_link__user=user,
-        scheduled_at__date=today,
-        status__in=["pending", "confirmed"],
-    ).count()
+    booking_today = 0
 
     has_platform = SocialAccount.objects.filter(user=user, is_active=True).exists()
     has_published = Post.objects.filter(user=user, status="published").exists()
@@ -225,18 +219,14 @@ _SETUP_MISSION_ICONS = {
 def _collect_money_board_stats(user, week_ago):
     """Single aggregate pass for Today money-chase board."""
     from apps.create.content.models import Post
-    from apps.messaging.engage.models import Interaction
     from apps.commerce.leads.models import Lead
     from apps.messaging.whatsapp.models import WhatsAppConversation
 
-    row = Interaction.objects.filter(user=user).aggregate(
-        engage_needs_reply=Count("id", filter=Q(status__in=["new", "flagged"])),
-    )
     wa_needs_reply = WhatsAppConversation.objects.filter(
         social_account__user=user,
         status=WhatsAppConversation.Status.ESCALATED,
     ).count()
-    needs_reply = row["engage_needs_reply"] + wa_needs_reply
+    needs_reply = wa_needs_reply
 
     hot_leads = Lead.objects.filter(user=user).filter(
         Q(status=Lead.Status.NEW)
@@ -254,7 +244,7 @@ def _collect_money_board_stats(user, week_ago):
     return {
         "needs_reply": needs_reply,
         "needs_reply_wa": wa_needs_reply,
-        "needs_reply_engage": row["engage_needs_reply"],
+        "needs_reply_engage": 0,
         "hot_leads": hot_leads,
         "ready_to_approve": ready_to_approve,
         "leads_week": leads_week,

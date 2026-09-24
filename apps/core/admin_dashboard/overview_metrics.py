@@ -37,12 +37,9 @@ def build_overview_context() -> dict:
     from apps.core.billing.models import MpesaPayment, PLAN_LIMITS, PlanPrice
     from apps.create.briefs.models import DailyBrief
     from apps.create.content.models import ABTest, ContentSeed, Post, VoiceBrief
-    from apps.messaging.engage.models import Interaction, Superfan
     from apps.insight.help.models import Article, HelpPageView
     from apps.commerce.leads.models import Lead, LeadActivity, LeadEnrollment
-    from apps.core.partners.models import Partner, PartnerApplication, Referral
     from apps.core.platforms.models import SocialAccount
-    from apps.core.teams.models import Brand, Team, TeamActivity, TeamMember
     from rest_framework.authtoken.models import Token
 
     now = timezone.now()
@@ -243,9 +240,7 @@ def build_overview_context() -> dict:
         .select_related("user", "social_account")
         .order_by("-updated_at")[:5],
     )
-    recent_team_activity = list(
-        TeamActivity.objects.select_related("team", "actor").order_by("-created_at")[:10],
-    )
+    recent_team_activity = []
 
     # ── Platform health (4 → 1 aggregate) ────────────────────────────────
     social_agg = SocialAccount.objects.aggregate(
@@ -267,23 +262,23 @@ def build_overview_context() -> dict:
         ),
     )
 
-    # ── Quick stats (engage + seeds) ─────────────────────────────────────
+    # ── Quick stats (seeds) ──────────────────────────────────────────────
     total_seeds = ContentSeed.objects.count()
-    total_interactions = Interaction.objects.count()
-    total_superfans = Superfan.objects.count()
+    total_interactions = 0
+    total_superfans = 0
 
     team_agg = {
-        "teams": Team.objects.count(),
-        "members": TeamMember.objects.count(),
+        "teams": 0,
+        "members": 0,
     }
     ab_agg = ABTest.objects.aggregate(
         total=Count("id"),
         running=Count("id", filter=Q(status="running")),
     )
-    brand_agg = Brand.objects.aggregate(
-        total=Count("id"),
-        active=Count("id", filter=Q(is_active=True)),
-    )
+    brand_agg = {
+        "total": 0,
+        "active": 0,
+    }
 
     conv_agg = Conversion.objects.aggregate(
         total=Count("id"),
@@ -302,16 +297,13 @@ def build_overview_context() -> dict:
     help_articles = Article.objects.filter(status=Article.Status.PUBLISHED).count()
 
     partner_agg = {
-        "active": Partner.objects.filter(is_active=True).count(),
-        "pending_apps": PartnerApplication.objects.filter(status="pending").count(),
+        "active": 0,
+        "pending_apps": 0,
     }
-    referral_agg = Referral.objects.aggregate(
-        total=Count("id"),
-        active=Count(
-            "id",
-            filter=Q(is_active=True, activated_at__isnull=False),
-        ),
-    )
+    referral_agg = {
+        "total": 0,
+        "active": 0,
+    }
 
     seed_7d_agg = ContentSeed.objects.filter(created_at__gte=seven_days_ago).aggregate(
         total=Count("id"),

@@ -72,10 +72,6 @@
             </div>
             <p class="mt-1 truncate text-xs text-white/40">@{{ account.username }} · connected {{ account.connected_at|timesince }} ago</p>
 
-            {% if account.platform == 'tiktok' and account.metadata.tiktok_self_only %}
-            <p class="mt-2 text-xs text-gold-200/90">Private-only posting until TikTok approves public publish.</p>
-            {% endif %}
-
             {% if account.last_error %}
             <p class="mt-2 text-xs text-red-300">{{ account.last_error|truncatewords:18 }}</p>
             {% endif %}
@@ -167,10 +163,6 @@
       <div class="mt-3 space-y-3 text-xs leading-relaxed text-white/50">
         <p><span class="font-medium text-white/70">Instagram:</span> Needs a Business or Creator account (free switch in Instagram settings).</p>
         <p><span class="font-medium text-white/70">Facebook:</span> Publishes to Pages only. Use <strong class="font-medium text-white/70">Set active</strong> to choose which page.</p>
-        <p>
-          <span class="font-medium text-white/70">LinkedIn Company Page:</span>
-          <a href="{% url 'platforms:linkedin_connect_page' %}" class="text-kova-300 hover:text-kova-200">Connect separately →</a>
-        </p>
       </div>
     </details>
   </section>

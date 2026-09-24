@@ -13,7 +13,7 @@ from apps.create.content.forms import ContentSeedForm
 from apps.create.content.models import ContentSeed, Post
 from apps.create.content.tasks import generate_from_seed
 from apps.core.accounts.autopilot_helpers import filter_social_accounts_for_autopilot
-from apps.core.teams.permissions import can_approve_post, get_teammate_ids
+from apps.core.accounts.access import can_approve_post, get_teammate_ids
 from apps.core.utils import fire_task
 
 
@@ -772,7 +772,7 @@ def seed_status(request, seed_id):
             seed.error_message = "Generation timed out. Please try again."
             seed.save(update_fields=["status", "error_message", "updated_at"])
 
-    posts = seed.posts.select_related("social_account", "user", "brand").all()
+    posts = seed.posts.select_related("social_account", "user").all()
     profile = getattr(request.user, "profile", None)
     auto_approve_posts = bool(profile and profile.auto_approve_posts)
     pending_for_review_count = posts.filter(status__in=["pending_approval", "draft"]).count()

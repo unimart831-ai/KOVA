@@ -93,7 +93,7 @@ def _theme_tokens(profile, user) -> dict[str, str]:
     primary = _valid_hex(colors[0]) if colors else ""
     secondary = _valid_hex(colors[1]) if len(colors) > 1 else ""
 
-    from apps.core.teams.branding import get_commerce_branding
+    from apps.core.accounts.access import get_commerce_branding
 
     branding = get_commerce_branding(user, profile)
     agency_primary = (branding.get("theme_primary_color") or "").strip()
@@ -211,7 +211,7 @@ def resolve_hero_mode(profile, products, shop_reels) -> str:
 
 
 def _powered_by_kova(user) -> bool:
-    from apps.core.teams.branding import get_active_brand_for_user
+    from apps.core.accounts.access import get_active_brand_for_user
 
     return get_active_brand_for_user(user) is None
 

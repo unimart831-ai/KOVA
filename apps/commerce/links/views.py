@@ -387,13 +387,12 @@ def public_page(request, slug):
 
         shop_url = shop_index_url(profile, request)
         if business_model in ("service", "professional"):
-            booking_link = page.user.booking_links.filter(is_active=True).first()
-            if booking_link:
-                from django.urls import reverse
+            try:
+                from apps.commerce.products.commerce_canonical import canonical_business_url
 
-                booking_url = request.build_absolute_uri(
-                    reverse("bookings:public_book", kwargs={"slug": booking_link.slug})
-                )
+                booking_url = canonical_business_url(page.user, profile) or ""
+            except Exception:
+                booking_url = ""
 
     return render(request, "links/public_page.html", {
         "page": page,

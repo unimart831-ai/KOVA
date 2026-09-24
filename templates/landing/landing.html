@@ -1,101 +1,118 @@
 {% extends "landing/base.html" %}
 {% load static %}
 
-{% block title %}KOVA — More customers. Less work.{% endblock %}
+{% block title %}KOVA — More customers. Less posting.{% endblock %}
 
-{% block meta_description %}The AI Growth OS for African SMEs. Send a photo on WhatsApp — Kova creates campaigns, captures leads, and helps you get paid. Join free · 7-day trial.{% endblock %}
+{% block meta_description %}Kova drafts posts in your brand voice for WhatsApp, Instagram, and Facebook. You approve — then it publishes and shows what worked. 7-day free trial · Pay with M-Pesa.{% endblock %}
 
 {% block content %}
 <section aria-labelledby="hero-heading" class="relative mx-auto mb-3 h-[88svh] w-[calc(100%-1rem)] max-w-8xl overflow-hidden rounded-2xl sm:mb-4 sm:w-[calc(100%-2rem)]">
   <div class="absolute inset-0 overflow-hidden rounded-2xl">
     <img
       src="{% static 'img/hero.png' %}"
-      alt="Shop owners reviewing a campaign on a phone at an outdoor market"
+      alt="Shop owner holding a phone that shows a polished product post ready to publish"
       width="1536"
       height="1024"
       decoding="async"
       fetchpriority="high"
       class="h-full w-full object-cover object-center"
     >
-    <div class="absolute inset-0 bg-gradient-to-b from-canvas/70 via-canvas/70 to-canvas/60" aria-hidden="true"></div>
+    {# Light veil so the shop scene reads; stronger only at the bottom for type #}
+    <div class="absolute inset-0 bg-gradient-to-b from-canvas/25 via-canvas/15 to-canvas/85" aria-hidden="true"></div>
   </div>
 
-  <div class="relative z-10 flex h-full flex-col items-center justify-center px-5 py-12 text-center sm:px-8">
-    <h1 id="hero-heading" class="max-w-3xl text-balance font-serif text-[3rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-5xl sm:leading-[1.08] md:text-[54px]">
-      More customers. <span class="text-kova-400">Less work.</span>
+  <div class="relative z-10 flex h-full flex-col items-center justify-end px-5 pb-12 pt-20 text-center sm:px-8 sm:pb-16">
+    <p class="font-display text-sm font-semibold tracking-[0.2em] text-white/90 sm:text-base">KOVA</p>
+    <h1 id="hero-heading" class="mt-3 max-w-3xl text-balance font-serif text-[3rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:mt-4 sm:text-5xl sm:leading-[1.08] md:text-[54px]">
+      More customers. <span class="text-kova-400">Less posting.</span>
     </h1>
-    <p class="mt-4 max-w-md font-sans text-[15px] font-light leading-[1.5] text-white/80 sm:mt-6 sm:max-w-xl sm:text-lg sm:leading-[1.4] md:text-[19px]">
-      Send a photo — Kova creates campaigns, captures leads, and helps you get paid.
+    <p class="mt-4 max-w-lg font-sans text-[15px] font-light leading-[1.5] text-white/85 sm:mt-5 sm:max-w-xl sm:text-lg sm:leading-[1.4] md:text-[19px]">
+      Kova drafts posts in your brand voice for WhatsApp, Instagram, and Facebook. You approve. Then it publishes — and shows what worked.
     </p>
-    <div class="mt-7 flex w-full max-w-xs flex-col items-center justify-center gap-4 sm:mt-9 sm:max-w-none sm:flex-row sm:gap-8">
+    <div class="mt-7 flex w-full max-w-xs flex-col items-center justify-center gap-4 sm:mt-8 sm:max-w-none sm:flex-row sm:gap-8">
       {% url 'account_signup' as signup_url %}
-      {% include "components/brand/_primary_cta.html" with href=signup_url label="Start for Free" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
+      {% include "components/brand/_primary_cta.html" with href=signup_url label="Start free trial" extra_class="w-full justify-between sm:w-auto sm:min-w-[10.5rem]" %}
       {% include "components/brand/_secondary_cta.html" with href="#how-it-works" label="See how it works" %}
     </div>
   </div>
 </section>
 
-{# ── One loop: photo → customers → paid ── #}
+{# Trust strip — proof under the fold, not badges on the hero photo #}
+<section aria-label="Why try Kova" class="border-y border-white/10 bg-canvas-muted">
+  <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-5 py-4 text-center sm:px-6 sm:py-5">
+    <p class="text-sm text-white/70"><span class="font-medium text-white">7-day free trial</span> · no charge to start</p>
+    <p class="hidden text-white/25 sm:inline" aria-hidden="true">·</p>
+    <p class="text-sm text-white/70"><span class="font-medium text-white">WhatsApp, Instagram, Facebook</span></p>
+    <p class="hidden text-white/25 sm:inline" aria-hidden="true">·</p>
+    <p class="text-sm text-white/70"><span class="font-medium text-white">Nothing goes live without you</span></p>
+    <p class="hidden text-white/25 sm:inline" aria-hidden="true">·</p>
+    <p class="text-sm text-white/70"><span class="font-medium text-white">From KES 1,300/mo</span> · M-Pesa</p>
+  </div>
+</section>
+
+{# ── V1 loop: connect → draft → approve → results ── #}
 <section id="how-it-works" class="py-14 sm:py-20 md:py-24">
   <div class="max-w-5xl mx-auto px-5 sm:px-6 lg:px-8">
     <div class="text-center max-w-3xl mx-auto reveal">
-      <h2 class="text-balance font-serif text-[2.25rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-5xl sm:leading-[1.08] md:text-[54px]">From one photo to <span class="text-kova-400">paying customers</span></h2>
-      <p class="mt-4 max-w-md mx-auto font-sans text-[15px] font-light leading-[1.5] text-white/80 sm:mt-6 sm:max-w-xl sm:text-lg sm:leading-[1.4] md:text-[19px]">WhatsApp-first. You approve in five minutes. Nothing goes live without you.</p>
+      <h2 class="text-balance font-serif text-[2.25rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-5xl sm:leading-[1.08] md:text-[54px]">
+        From connected channels to <span class="text-kova-400">real results</span>
+      </h2>
+      <p class="mt-4 max-w-md mx-auto font-sans text-[15px] font-light leading-[1.5] text-white/80 sm:mt-6 sm:max-w-xl sm:text-lg sm:leading-[1.4] md:text-[19px]">
+        Connect once. Approve in minutes. Kova handles the rest — and you always stay in control.
+      </p>
     </div>
 
     <div class="reveal mt-8 sm:mt-10 overflow-hidden rounded-2xl bg-canvas-muted ring-1 ring-white/10">
-      <video
-        class="w-full h-auto"
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="metadata"
-        aria-label="How Kova works — from a photo to paying customers"
+      <img
+        src="{% static 'img/how-it-works.png' %}"
+        alt="Four steps on a phone: connect channels, review a draft post, approve, then see engagement"
+        width="1536"
+        height="864"
+        loading="lazy"
+        decoding="async"
+        class="h-auto w-full object-cover"
       >
-        <source src="{% static 'vid/how-it-works.mp4' %}" type="video/mp4">
-      </video>
     </div>
 
     <ol class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:mt-14 sm:gap-10 lg:gap-6">
       <li class="reveal text-center">
         <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-kova-500 text-white text-sm font-bold font-display">1</span>
-        <h3 class="mt-4 text-base font-semibold text-white">Send a photo</h3>
-        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">On WhatsApp or in the app</p>
+        <h3 class="mt-4 text-base font-semibold text-white">Connect channels</h3>
+        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">WhatsApp, Instagram &amp; Facebook</p>
       </li>
       <li class="reveal text-center reveal-delay-1">
         <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-kova-500 text-white text-sm font-bold font-display">2</span>
-        <h3 class="mt-4 text-base font-semibold text-white">Get content</h3>
-        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">Posts, reels, carousels</p>
+        <h3 class="mt-4 text-base font-semibold text-white">Get drafts</h3>
+        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">Posts in your brand voice</p>
       </li>
       <li class="reveal text-center reveal-delay-2">
         <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-kova-500 text-white text-sm font-bold font-display">3</span>
-        <h3 class="mt-4 text-base font-semibold text-white">Get customers</h3>
-        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">Leads &amp; reply drafts</p>
+        <h3 class="mt-4 text-base font-semibold text-white">You approve</h3>
+        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">Nothing goes live without you</p>
       </li>
       <li class="reveal text-center reveal-delay-3">
         <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-kova-500 text-white text-sm font-bold font-display">4</span>
-        <h3 class="mt-4 text-base font-semibold text-white">Get paid</h3>
-        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">M-Pesa &amp; bookings</p>
+        <h3 class="mt-4 text-base font-semibold text-white">See results</h3>
+        <p class="mt-1.5 text-sm text-white/55 leading-relaxed">What worked — and what to post next</p>
       </li>
     </ol>
 
     <div class="mt-12 text-center reveal">
       {% url 'account_signup' as signup_url %}
-      {% include "components/brand/_primary_cta.html" with href=signup_url label="Start for Free" %}
+      {% include "components/brand/_primary_cta.html" with href=signup_url label="Start free trial" %}
     </div>
   </div>
 </section>
 
-{# ── Built for how you already sell ── #}
+{# ── Built for how African SMEs already sell ── #}
 <section class="py-14 sm:py-20 md:py-24 bg-canvas-muted">
   <div class="max-w-5xl mx-auto px-5 sm:px-6 lg:px-8">
     <div class="text-center max-w-3xl mx-auto reveal">
       <h2 class="mt-3 text-balance font-serif text-[2.25rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-5xl sm:leading-[1.08] md:text-[54px]">
-        Your content. <span class="text-kova-400">Turned into growth.</span>
+        Your business. <span class="text-kova-400">On the channels that sell.</span>
       </h2>
       <p class="mt-4 max-w-2xl mx-auto font-sans text-[15px] font-light leading-[1.5] text-white/80 sm:mt-6 sm:text-lg sm:leading-[1.4] md:text-[19px]">
-        Give it your products, services, offers and customer wins. AI turns them into campaigns that drive sales, bookings, orders and enquiries.
+        Retail, salons, kitchens, and service crews — Kova turns what you already make into posts customers actually see on WhatsApp, Instagram, and Facebook.
       </p>
     </div>
   </div>
@@ -104,56 +121,38 @@
     <ul class="kova-marquee__track">
       <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10">
         <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/retail.png' %}" alt="Retail and fashion products" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
+          <img src="{% static 'img/retail.png' %}" alt="African wax prints and sneakers next to a phone showing a product post" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Retail &amp; Fashion</h3>
-          <p class="mt-1.5 text-sm text-white/55">Products <span class="text-kova-400">→</span> <span class="text-white/80">Sales</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Products <span class="text-kova-400">→</span> <span class="text-white/80">Posts that sell</span></p>
         </div>
       </li>
       <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10">
         <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/salon.png' %}" alt="Salon and barber services" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
+          <img src="{% static 'img/salon.png' %}" alt="Barbershop chair with a phone showing a fresh cut ready to post" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Salons &amp; Barbers</h3>
-          <p class="mt-1.5 text-sm text-white/55">Services <span class="text-kova-400">→</span> <span class="text-white/80">Bookings</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Looks <span class="text-kova-400">→</span> <span class="text-white/80">Clients who find you</span></p>
         </div>
       </li>
       <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10">
         <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/restaurant.png' %}" alt="Restaurant food and offers" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
+          <img src="{% static 'img/restaurant.png' %}" alt="Plated meal with a phone capturing a draft food post" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Restaurants &amp; F&amp;B</h3>
-          <p class="mt-1.5 text-sm text-white/55">Offers <span class="text-kova-400">→</span> <span class="text-white/80">Orders</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Dishes <span class="text-kova-400">→</span> <span class="text-white/80">Hungry followers</span></p>
         </div>
       </li>
       <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10">
         <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/agency.png' %}" alt="Agency and designer portfolio" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
-        </div>
-        <div class="p-4 sm:p-5">
-          <h3 class="text-base font-semibold text-white">Agencies &amp; Designers</h3>
-          <p class="mt-1.5 text-sm text-white/55">Portfolio <span class="text-kova-400">→</span> <span class="text-white/80">Enquiries</span></p>
-        </div>
-      </li>
-      <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10">
-        <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/consultant.png' %}" alt="Consultant and lawyer expertise" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
-        </div>
-        <div class="p-4 sm:p-5">
-          <h3 class="text-base font-semibold text-white">Consultants &amp; Lawyers</h3>
-          <p class="mt-1.5 text-sm text-white/55">Expertise <span class="text-kova-400">→</span> <span class="text-white/80">Consultations</span></p>
-        </div>
-      </li>
-      <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10">
-        <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/service.png' %}" alt="Service business work and proof" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
+          <img src="{% static 'img/service.png' %}" alt="Service worker messaging customers on WhatsApp from a job site" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Service Businesses</h3>
-          <p class="mt-1.5 text-sm text-white/55">Proof <span class="text-kova-400">→</span> <span class="text-white/80">Leads</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Proof of work <span class="text-kova-400">→</span> <span class="text-white/80">WhatsApp leads</span></p>
         </div>
       </li>
 
@@ -164,7 +163,7 @@
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Retail &amp; Fashion</h3>
-          <p class="mt-1.5 text-sm text-white/55">Products <span class="text-kova-400">→</span> <span class="text-white/80">Sales</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Products <span class="text-kova-400">→</span> <span class="text-white/80">Posts that sell</span></p>
         </div>
       </li>
       <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10" data-marquee-clone aria-hidden="true">
@@ -173,7 +172,7 @@
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Salons &amp; Barbers</h3>
-          <p class="mt-1.5 text-sm text-white/55">Services <span class="text-kova-400">→</span> <span class="text-white/80">Bookings</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Looks <span class="text-kova-400">→</span> <span class="text-white/80">Clients who find you</span></p>
         </div>
       </li>
       <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10" data-marquee-clone aria-hidden="true">
@@ -182,25 +181,7 @@
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Restaurants &amp; F&amp;B</h3>
-          <p class="mt-1.5 text-sm text-white/55">Offers <span class="text-kova-400">→</span> <span class="text-white/80">Orders</span></p>
-        </div>
-      </li>
-      <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10" data-marquee-clone aria-hidden="true">
-        <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/agency.png' %}" alt="" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
-        </div>
-        <div class="p-4 sm:p-5">
-          <h3 class="text-base font-semibold text-white">Agencies &amp; Designers</h3>
-          <p class="mt-1.5 text-sm text-white/55">Portfolio <span class="text-kova-400">→</span> <span class="text-white/80">Enquiries</span></p>
-        </div>
-      </li>
-      <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10" data-marquee-clone aria-hidden="true">
-        <div class="aspect-[4/3] overflow-hidden bg-canvas-raised">
-          <img src="{% static 'img/consultant.png' %}" alt="" width="640" height="480" loading="lazy" decoding="async" class="h-full w-full object-cover">
-        </div>
-        <div class="p-4 sm:p-5">
-          <h3 class="text-base font-semibold text-white">Consultants &amp; Lawyers</h3>
-          <p class="mt-1.5 text-sm text-white/55">Expertise <span class="text-kova-400">→</span> <span class="text-white/80">Consultations</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Dishes <span class="text-kova-400">→</span> <span class="text-white/80">Hungry followers</span></p>
         </div>
       </li>
       <li class="kova-marquee__item overflow-hidden rounded-2xl bg-canvas ring-1 ring-white/10" data-marquee-clone aria-hidden="true">
@@ -209,20 +190,21 @@
         </div>
         <div class="p-4 sm:p-5">
           <h3 class="text-base font-semibold text-white">Service Businesses</h3>
-          <p class="mt-1.5 text-sm text-white/55">Proof <span class="text-kova-400">→</span> <span class="text-white/80">Leads</span></p>
+          <p class="mt-1.5 text-sm text-white/55">Proof of work <span class="text-kova-400">→</span> <span class="text-white/80">WhatsApp leads</span></p>
         </div>
       </li>
     </ul>
   </div>
 
-  <div class="mt-12 text-center reveal">
+  <div class="mt-12 flex flex-col items-center justify-center gap-4 text-center reveal sm:flex-row sm:gap-8">
+    {% url 'account_signup' as signup_url %}
     {% url 'pricing' as pricing_url %}
-    {% include "components/brand/_primary_cta.html" with href=pricing_url label="Look at our Pricing" %}
+    {% include "components/brand/_primary_cta.html" with href=signup_url label="Start free trial" %}
+    {% include "components/brand/_secondary_cta.html" with href=pricing_url label="See pricing" %}
   </div>
 </section>
 
-
-{# ── Closing CTA ── #}
+{# ── Closing CTA — new reason to convert ── #}
 <section class="relative mb-0 min-h-[52svh] w-full overflow-hidden sm:min-h-[56svh]">
   <div class="absolute inset-0 overflow-hidden">
     <img
@@ -232,20 +214,20 @@
       height="1024"
       loading="lazy"
       decoding="async"
-      class="h-full w-full object-cover object-center"
+      class="h-full w-full object-cover object-[center_30%]"
     >
-    <div class="absolute inset-0 bg-gradient-to-b from-canvas/70 via-canvas/70 to-canvas/60" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-canvas/40 via-canvas/55 to-canvas/90" aria-hidden="true"></div>
   </div>
 
   <div class="relative z-10 flex min-h-[52svh] flex-col items-center justify-center px-5 py-16 text-center sm:min-h-[56svh] sm:px-8 sm:py-20">
     <h2 class="max-w-3xl text-balance font-serif text-[2.25rem] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-5xl sm:leading-[1.08] md:text-[54px]">
-      More customers. <span class="text-kova-400">Less work.</span>
+      Stop staring at a blank post. <span class="text-kova-400">Start approving.</span>
     </h2>
     <p class="mt-4 max-w-md font-sans text-[15px] font-light leading-[1.5] text-white/80 sm:mt-6 sm:max-w-xl sm:text-lg sm:leading-[1.4] md:text-[19px]">
-      Send a photo — Kova creates campaigns, captures leads, and helps you get paid.
+      Seven days free. Drafts ready while you run the shop — you stay in control of every publish.
     </p>
     {% url 'account_signup' as signup_url %}
-    {% include "components/brand/_primary_cta.html" with href=signup_url label="Start your free trial" extra_class="mt-8" %}
+    {% include "components/brand/_primary_cta.html" with href=signup_url label="Start free trial" extra_class="mt-8" %}
   </div>
 </section>
 {% endblock %}

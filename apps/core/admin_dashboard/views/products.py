@@ -14,7 +14,6 @@ from apps.core.admin_dashboard.decorators import staff_required
 from apps.create.agents.models import AgentAction
 from apps.insight.analytics.models import ShopifyStore
 from apps.create.content.models import ContentSeed, Post
-from apps.core.partners.models import MarketplacePartner, MarketplaceSellerAccount
 from apps.commerce.products.commerce_links import commerce_link_url, resolve_page_slug
 from apps.commerce.products.commerce_seo import MIN_SEO_DESCRIPTION_LEN, commerce_seo_checklist
 from apps.commerce.products.models import CommercePayment, Product, ProductCategory, StockAlert, StockUpdate
@@ -42,22 +41,16 @@ def _profile_mode_payload(profile):
 
 def _offer_fulfillment_payload(product):
     if product.offering_type == Product.OfferingType.SERVICE:
-        if product.booking_link_id:
+        if (product.fulfillment_url or "").strip() or (product.product_url or "").strip():
             return {
                 "status": "ready",
-                "label": "Booking link ready",
-                "detail": "Uses Kova booking flow",
-            }
-        if (product.fulfillment_url or "").strip():
-            return {
-                "status": "ready",
-                "label": "External booking ready",
-                "detail": "Uses external booking or inquiry URL",
+                "label": "Service URL ready",
+                "detail": "Uses fulfillment or product URL",
             }
         return {
             "status": "missing",
             "label": "Missing booking path",
-            "detail": "No booking link or fulfillment URL",
+            "detail": "No fulfillment or product URL",
         }
 
     if product.offering_type == Product.OfferingType.DIGITAL:
@@ -150,7 +143,7 @@ def commerce_overview(request):
 
     total_categories = ProductCategory.objects.filter(is_active=True).count()
     recent_products = list(
-        active_qs.select_related("user", "category", "marketplace_partner")
+        active_qs.select_related("user", "category")
         .order_by("-created_at")[:15]
     )
     recent_products = [_decorate_offer(product) for product in recent_products]
@@ -189,7 +182,7 @@ def commerce_overview(request):
     service_fulfillment_ready = active_qs.filter(
         offering_type=Product.OfferingType.SERVICE,
     ).filter(
-        Q(booking_link__isnull=False) | Q(fulfillment_url__gt=""),
+        Q(fulfillment_url__gt="") | Q(product_url__gt=""),
     ).count()
     digital_fulfillment_ready = active_qs.filter(
         offering_type=Product.OfferingType.DIGITAL,
@@ -243,8 +236,8 @@ def commerce_overview(request):
 
     shopify_stores = ShopifyStore.objects.filter(is_active=True).count()
     shopify_products_synced = ShopifyStore.objects.aggregate(t=Sum("products_synced"))["t"] or 0
-    active_marketplaces = MarketplacePartner.objects.filter(is_active=True).count()
-    marketplace_sellers = MarketplaceSellerAccount.objects.filter(status="active").count()
+    active_marketplaces = 0
+    marketplace_sellers = 0
 
     site_url = getattr(settings, "SITE_URL", "").rstrip("/")
 
@@ -314,7 +307,7 @@ def commerce_catalog(request):
     """Browse all catalog items — filterable by stock, source, and commerce readiness."""
     qs = (
         Product.objects
-        .select_related("user", "category", "marketplace_partner")
+        .select_related("user", "category")
         .filter(is_active=True)
         .order_by("-created_at")
     )
@@ -375,7 +368,7 @@ def commerce_catalog(request):
 def commerce_product_detail(request, pk):
     """Read-only commerce view for a single product."""
     product = get_object_or_404(
-        Product.objects.select_related("user", "user__profile", "category", "marketplace_partner"),
+        Product.objects.select_related("user", "user__profile", "category"),
         pk=pk,
     )
     profile = product.user.profile
@@ -451,7 +444,7 @@ def commerce_shops(request):
                 filter=Q(
                     user__products__is_active=True,
                     user__products__offering_type=Product.OfferingType.SERVICE,
-                ) & (Q(user__products__booking_link__isnull=False) | Q(user__products__fulfillment_url__gt="")),
+                ) & (Q(user__products__fulfillment_url__gt="") | Q(user__products__product_url__gt="")),
                 distinct=True,
             ),
             access_ready=Count(
@@ -541,33 +534,21 @@ def commerce_payments(request):
 
 @staff_required
 def commerce_integrations(request):
-    """Shopify stores and marketplace partners in one place."""
+    """Shopify stores overview (marketplace partners removed in V1)."""
     shopify_stores = (
         ShopifyStore.objects
         .select_related("user")
         .order_by("-last_product_sync", "-created_at")
-    )
-    marketplaces = (
-        MarketplacePartner.objects.select_related("partner__user")
-        .annotate(
-            active_sellers=Count("seller_accounts", filter=Q(seller_accounts__status="active")),
-            products_count=Count(
-                "synced_products",
-                filter=Q(synced_products__is_active=True),
-                distinct=True,
-            ),
-        )
-        .order_by("-created_at")
     )
 
     return render(request, COMMERCE_TEMPLATE.format(name="integrations"), _commerce_context({
         "page_title": "Integrations",
         "commerce_section": "integrations",
         "shopify_stores": shopify_stores,
-        "marketplaces": marketplaces,
+        "marketplaces": [],
         "shopify_active": shopify_stores.filter(is_active=True).count(),
         "shopify_products_synced": shopify_stores.aggregate(t=Sum("products_synced"))["t"] or 0,
-        "marketplace_active": marketplaces.filter(is_active=True).count(),
+        "marketplace_active": 0,
     }))
 
 

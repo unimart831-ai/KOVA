@@ -120,23 +120,6 @@ class TestDispatchCommand:
         assert meta["has_booking_link"] is False
         assert "booking page" in text.lower()
 
-    def test_book_command_with_link(self, pro_user, today_brief):
-        from apps.commerce.bookings.models import BookingLink
-
-        BookingLink.objects.create(
-            user=pro_user,
-            slug="pro-salon",
-            label="Pro Salon",
-            services=[{"name": "Cut", "duration_minutes": 30, "price_kes": 1000}],
-            working_hours={"mon": [{"start": "09:00", "end": "17:00"}]},
-        )
-        text, cmd, ok, meta = _dispatch_command(pro_user, "book")
-        assert cmd == "book"
-        assert ok is True
-        assert meta["has_booking_link"] is True
-        assert "Pro Salon" in text
-        assert "Cut" in text
-
     def test_idea_out_of_range(self, pro_user, today_brief):
         text, cmd, ok, _ = _dispatch_command(pro_user, "idea 9")
         assert ok is False

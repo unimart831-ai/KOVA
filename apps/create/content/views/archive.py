@@ -11,7 +11,7 @@ from apps.create.content.views.queue import (
     _apply_queue_filters,
     _group_queue_by_seed,
 )
-from apps.core.teams.permissions import get_teammate_ids
+from apps.core.accounts.access import get_teammate_ids
 
 ARCHIVE_SECTION_CAP = 60
 
@@ -106,7 +106,7 @@ def archive_sections(request):
 @require_POST
 def archive_clear_failed(request):
     """Bulk soft-delete failed archive posts."""
-    from apps.core.teams.permissions import get_teammate_ids
+    from apps.core.accounts.access import get_teammate_ids
 
     visible_user_ids = get_teammate_ids(request.user)
     qs = Post.objects.filter(

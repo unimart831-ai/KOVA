@@ -497,71 +497,11 @@
 </div>
 
 {% elif tab == "engagement" %}
-<!-- Engagement Tab -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_interactions }}</p>
-    <p class="text-xs text-gray-500 dark:text-gray-400">Interactions</p>
-  </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-growth-600 dark:text-growth-400">{{ interaction_stats.completed|default:0 }}</p>
-    <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
-  </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-gold-600 dark:text-gold-400">{{ interaction_stats.pending|default:0 }}</p>
-    <p class="text-xs text-gray-500 dark:text-gray-400">Pending</p>
-  </div>
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm text-center">
-    <p class="text-2xl font-bold text-kova-600 dark:text-kova-400">{{ superfans|length }}</p>
-    <p class="text-xs text-gray-500 dark:text-gray-400">Superfans</p>
-  </div>
-</div>
-
-<!-- Superfans -->
-{% if superfans %}
-<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
-  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Top Superfans</h3>
-  </div>
-  <div class="divide-y divide-gray-100 dark:divide-gray-800">
-    {% for fan in superfans %}
-    <div class="px-4 py-3 flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ fan.platform_username }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">{{ fan.platform }} · {{ fan.interaction_count }} interactions</p>
-      </div>
-      <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {% if fan.tier == 'gold' %}bg-gold-100 text-gold-700 dark:bg-gold-900/30 dark:text-gold-400{% elif fan.tier == 'silver' %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% else %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400{% endif %}">
-        {{ fan.tier|title }}
-      </span>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<!-- Recent Interactions -->
+<!-- Engagement Tab — Engage app retired -->
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Recent Interactions</h3>
-  </div>
-  <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto">
-    {% for ix in interactions %}
-    <div class="px-4 py-3">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-900 dark:text-white">{{ ix.interaction_type }} — {{ ix.platform_username|default:"unknown" }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ ix.platform }} · {{ ix.created_at|timesince }} ago</p>
-        </div>
-        <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full {{ ix.status|status_color }}">{{ ix.status }}</span>
-      </div>
-      {% if ix.original_text %}
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">{{ ix.original_text|truncatechars:100 }}</p>
-      {% endif %}
-    </div>
-    {% empty %}
-    <p class="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No interactions yet</p>
-    {% endfor %}
-  </div>
+  <p class="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 text-center">
+    Social engagement inbox has been retired. Customer messaging is handled via WhatsApp.
+  </p>
 </div>
 
 {% elif tab == "briefs" %}

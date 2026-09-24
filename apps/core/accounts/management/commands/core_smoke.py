@@ -21,8 +21,6 @@ CRITICAL_ROUTES = (
     ("brief:home", {}),
     ("products:snap", {}),
     ("content:studio", {}),
-    ("bookings:list", {}),
-    ("bookings:link_create", {}),
     ("accounts:settings", {}),
     ("api:asset-list", {}),
     ("api:product-list", {}),
@@ -106,7 +104,6 @@ class Command(BaseCommand):
             "apps.create.media.asset_intelligence",
             "apps.create.media.router",
             "apps.create.media.orchestrator",
-            "apps.commerce.bookings.service_setup",
             "apps.create.briefs.whatsapp_commands",
             "apps.create.content.approval",
         )

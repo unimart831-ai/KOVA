@@ -1,4 +1,4 @@
-{# HTMX partial: compact onboarding progress for glass setup card #}
+{# HTMX partial: onboarding progress — show intelligence, not just Done badges #}
 {% load static %}
 
 {% if progress.all_done or progress.stuck %}
@@ -8,6 +8,31 @@
 {% else %}
 <div>
 {% endif %}
+
+  {% if first_report and first_report.marketing_score %}
+  <div class="kova-setup-card" style="margin-bottom:0.85rem;padding:0.85rem">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem">
+      <div style="min-width:0">
+        <p class="kova-setup-badge" style="margin:0">Business assessment</p>
+        <p class="kova-setup-label" style="margin-top:0.25rem">Kova already understands {{ request.user.profile.company_name|default:"your business" }}</p>
+        {% if first_report.strengths %}
+        <p class="kova-setup-meta" style="margin-top:0.35rem">{{ first_report.strengths.0 }}</p>
+        {% endif %}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <p style="font-size:1.5rem;font-weight:800;color:#fff;line-height:1;margin:0">{{ first_report.marketing_score }}<span style="font-size:0.75rem;color:rgba(255,255,255,0.55)">/100</span></p>
+        <p class="kova-setup-meta">{{ first_report.grade }}</p>
+      </div>
+    </div>
+    {% if first_report.growth_opportunities %}
+    <ol style="margin:0.75rem 0 0;padding-left:1.1rem">
+      {% for opp in first_report.growth_opportunities|slice:":2" %}
+      <li class="kova-setup-meta" style="margin-top:0.25rem;color:rgba(255,255,255,0.8)">{{ opp }}</li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <div class="kova-setup-card">
     {% for step in progress.steps %}
@@ -35,9 +60,15 @@
           {% else %}{{ step.key }}{% endif %}
         </p>
         <p class="kova-setup-meta">
-          {% if step.status == "completed" %}Done
+          {% if step.key == "content" and preview_posts and step.status == "running" %}
+            Preview ready — sharpening with AI…
+          {% elif step.status == "completed" and step.key == "research" %}
+            Angles mapped for your brand
+          {% elif step.status == "completed" and step.key == "content" %}
+            {{ preview_posts|length }} draft{{ preview_posts|length|pluralize }} ready to review
+          {% elif step.status == "completed" %}Done
           {% elif step.status == "running" %}Working…
-          {% elif step.status == "failed" %}Partial
+          {% elif step.status == "failed" %}Partial — you can continue
           {% else %}Queued{% endif %}
         </p>
       </div>
@@ -51,39 +82,52 @@
     {% endfor %}
   </div>
 
-  {% if progress.stuck and not progress.all_done %}
-  <p class="kova-auth__hint mt-3" style="color:#fde68a">Taking longer than usual — retry or continue to Studio.</p>
-  <div class="kova-setup-actions">
-    <form method="post" action="{% url 'accounts:onboarding_retry' %}">
-      {% csrf_token %}
-      <button type="submit" class="primary" style="width:100%">Retry setup</button>
-    </form>
-    <a href="{% url 'content:studio' %}" class="ghost">Skip to Studio</a>
-  </div>
-  {% endif %}
-
-  {% if progress.all_done %}
-  <div class="kova-setup-actions">
-    <a href="{% url 'content:studio' %}" class="primary">Review posts in Studio</a>
-    <a href="{% url 'brief:home' %}" class="ghost">Go to Today</a>
-    {% if not has_platforms %}
-    <a href="{% url 'platforms:list' %}" class="ghost">Connect a platform</a>
-    {% endif %}
-  </div>
   {% if preview_posts %}
   <div class="kova-setup-card" style="margin-top:0.85rem">
-    {% for post in preview_posts|slice:":2" %}
+    <div class="kova-setup-row" style="border-bottom:1px solid rgba(255,255,255,0.1)">
+      <p class="kova-setup-label" style="margin:0">Your first drafts</p>
+    </div>
+    {% for post in preview_posts|slice:":3" %}
     <div class="kova-setup-row" style="align-items:flex-start">
+      {% if post.media_urls.0 %}
+      <img src="{{ post.media_urls.0 }}" alt="" width="48" height="48"
+           style="width:3rem;height:3rem;border-radius:0.5rem;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,0.08)">
+      {% else %}
+      <div class="kova-setup-icon" style="width:3rem;height:3rem;border-radius:0.5rem">
+        <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.7)">{{ post.platform|slice:":2"|upper|default:"IG" }}</span>
+      </div>
+      {% endif %}
       <div class="min-w-0 flex-1">
-        <p class="kova-setup-label">{{ post.get_platform_display|default:post.platform|default:"Draft" }}</p>
-        <p class="kova-setup-meta">{{ post.content_text|truncatechars:120 }}</p>
+        <p class="kova-setup-label">{{ post.ai_angle|default:post.get_platform_display|default:post.platform|default:"Draft" }}</p>
+        <p class="kova-setup-meta">{{ post.content_text|truncatechars:140 }}</p>
       </div>
     </div>
     {% endfor %}
   </div>
   {% endif %}
-  {% elif not progress.stuck %}
-  <p class="kova-auth__hint mt-3">Usually finishes in 1–3 minutes.</p>
+
+  {% if progress.stuck and not progress.all_done %}
+  <p class="kova-auth__hint mt-3" style="color:#fde68a">Taking longer than usual — your preview drafts are ready; continue or retry enrichment.</p>
+  <div class="kova-setup-actions">
+    <form method="post" action="{% url 'accounts:onboarding_retry' %}">
+      {% csrf_token %}
+      <button type="submit" class="primary" style="width:100%">Retry enrichment</button>
+    </form>
+    <a href="{% url 'content:studio' %}" class="ghost">Review drafts in Studio</a>
+  </div>
+  {% elif progress.all_done %}
+  <div class="kova-setup-actions">
+    <a href="{% url 'content:studio' %}" class="primary">Review posts in Studio</a>
+    {% if not has_platforms %}
+    <a href="{% url 'platforms:list' %}" class="ghost">Connect Instagram, Facebook, or WhatsApp</a>
+    {% endif %}
+    <a href="{% url 'brief:home' %}" class="ghost">Go to Home</a>
+  </div>
+  {% else %}
+  <div class="kova-setup-actions">
+    <a href="{% url 'content:studio' %}" class="primary">Peek at drafts now</a>
+    <p class="kova-auth__hint" style="margin:0;text-align:center">Usually finishes in 1–3 minutes. You can review drafts while we sharpen them.</p>
+  </div>
   {% endif %}
 
 </div>

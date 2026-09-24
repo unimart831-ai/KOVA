@@ -17,7 +17,7 @@
   <div class="flex-shrink-0 px-4 pb-3 pt-4">
     <div class="mb-3 flex items-center justify-between gap-2">
       <a href="{% url 'brief:home' %}" class="inline-flex min-w-0 items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-kova-400" aria-label="KOVA home">
-        <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-kova-500 font-display text-sm font-bold text-white"{% if agency_brand_theme %} style="background-color: var(--brand-accent);"{% endif %} aria-hidden="true">K</span>
+        <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-kova-500 font-display text-sm font-bold text-white" aria-hidden="true">K</span>
         <span class="truncate font-display text-base font-bold tracking-tight text-white">KOVA</span>
       </a>
       <button type="button"
@@ -29,21 +29,6 @@
         </svg>
       </button>
     </div>
-
-    {% if agency_brands|length > 1 and kova_features.teams %}
-    <form method="post" action="{% url 'teams:switch_brand' %}">
-      {% csrf_token %}
-      <label for="agency-brand-select" class="sr-only">Active client</label>
-      <select id="agency-brand-select" name="brand_id" onchange="this.form.submit()"
-              class="w-full rounded-lg border border-white/10 bg-canvas-raised px-2.5 py-1.5 text-xs text-white/85">
-        {% for b in agency_brands %}
-        <option value="{{ b.id }}" {% if b.id == active_agency_brand_id %}selected{% endif %}>{{ b.name }}</option>
-        {% endfor %}
-      </select>
-    </form>
-    {% elif agency_brands|length == 1 and kova_features.teams %}
-    <p class="truncate text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-white/35">{{ agency_brands.0.name }}</p>
-    {% endif %}
   </div>
 
   <nav class="sidebar-scroll flex-1 overflow-y-auto px-3 pb-4" aria-label="Primary">

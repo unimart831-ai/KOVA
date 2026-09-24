@@ -197,13 +197,17 @@ def public_shop_index(request, page_slug):
     service_products = service_offerings_for_shop(products) if storefront.get("business_model") == "service" else []
     booking_url = ""
     if storefront.get("show_bookings_cta"):
-        from django.urls import reverse
+        booking_url = (
+            (getattr(profile, "fulfillment_url", "") or "").strip()
+            or ""
+        )
+        if not booking_url:
+            try:
+                from apps.commerce.products.commerce_canonical import canonical_business_url
 
-        booking_link = user.booking_links.filter(is_active=True).first()
-        if booking_link:
-            booking_url = request.build_absolute_uri(
-                reverse("bookings:public_book", kwargs={"slug": booking_link.slug})
-            )
+                booking_url = canonical_business_url(user, profile) or ""
+            except Exception:
+                booking_url = ""
     body_extra = " ".join(filter(None, [
         "kc-shop--sticky" if (commerce_ctx.get("wa_url") or booking_url) and products else "",
     ]))
@@ -297,7 +301,7 @@ def public_commerce_link(request, page_slug, commerce_slug):
     )
     product_highlights = get_product_display_highlights(product)
 
-    from apps.core.teams.branding import get_commerce_branding
+    from apps.core.accounts.access import get_commerce_branding
 
     commerce_branding = get_commerce_branding(user, profile)
     if commerce_branding.get("custom_domain"):

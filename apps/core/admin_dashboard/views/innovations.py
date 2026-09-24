@@ -144,34 +144,17 @@ def voice_brief_detail(request, pk):
 
 @staff_required
 def screenshot_list(request):
-    """List all competitor screenshots."""
-    from apps.insight.analytics.models import CompetitorScreenshot
+    """V1: screenshot-to-compete UI removed."""
+    from django.contrib import messages
 
-    status_filter = request.GET.get("status", "")
-    qs = CompetitorScreenshot.objects.select_related("user", "competitor").order_by("-created_at")
-
-    if status_filter:
-        qs = qs.filter(status=status_filter)
-
-    paginator = Paginator(qs, 30)
-    page = paginator.get_page(request.GET.get("page"))
-
-    return render(request, "admin_dashboard/innovations/screenshot_list.html", {
-        "page": page,
-        "status_filter": status_filter,
-        "status_choices": CompetitorScreenshot.Status.choices,
-    })
+    messages.info(request, "Screenshot-to-compete is deferred past V1.")
+    return redirect("admin_dashboard:innovations_overview")
 
 
 @staff_required
 def screenshot_detail(request, pk):
-    """Detail view for a competitor screenshot analysis."""
-    from apps.insight.analytics.models import CompetitorScreenshot
-    ss = get_object_or_404(CompetitorScreenshot.objects.select_related(
-        "user", "competitor", "counter_seed",
-    ), pk=pk)
-
-    return render(request, "admin_dashboard/innovations/screenshot_detail.html", {"ss": ss})
+    """V1: screenshot-to-compete UI removed."""
+    return redirect("admin_dashboard:innovations_overview")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -235,33 +218,14 @@ def trend_alert_detail(request, pk):
 
 @staff_required
 def recycle_list(request):
-    """List all performance recycle records."""
-    from apps.insight.analytics.models import PerformanceRecycle
+    """V1: performance-to-email UI removed."""
+    from django.contrib import messages
 
-    status_filter = request.GET.get("status", "")
-    qs = PerformanceRecycle.objects.select_related(
-        "user", "source_post", "email_campaign",
-    ).order_by("-detected_at")
-
-    if status_filter:
-        qs = qs.filter(status=status_filter)
-
-    paginator = Paginator(qs, 30)
-    page = paginator.get_page(request.GET.get("page"))
-
-    return render(request, "admin_dashboard/innovations/recycle_list.html", {
-        "page": page,
-        "status_filter": status_filter,
-        "status_choices": PerformanceRecycle.Status.choices,
-    })
+    messages.info(request, "Performance-to-email recycle is deferred past V1.")
+    return redirect("admin_dashboard:innovations_overview")
 
 
 @staff_required
 def recycle_detail(request, pk):
-    """Detail view for a performance recycle record."""
-    from apps.insight.analytics.models import PerformanceRecycle
-    recycle = get_object_or_404(PerformanceRecycle.objects.select_related(
-        "user", "source_post", "post_metric", "email_campaign",
-    ), pk=pk)
-
-    return render(request, "admin_dashboard/innovations/recycle_detail.html", {"recycle": recycle})
+    """V1: performance-to-email UI removed."""
+    return redirect("admin_dashboard:innovations_overview")

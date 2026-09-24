@@ -574,7 +574,11 @@ def generate_branded_graphic(
     Returns:
         URL of the saved image, or None if rendering failed.
     """
-    platform = post.social_account.platform if post.social_account else "twitter"
+    platform = (
+        post.social_account.platform
+        if post.social_account
+        else (getattr(post, "platform", None) or "instagram")
+    )
     width, height = CANVAS_SIZES.get(platform, DEFAULT_CANVAS)
 
     # Load brand colors from user profile

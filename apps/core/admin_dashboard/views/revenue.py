@@ -140,28 +140,15 @@ def conversion_list(request):
 
 @staff_required
 def shopify_stores_list(request):
-    """Manage all connected Shopify stores across all users."""
-    stores = (
-        ShopifyStore.objects
-        .select_related("user")
-        .order_by("-total_revenue")
-    )
-    return render(request, "admin_dashboard/revenue/shopify_stores.html", {
-        "page_title": "Shopify Stores",
-        "stores": stores,
-    })
+    """V1: Shopify admin UI removed — redirect to revenue overview."""
+    messages.info(request, "Shopify stores management is deferred past V1.")
+    return redirect("admin_dashboard:revenue_overview")
 
 
 @senior_staff_required
 def shopify_store_toggle(request, pk):
-    """Activate/deactivate a Shopify store connection."""
-    if request.method == "POST":
-        store = get_object_or_404(ShopifyStore, pk=pk)
-        store.is_active = not store.is_active
-        store.save(update_fields=["is_active"])
-        action = "activated" if store.is_active else "deactivated"
-        messages.success(request, f"Shopify store {store.shop_domain} {action}.")
-    return redirect("admin_dashboard:shopify_stores")
+    """V1: Shopify admin UI removed."""
+    return redirect("admin_dashboard:revenue_overview")
 
 
 @staff_required

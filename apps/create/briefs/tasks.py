@@ -246,68 +246,6 @@ def _build_action_summary(user) -> dict:
         "bookings_completed": 0,
     }
 
-    try:
-        from apps.messaging.engage.models import Interaction
-        summary["engage"]["auto_sent"] = Interaction.objects.filter(
-            user=user, status="auto_replied",
-            updated_at__gte=cutoff,
-        ).count()
-        summary["engage"]["escalated"] = Interaction.objects.filter(
-            user=user, status="flagged",
-            updated_at__gte=cutoff,
-        ).count()
-        summary["engage"]["drafts_pending"] = Interaction.objects.filter(
-            user=user, status="draft",
-        ).count()
-    except Exception:
-        pass
-
-    try:
-        from apps.commerce.reviews.models import ReviewRequest
-        rqs = ReviewRequest.objects.filter(user=user)
-        summary["reviews"]["scheduled"] = rqs.filter(
-            created_at__gte=cutoff,
-        ).count()
-        summary["reviews"]["sent"] = rqs.filter(
-            sent_at__gte=cutoff,
-        ).count()
-        summary["reviews"]["positive_seeds"] = rqs.filter(
-            content_seed__isnull=False,
-            responded_at__gte=cutoff,
-        ).count()
-        neg = rqs.filter(
-            escalated_in_brief=True,
-            sentiment="negative",
-            responded_at__gte=cutoff,
-        )[:3]
-        summary["reviews"]["negative_to_review"] = [
-            {
-                "customer": r.customer_name or "(anonymous)",
-                "preview": (r.response_text or "")[:120],
-            }
-            for r in neg
-        ]
-    except Exception:
-        pass
-
-    try:
-        from apps.commerce.qr_attribution.models import WalkInEvent
-        summary["walk_ins"] = WalkInEvent.objects.filter(
-            user=user, recorded_at__gte=cutoff,
-        ).count()
-    except Exception:
-        pass
-
-    try:
-        from apps.commerce.bookings.models import Booking
-        summary["bookings_completed"] = Booking.objects.filter(
-            booking_link__user=user,
-            status="completed",
-            completed_at__gte=cutoff,
-        ).count()
-    except Exception:
-        pass
-
     return summary
 
 
@@ -534,31 +472,8 @@ def _gather_brief_data(user):
     )
 
     # ── Decisions needed: items requiring human judgment ──────────────
-    # Unanswered interactions (new/flagged)
-    try:
-        from apps.messaging.engage.models import Interaction
-        unanswered = Interaction.objects.filter(
-            user=user,
-            status__in=["new", "flagged"],
-        ).order_by("-created_at")[:10]
-        unanswered_data = [
-            {
-                "author": i.author_name,
-                "content": i.content[:120],
-                "platform": i.platform,
-                "type": i.interaction_type,
-                "status": i.status,
-                "sentiment": i.sentiment,
-            }
-            for i in unanswered
-        ]
-        unanswered_count = Interaction.objects.filter(
-            user=user, status__in=["new", "flagged"],
-        ).count()
-    except Exception as e:
-        logger.warning("Unanswered interactions query failed: %s", e)
-        unanswered_data = []
-        unanswered_count = 0
+    unanswered_data = []
+    unanswered_count = 0
 
     # New leads awaiting action
     try:

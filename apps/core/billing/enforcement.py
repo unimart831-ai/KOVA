@@ -176,7 +176,8 @@ def check_api_access(user):
 
 
 def check_ab_testing(user) -> tuple[bool, str]:
-    return check_plan_feature(user, "ab_testing", "A/B testing")
+    # V1: A/B testing UI removed — never block plan gates on this feature.
+    return True, ""
 
 
 def check_auto_approve_plan(user) -> tuple[bool, str]:

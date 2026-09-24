@@ -165,6 +165,7 @@ GitHub Actions runs on every push/PR:
 
 ## Documentation
 
+- [Railway deploy](docs/RAILWAY_DEPLOY.md) — Postgres, Redis, web/worker/beat, env vars
 - [Docs index](docs/README.md) — all essential docs
 - [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) — product / sprint plan
 - [API Reference](docs/API_REFERENCE.md) — REST API v1

@@ -1,4 +1,4 @@
-"""REACH lead automation — walk-in bridge, nurture triggers, scoring."""
+"""REACH lead automation — nurture triggers, scoring (walk-in QR bridge removed in V1)."""
 from __future__ import annotations
 
 from datetime import timedelta
@@ -7,11 +7,9 @@ import pytest
 from django.utils import timezone
 
 from apps.core.accounts.models import User, UserProfile
-from apps.commerce.leads.bridges import create_lead_from_walkin
 from apps.commerce.leads.defaults import WELCOME_SEQUENCE_NAME, ensure_default_nurture_sequences
 from apps.commerce.leads.models import Lead, LeadEnrollment, NurtureSequence, NurtureStep
 from apps.commerce.leads.tasks import enroll_lead_in_sequences, enroll_stale_lead_in_winback
-from apps.commerce.qr_attribution.models import WalkInEvent
 
 
 @pytest.fixture
@@ -26,45 +24,6 @@ def owner(db):
     u.onboarding_completed = True
     u.save(update_fields=["onboarding_completed"])
     return u
-
-
-class TestWalkInBridge:
-    def test_walkin_with_phone_creates_lead(self, owner):
-        WalkInEvent.objects.create(
-            user=owner,
-            attribution_source=WalkInEvent.AttributionSource.INSTAGRAM,
-            customer_phone="254712345678",
-            customer_name="Jane Doe",
-        )
-        lead = Lead.objects.get(user=owner, phone="254712345678")
-        assert lead.source_type == Lead.Source.WALK_IN
-        assert lead.name == "Jane Doe"
-
-    def test_bridge_direct_call(self, owner):
-        walkin = WalkInEvent(
-            user=owner,
-            attribution_source=WalkInEvent.AttributionSource.WHATSAPP,
-            customer_phone="254700000099",
-        )
-        lead = create_lead_from_walkin(walkin)
-        assert lead is not None
-        assert lead.phone == "254700000099"
-
-    def test_walkin_without_phone_skips_lead(self, owner):
-        walkin = WalkInEvent.objects.create(
-            user=owner,
-            attribution_source=WalkInEvent.AttributionSource.FLYER,
-        )
-        assert create_lead_from_walkin(walkin) is None
-        assert Lead.objects.filter(user=owner).count() == 0
-
-    def test_post_save_signal_creates_lead(self, owner):
-        WalkInEvent.objects.create(
-            user=owner,
-            customer_phone="0711999888",
-            customer_name="Signal Test",
-        )
-        assert Lead.objects.filter(user=owner, source_type=Lead.Source.WALK_IN).exists()
 
 
 class TestNurtureTriggerParsing:

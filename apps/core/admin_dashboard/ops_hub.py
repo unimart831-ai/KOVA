@@ -28,7 +28,6 @@ def build_ops_hub_snapshot() -> dict:
     from apps.core.billing.models import AgencySalesInquiry
     from apps.core.billing.visual_credits import get_platform_photoroom_usage
     from apps.create.content.models import ContentSafetyIncident, Post, SystemSafetyConfig
-    from apps.core.partners.models import MarketplacePartner, MarketplaceSellerAccount, WebhookDeliveryLog
     from apps.core.platforms.models import SocialAccount
 
     now = timezone.now()
@@ -93,17 +92,10 @@ def build_ops_hub_snapshot() -> dict:
         status=AgencySalesInquiry.Status.NEW,
     ).count()
 
-    active_marketplaces = MarketplacePartner.objects.filter(is_active=True).count()
-    from apps.core.partners.unimart_partner import resolve_unimart_partner
-
-    unimart = resolve_unimart_partner()
+    active_marketplaces = 0
+    unimart = None
     unimart_sellers = 0
-    if unimart:
-        unimart_sellers = MarketplaceSellerAccount.objects.filter(marketplace=unimart).count()
-    webhook_failed_7d = WebhookDeliveryLog.objects.filter(
-        created_at__gte=seven_days_ago,
-        status=WebhookDeliveryLog.Status.FAILED,
-    ).count()
+    webhook_failed_7d = 0
 
     photoroom = get_platform_photoroom_usage()
     photoroom["pool_pct_display"] = round(photoroom.get("pool_pct", 0) * 100, 1)

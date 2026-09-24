@@ -187,9 +187,7 @@ def system_health(request):
     from apps.insight.analytics.models import Conversion
     from apps.core.billing.models import BillingEvent, MpesaPayment
     from apps.create.briefs.models import DailyBrief
-    from apps.messaging.engage.models import Interaction, Superfan
     from apps.messaging.notifications.models import Notification
-    from apps.core.teams.models import Brand, TeamActivity
     from rest_framework.authtoken.models import Token
 
     total_api_tokens = Token.objects.count()
@@ -199,15 +197,11 @@ def system_health(request):
         {"table": "Posts", "count": Post.objects.count()},
         {"table": "Content Seeds", "count": ContentSeed.objects.count()},
         {"table": "Agent Actions", "count": AgentAction.objects.count()},
-        {"table": "Interactions", "count": Interaction.objects.count()},
-        {"table": "Superfans", "count": Superfan.objects.count()},
         {"table": "Social Accounts", "count": SocialAccount.objects.count()},
         {"table": "Notifications", "count": Notification.objects.count()},
         {"table": "Daily Briefs", "count": DailyBrief.objects.count()},
         {"table": "M-Pesa Payments", "count": MpesaPayment.objects.count()},
         {"table": "Billing Events", "count": BillingEvent.objects.count()},
-        {"table": "Brands", "count": Brand.objects.count()},
-        {"table": "Team Activities", "count": TeamActivity.objects.count()},
         {"table": "Conversions", "count": Conversion.objects.count()},
         {"table": "API Tokens", "count": total_api_tokens},
     ]

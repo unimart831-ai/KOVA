@@ -81,12 +81,6 @@
           <dt class="text-[10px] text-gray-400 uppercase">Owner page</dt>
           <dd><a href="{{ shop_url }}" target="_blank" rel="noopener" class="text-growth-600 hover:underline break-all">{{ shop_url }} ↗</a></dd>
         </div>
-        {% if product.booking_link %}
-        <div>
-          <dt class="text-[10px] text-gray-400 uppercase">Booking link</dt>
-          <dd class="text-gray-900 dark:text-white">{{ product.booking_link.title|default:"Kova booking flow" }}</dd>
-        </div>
-        {% endif %}
         {% if product.fulfillment_url %}
         <div>
           <dt class="text-[10px] text-gray-400 uppercase">Fulfillment URL</dt>

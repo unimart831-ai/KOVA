@@ -79,18 +79,6 @@ def apply_business_model_defaults(profile, user) -> None:
             profile.goals = ["generate_leads", "drive_sales"]
     profile.save()
 
-    if profile.business_model == BUSINESS_MODEL_SERVICE:
-        try:
-            from apps.commerce.bookings.service_setup import ensure_primary_booking_link
-
-            ensure_primary_booking_link(
-                user,
-                label=profile.company_name or "Book an appointment",
-                industry=profile.industry or "generic",
-            )
-        except Exception:
-            pass
-
 
 def ensure_brand_defaults(profile, user) -> None:
     """Apply industry pack and safe defaults so preview → finish works without Step 2 edits."""

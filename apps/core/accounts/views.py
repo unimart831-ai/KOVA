@@ -826,6 +826,8 @@ def onboarding_progress_api(request):
 
     profile = request.user.profile
 
+    from apps.core.accounts.first_business_report import get_first_business_report
+
     return render(request, "accounts/_onboarding_progress.html", {
         "progress": progress,
         "brief": brief,
@@ -835,6 +837,7 @@ def onboarding_progress_api(request):
         "is_commerce": is_commerce_industry(profile.industry),
         "onboarding_intent": get_onboarding_intent(profile),
         "setup_mission": build_setup_mission(request.user),
+        "first_report": get_first_business_report(request.user),
     })
 
 

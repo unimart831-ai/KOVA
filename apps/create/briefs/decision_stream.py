@@ -67,12 +67,7 @@ def _build_decision_stream_uncached(user, brief=None) -> list[StreamItem]:
     ops += _pending_posts(user)
 
     if feature_enabled("engage_inbox", default=False):
-        ops += _flagged_interactions(user)
-        ops += _needs_reply_interactions(user)
         ops += _escalated_whatsapp(user)
-
-    if feature_enabled("bookings", default=False):
-        ops += _pending_bookings(user)
 
     ops += _connect_platform_nudge(user)
     ops += _onboarding_next_step(user)
@@ -121,32 +116,6 @@ def _failed_posts(user) -> list[StreamItem]:
         return []
 
 
-def _flagged_interactions(user) -> list[StreamItem]:
-    try:
-        from apps.messaging.engage.models import Interaction
-        flagged = (
-            Interaction.objects.filter(user=user, status=Interaction.Status.FLAGGED)
-            .select_related("social_account")
-            .order_by("-created_at")[:3]
-        )
-        items = []
-        for i in flagged:
-            platform = i.social_account.get_platform_display() if i.social_account else i.platform
-            items.append(StreamItem(
-                kind="reply_message",
-                urgency="critical",
-                title=f"Flagged: {i.author_name} — {(i.content or '')[:40]}",
-                subtitle=f"{platform} · {i.get_interaction_type_display()}",
-                action_url=reverse("whatsapp:inbox"),
-                source_id=str(i.id),
-                meta={"platform": i.platform, "sentiment": getattr(i, "sentiment", "")},
-            ))
-        return items
-    except Exception:
-        logger.exception("Decision stream: flagged_interactions error")
-        return []
-
-
 def _pending_posts(user) -> list[StreamItem]:
     try:
         from apps.create.content.models import Post
@@ -177,45 +146,6 @@ def _pending_posts(user) -> list[StreamItem]:
         return items
     except Exception:
         logger.exception("Decision stream: pending_posts error")
-        return []
-
-
-def _needs_reply_interactions(user) -> list[StreamItem]:
-    try:
-        from apps.messaging.engage.models import Interaction
-        needs_reply = (
-            Interaction.objects.filter(user=user, status=Interaction.Status.NEW)
-            .select_related("social_account")
-            .order_by("-created_at")[:3]
-        )
-        count = Interaction.objects.filter(
-            user=user, status=Interaction.Status.NEW,
-        ).count()
-        if not needs_reply:
-            return []
-        first = needs_reply[0]
-        platform = first.social_account.get_platform_display() if first.social_account else first.platform
-        if count == 1:
-            return [StreamItem(
-                kind="reply_message",
-                urgency="today",
-                title=f"{first.author_name}: {(first.content or '')[:40]}",
-                subtitle=f"{platform} · {first.get_interaction_type_display()}",
-                action_url=reverse("whatsapp:inbox"),
-                source_id=str(first.id),
-                meta={"count": 1},
-            )]
-        return [StreamItem(
-            kind="reply_message",
-            urgency="today",
-            title=f"{count} messages need your reply",
-            subtitle=f"Latest from {first.author_name} on {platform}",
-            action_url=reverse("whatsapp:inbox"),
-            source_id="",
-            meta={"count": count},
-        )]
-    except Exception:
-        logger.exception("Decision stream: needs_reply error")
         return []
 
 
@@ -278,28 +208,6 @@ def _new_leads(user) -> list[StreamItem]:
         )]
     except Exception:
         logger.exception("Decision stream: new_leads error")
-        return []
-
-
-def _pending_bookings(user) -> list[StreamItem]:
-    try:
-        from apps.commerce.bookings.models import Booking
-        today = timezone.now().date()
-        count = Booking.objects.filter(
-            booking_link__user=user, status="pending", scheduled_at__date=today,
-        ).count()
-        if not count:
-            return []
-        return [StreamItem(
-            kind="confirm_booking",
-            urgency="today",
-            title=f"{count} booking{'s' if count != 1 else ''} to confirm today",
-            subtitle="Clients waiting for confirmation",
-            action_url=reverse("leads:list"),
-            meta={"count": count},
-        )]
-    except Exception:
-        logger.exception("Decision stream: pending_bookings error")
         return []
 
 

@@ -319,55 +319,9 @@ def enrich_idea_with_product(idea: str, product) -> str:
 def _get_demand_signals(user) -> list:
     """
     Analyze recent comments/DMs for product-related keywords.
-    Returns list of {keyword, count} showing what the audience is asking about.
+    Engage interactions removed — always empty.
     """
-    from apps.messaging.engage.models import Interaction
-    from apps.commerce.products.models import Product
-
-    week_ago = timezone.now() - timedelta(days=7)
-    product_names = list(
-        Product.objects.filter(user=user, is_active=True)
-        .values_list("name", flat=True)
-    )
-
-    if not product_names:
-        return []
-
-    interactions = Interaction.objects.filter(
-        user=user, created_at__gte=week_ago,
-    ).values_list("content", flat=True)
-
-    if not interactions:
-        return []
-
-    # Count product name mentions in interactions
-    mentions = defaultdict(int)
-    for content in interactions:
-        content_lower = (content or "").lower()
-        for name in product_names:
-            if name.lower() in content_lower:
-                mentions[name] += 1
-
-    # Also detect generic demand keywords (products + services)
-    demand_keywords = ["price", "how much", "cost", "available", "stock", "order",
-                       "buy", "purchase", "delivery", "shipping", "bei", "deliver",
-                       "book", "schedule", "appointment", "consult", "quote",
-                       "estimate", "project", "hire", "service", "package"]
-    generic_demand = 0
-    for content in interactions:
-        content_lower = (content or "").lower()
-        for kw in demand_keywords:
-            if kw in content_lower:
-                generic_demand += 1
-                break
-
-    signals = [{"keyword": name, "count": count} for name, count in mentions.items() if count > 0]
-    signals.sort(key=lambda x: x["count"], reverse=True)
-
-    if generic_demand > 0:
-        signals.append({"keyword": "purchase intent (price/buy/order questions)", "count": generic_demand})
-
-    return signals
+    return []
 
 
 # ─── Product-Engagement Correlation ──────────────────────────────────────────

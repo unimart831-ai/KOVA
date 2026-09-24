@@ -86,7 +86,7 @@ def user_list(request):
         service_ready_count=Count(
             "products",
             filter=Q(products__is_active=True, products__offering_type="service")
-            & (Q(products__booking_link__isnull=False) | Q(products__fulfillment_url__gt="")),
+            & (Q(products__fulfillment_url__gt="") | Q(products__product_url__gt="")),
             distinct=True,
         ),
         digital_ready_count=Count(
@@ -162,7 +162,6 @@ def user_detail(request, pk):
     from apps.create.briefs.models import DailyBrief
     from apps.create.content.models import ContentSeed, MarketingCampaign, Post
     from apps.create.content.models import VoiceBrief
-    from apps.messaging.engage.models import Interaction, Superfan
     from apps.core.platforms.models import SocialAccount
     from apps.commerce.products.models import Product
 
@@ -185,7 +184,7 @@ def user_detail(request, pk):
         "service_ready": offer_qs.filter(
             offering_type=Product.OfferingType.SERVICE,
         ).filter(
-            Q(booking_link__isnull=False) | Q(fulfillment_url__gt=""),
+            Q(fulfillment_url__gt="") | Q(product_url__gt=""),
         ).count(),
         "digital_ready": offer_qs.filter(
             offering_type=Product.OfferingType.DIGITAL,
@@ -277,14 +276,11 @@ def user_detail(request, pk):
         })
 
     elif tab == "engagement":
-        interactions = Interaction.objects.filter(user=user).order_by("-created_at")[:30]
-        superfans = Superfan.objects.filter(user=user).order_by("-interaction_count")[:10]
-        interaction_stats = Interaction.objects.filter(user=user).values("status").annotate(c=Count("id"))
         context.update({
-            "interactions": interactions,
-            "superfans": superfans,
-            "interaction_stats": {s["status"]: s["c"] for s in interaction_stats},
-            "total_interactions": Interaction.objects.filter(user=user).count(),
+            "interactions": [],
+            "superfans": [],
+            "interaction_stats": {},
+            "total_interactions": 0,
         })
 
     elif tab == "briefs":

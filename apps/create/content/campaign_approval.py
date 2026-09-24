@@ -168,7 +168,7 @@ def client_approval_blocks_publish(campaign, user) -> tuple[bool, str]:
     status = client_approval_status(campaign).get("status")
     if status != "pending":
         return False, ""
-    from apps.core.teams.permissions import get_client_membership
+    from apps.core.accounts.access import get_client_membership
 
     if get_client_membership(user):
         return False, ""

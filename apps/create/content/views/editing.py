@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 
 from apps.create.content.forms import PostEditForm
 from apps.create.content.models import Post
-from apps.core.teams.permissions import can_edit_post
+from apps.core.accounts.access import can_edit_post
 from apps.core.utils import fire_task
 
 

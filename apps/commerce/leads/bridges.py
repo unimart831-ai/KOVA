@@ -22,15 +22,12 @@ def _engage_lead_metadata(interaction) -> dict:
     }
     if interaction.ai_intent == "booking":
         try:
-            from apps.commerce.bookings.models import BookingLink
-            from apps.commerce.bookings.service_setup import booking_public_url
+            from apps.commerce.products.commerce_canonical import canonical_business_url
 
-            link = BookingLink.objects.filter(
-                user=interaction.user, is_active=True,
-            ).first()
-            if link:
-                meta["booking_url"] = booking_public_url(link)
-                meta["suggested_owner_action"] = "Reply with booking link or let WhatsApp bot handle BOOK"
+            url = canonical_business_url(interaction.user, interaction.user.profile)
+            if url:
+                meta["booking_url"] = url
+                meta["suggested_owner_action"] = "Reply with your service page link or let WhatsApp handle orders"
         except Exception:
             pass
     return meta

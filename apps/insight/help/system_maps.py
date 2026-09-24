@@ -264,27 +264,15 @@ flowchart LR
         title="Engage Inbox",
         nav_group="Customers",
         print_order=8,
-        summary="Social comments, DMs, AI drafts, optional auto-send.",
+        summary="Retired — social engage inbox removed from V1.",
         audit=[
-            "PRO gate: engagement_agent plan limit.",
-            "run_engage_cycle every 30 min: fetch → analyze → generate_replies → auto_respond.",
-            "Default engage_autonomy_level=suggest — user approves in inbox.",
-            "Levels: suggest (manual), assisted, auto — gated by ENGAGE_GRADUATED_AUTONOMY_ENABLED.",
-            "auto_sent_list allows undo/correct for AI-sent replies.",
+            "Engage Agent and Interaction models retired from kept V1 apps.",
+            "WhatsApp inbox handles customer messaging.",
         ],
-        admin_links=[
-            ("Engage overview", "engagement_overview"),
-            ("Interaction feed", "interaction_feed"),
-        ],
+        admin_links=[],
         diagram="""
 flowchart LR
-  BEAT[Engage beat 30 min] --> FETCH[Fetch interactions]
-  FETCH --> AN[Analyze sentiment]
-  AN --> DRAFT[Generate replies]
-  DRAFT --> ROUTE{engage_autonomy_level}
-  ROUTE -->|suggest default| INBOX[Inbox — manual send]
-  ROUTE -->|auto + env flag| SEND[Platform auto-send]
-  SEND --> UNDO[Auto-sent undo/correct]
+  WA[WhatsApp webhook] --> INBOX[WhatsApp inbox]
 """,
     ),
     SystemMap(

@@ -5,7 +5,6 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import include, path, re_path
-from django.views.generic import TemplateView
 from django.views.generic.base import RedirectView
 
 from apps.commerce.links.views import public_page, public_form_submit, public_link_click
@@ -18,7 +17,6 @@ from apps.commerce.products.commerce_views import (
 )
 from apps.create.content.views.campaign_pages import public_campaign_page
 from apps.commerce.products.commerce_sitemap import commerce_sitemap_xml, robots_txt
-from apps.core.partners.views import referral_redirect
 from apps.core.accounts.legal_views import legal
 from apps.core.platforms.facebook_data_deletion_views import (
     facebook_data_deletion_instructions,
@@ -63,7 +61,19 @@ _COMPARE_TEMPLATES = {
 
 
 def pricing(request) -> HttpResponse:
-    return render(request, "pages/pricing.html")
+    from apps.core.billing.models import (
+        TRIAL_CAMPAIGN_LIMIT,
+        get_campaign_addon_packs,
+        get_plan_limits,
+    )
+    kova = get_plan_limits("kova")
+    return render(request, "pages/pricing.html", {
+        "kova_plan": kova,
+        "campaign_addons": get_campaign_addon_packs(),
+        "agency_plan": get_plan_limits("agency"),
+        "trial_days": kova.get("trial_days", 7),
+        "trial_campaigns": TRIAL_CAMPAIGN_LIMIT,
+    })
 
 def compare_page(request, slug):
     template = _COMPARE_TEMPLATES.get(slug)
@@ -132,11 +142,6 @@ urlpatterns = [
     path("dpa/", RedirectView.as_view(url="/legal/dpa/", permanent=True)),
     path("privacy/data-deletion/", RedirectView.as_view(pattern_name="facebook_data_deletion",permanent=False), name="privacy_data_deletion", ),
     
-    path(
-        "campus-rep/",
-        TemplateView.as_view(template_name="pages/campus_rep.html"),
-        name="campus_rep",
-    ),
     # Public help / learn section (no login required)
     path("learn/", include("apps.insight.help.urls_public")),
     # Public SEO blog (Educator agent output — no login required)
@@ -206,43 +211,6 @@ urlpatterns = [
     # OpenAPI schema + interactive docs
     path("api/schema/", include("apps.insight.api.schema_urls")),
 ]
-
-from apps.core.features import feature_enabled
-
-# V1: partners / QR / bookings / reviews / engage / teams UI routes removed.
-# Apps stay in INSTALLED_APPS for FK + migration history. Re-enable via feature
-# flags only after restoring templates and mounting routes again.
-if feature_enabled("teams", default=False):
-    urlpatterns += [
-        path("teams/", include("apps.core.teams.urls")),
-    ]
-
-if feature_enabled("engage_inbox", default=False):
-    urlpatterns += [
-        path("engage/", include("apps.messaging.engage.urls")),
-    ]
-
-if feature_enabled("partners", default=False):
-    urlpatterns += [
-        path("partners/", include("apps.core.partners.urls")),
-        path("r/<str:referral_code>/", referral_redirect, name="referral_redirect"),
-        path("api/v1/partner/", include("apps.insight.api.partner_urls")),
-    ]
-
-if feature_enabled("qr_attribution", default=False):
-    urlpatterns += [
-        path("", include("apps.commerce.qr_attribution.urls")),
-    ]
-
-if feature_enabled("bookings", default=False):
-    urlpatterns += [
-        path("", include("apps.commerce.bookings.urls")),
-    ]
-
-if feature_enabled("reviews", default=False):
-    urlpatterns += [
-        path("", include("apps.commerce.reviews.urls")),
-    ]
 
 if settings.DEBUG:
     urlpatterns += staticfiles_urlpatterns()

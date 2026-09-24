@@ -64,7 +64,7 @@ def get_commerce_branding_cached(user, profile) -> dict:
     cached = cache.get(key)
     if cached is not None:
         return cached
-    from apps.core.teams.branding import get_commerce_branding
+    from apps.core.accounts.access import get_commerce_branding
 
     branding = get_commerce_branding(user, profile)
     cache.set(key, branding, BRANDING_TTL)

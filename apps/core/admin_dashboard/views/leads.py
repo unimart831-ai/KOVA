@@ -9,7 +9,6 @@ from django.utils import timezone
 
 from apps.core.admin_dashboard.decorators import staff_required
 from apps.commerce.leads.models import Lead, LeadActivity, LeadEnrollment, NurtureSequence
-from apps.commerce.qr_attribution.models import WalkInEvent
 
 STALE_DAYS = 7
 
@@ -66,9 +65,9 @@ def leads_overview(request):
     bridge_commerce = Lead.objects.filter(source_type=Lead.Source.COMMERCE_PURCHASE).count()
     bridge_qr = Lead.objects.filter(source_type=Lead.Source.QR_SCAN).count()
 
-    walk_ins_total = WalkInEvent.objects.count()
-    walk_ins_7d = WalkInEvent.objects.filter(recorded_at__gte=week_ago).count()
-    walk_ins_with_contact = WalkInEvent.objects.exclude(customer_phone="").count()
+    walk_ins_total = 0
+    walk_ins_7d = 0
+    walk_ins_with_contact = 0
 
     top_sequences = list(
         NurtureSequence.objects.annotate(

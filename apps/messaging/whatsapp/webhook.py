@@ -233,19 +233,6 @@ def _process_inbound_message(social_account, msg_data, contacts):
         status=WhatsAppMessage.MessageStatus.DELIVERED,
     )
 
-    # Unified Engage inbox (WhatsApp DMs alongside IG/FB)
-    try:
-        from apps.messaging.engage.dm_inbox import bridge_whatsapp_message_to_inbox
-        bridge_whatsapp_message_to_inbox(
-            user=social_account.user,
-            sender_phone=wa_id,
-            sender_name=contact_name,
-            message_text=content,
-            message_id=wamid,
-        )
-    except Exception as e:
-        logger.warning("WhatsApp inbox bridge failed: %s", e)
-
     # Operations Autopilot — FAQ keyword auto-replies (before AI queue)
     try:
         from apps.messaging.whatsapp.autopilot import try_faq_auto_reply

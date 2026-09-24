@@ -39,7 +39,6 @@ from apps.create.agents.models import AgentAction, AgentConfig
 from apps.insight.analytics.competitor_intel import get_competitor_context_for_strategist
 from apps.insight.analytics.models import GrowthSnapshot, PostMetric
 from apps.create.content.models import ContentSeed, Post
-from apps.messaging.engage.models import Interaction
 from apps.core.platforms.models import SocialAccount
 
 logger = logging.getLogger(__name__)
@@ -83,17 +82,11 @@ def _gather_strategy_inputs(user):
     )
     performance = analyst_actions.output_data if analyst_actions else {}
 
-    # 3. Engagement patterns from Engage Agent
+    # 3. Engagement patterns (Engage Agent removed — empty defaults)
     engagement_stats = {
-        "new_interactions_24h": Interaction.objects.filter(
-            user=user, created_at__gte=day_ago,
-        ).count(),
-        "unanswered": Interaction.objects.filter(
-            user=user, status=Interaction.Status.NEW, ai_suggested_reply="",
-        ).count(),
-        "flagged": Interaction.objects.filter(
-            user=user, status=Interaction.Status.FLAGGED,
-        ).count(),
+        "new_interactions_24h": 0,
+        "unanswered": 0,
+        "flagged": 0,
         "sentiment_breakdown": _get_sentiment_breakdown(user, days=7),
         "top_engagers": _get_top_engagers(user, days=30),
     }
@@ -189,42 +182,13 @@ def _gather_strategy_inputs(user):
 
 
 def _get_sentiment_breakdown(user, days=7):
-    """Get sentiment counts for recent interactions."""
-    cutoff = timezone.now() - timedelta(days=days)
-    interactions = Interaction.objects.filter(
-        user=user, created_at__gte=cutoff,
-    ).exclude(sentiment="")
-
-    breakdown = {"positive": 0, "neutral": 0, "negative": 0}
-    for sentiment in interactions.values_list("sentiment", flat=True):
-        if sentiment in breakdown:
-            breakdown[sentiment] += 1
-    return breakdown
+    """Sentiment counts — Engage interactions removed; always empty."""
+    return {"positive": 0, "neutral": 0, "negative": 0}
 
 
 def _get_top_engagers(user, days=30):
-    """Identify superfans — people who engage multiple times."""
-    cutoff = timezone.now() - timedelta(days=days)
-    engagers = {}
-
-    interactions = Interaction.objects.filter(
-        user=user,
-        created_at__gte=cutoff,
-    ).exclude(author_username="").values("author_username", "author_name")
-
-    for item in interactions:
-        username = item["author_username"]
-        if username not in engagers:
-            engagers[username] = {"name": item["author_name"], "count": 0}
-        engagers[username]["count"] += 1
-
-    # Return top 10 sorted by engagement count
-    top = sorted(engagers.items(), key=lambda x: x[1]["count"], reverse=True)[:10]
-    return [
-        {"username": u, "name": data["name"], "interactions": data["count"]}
-        for u, data in top
-        if data["count"] >= 2  # at least 2 interactions = superfan candidate
-    ]
+    """Superfan list — Engage interactions removed; always empty."""
+    return []
 
 
 def _get_content_growth_correlation(user, days=30):
@@ -760,52 +724,16 @@ def get_engagement_report(user, days=7):
     """
     Generate an engagement summary for the Daily Brief.
     Called by briefs/tasks.py when compiling the brief.
+    Engage Agent removed — returns empty defaults.
     """
-    cutoff = timezone.now() - timedelta(days=days)
-
-    interactions = Interaction.objects.filter(
-        user=user, created_at__gte=cutoff,
-    )
-
-    total = interactions.count()
-    if total == 0:
-        return {
-            "total_interactions": 0,
-            "summary": "No interactions in the last week.",
-            "top_interactions": [],
-            "response_rate": 0,
-            "superfans": [],
-        }
-
-    responded = interactions.filter(
-        status__in=[Interaction.Status.AI_REPLIED, Interaction.Status.USER_REPLIED]
-    ).count()
-
-    response_rate = round((responded / total) * 100) if total > 0 else 0
-
-    # Top interactions (flagged + negative first)
-    top_interactions = list(
-        interactions.filter(
-            status__in=[Interaction.Status.FLAGGED, Interaction.Status.NEW],
-        )
-        .exclude(sentiment="positive")
-        .order_by("-created_at")
-        .values("author_name", "content", "sentiment", "interaction_type", "status")[:5]
-    )
-
-    # Platform breakdown
-    platform_counts = {}
-    for item in interactions.values("social_account__platform"):
-        p = item["social_account__platform"]
-        platform_counts[p] = platform_counts.get(p, 0) + 1
-
     return {
-        "total_interactions": total,
-        "responded": responded,
-        "response_rate": response_rate,
-        "sentiment": _get_sentiment_breakdown(user, days),
-        "by_platform": platform_counts,
-        "top_interactions": top_interactions,
-        "superfans": _get_top_engagers(user, days),
+        "total_interactions": 0,
+        "responded": 0,
+        "response_rate": 0,
+        "sentiment": {"positive": 0, "neutral": 0, "negative": 0},
+        "by_platform": {},
+        "top_interactions": [],
+        "superfans": [],
+        "summary": "No interactions in the last week.",
         "growth_summary": GrowthSnapshot.get_growth_summary(user, days=7),
     }
