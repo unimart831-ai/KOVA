@@ -59,10 +59,14 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 ## 3. What runs on deploy
 
-1. **Build** — Nixpacks: apt deps, `pip install`, `npm install`, Tailwind minify, `chmod +x start.sh release.sh`
-2. **Release** (`railway.toml` → `bash release.sh`) — `migrate` + prune stale Celery beat tasks
-3. **Web start** (`start.sh`) — collectstatic, optional migrate, seed reel beds, ensure superuser, Daphne on `$PORT`
+1. **Build** — Nixpacks (or Docker): apt deps, `pip install`, Tailwind, `chmod +x start.sh release.sh`
+2. **Release** (`railway.toml` → `bash release.sh`) — `migrate` + ensure Site row + prune beat tasks
+3. **Web start** — **must** be `bash start.sh` (never raw `daphne`). Migrates, collectstatic, Site row, then Daphne on `$PORT`
 4. **Worker / beat** — Celery as in `Procfile`
+
+If login returns `relation "django_site" does not exist`, the service is not using `start.sh`. In Railway → Settings → Deploy:
+- Custom Start Command: `bash start.sh`
+- Or redeploy after pulling the Dockerfile/`railway.toml` fix
 
 Health endpoint: `GET /health/` (plain `ok`).
 

@@ -42,4 +42,6 @@ RUN DJANGO_SETTINGS_MODULE=config.settings.base python manage.py collectstatic -
 
 EXPOSE 8000
 
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+# Must go through start.sh so migrate / Site / collectstatic run on every boot.
+# Direct daphne leaves an empty Postgres DB and breaks /accounts/login (django_site).
+CMD ["bash", "start.sh"]
